@@ -2,9 +2,10 @@
 
 A professional algorithmic trading platform for macOS, featuring a Bloomberg Terminal-inspired interface and comprehensive trading capabilities.
 
-![Version](https://img.shields.io/badge/version-6.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-6.1.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.10+-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
+![Progress](https://img.shields.io/badge/progress-85%25-brightgreen.svg)
 
 ---
 
@@ -12,15 +13,19 @@ A professional algorithmic trading platform for macOS, featuring a Bloomberg Ter
 
 ### 🎯 Trading Capabilities
 - **Live Trading** - Execute trades on Alpaca Markets (live account)
-- **Paper Trading** - Risk-free strategy testing (Alpaca paper account)  
+- **Paper Trading** - Risk-free strategy testing (Alpaca paper account)
 - **Backtesting** - Historical strategy validation with performance metrics
 - **Analysis Mode** - Market analysis with 20+ technical indicators
+- **Real-Time Streaming** - WebSocket streaming for live quotes and trades
+- **Quick Order Entry** - Market and limit orders from Trading page
 
 ### 📊 Professional Interface
 - **Bloomberg-Style UI** - Dark theme with professional data grids
-- **Real-time Data** - Live price streaming and updates
+- **Real-time Data** - Live price streaming via WebSocket
+- **Professional Charts** - Candlestick charts with technical indicators
 - **Multi-Panel Layout** - Customizable workspace with tabs
 - **Keyboard Shortcuts** - Fast navigation (Cmd+1-6 for tabs)
+- **Settings Management** - Complete UI for API and risk configuration
 
 ### 🧠 Advanced Analytics
 - **Technical Indicators** - RSI, MACD, Bollinger Bands, ADX, Stochastic, and 15+ more
