@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ class Strategy(BaseModel):
     description: str
     status: str  # 'active', 'paused', 'stopped'
     symbols: List[str]
-    parameters: Dict[str, any]
+    parameters: Dict[str, Any]
 
 
 class StrategyPerformance(BaseModel):
