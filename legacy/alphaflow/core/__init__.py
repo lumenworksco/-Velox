@@ -54,6 +54,7 @@ from core.portfolio_manager import PortfolioManager
 from core.backtester import BacktestEngine
 from core.trading_engine import TradingEngine
 from core.order_manager import OrderManager, Order, OrderType, OrderSide, OrderStatus, TimeInForce
+from core.alert_system import AlertManager, Alert, AlertType, AlertStatus
 
 __all__ = [
     # Config
@@ -114,4 +115,8 @@ __all__ = [
     'OrderSide',
     'OrderStatus',
     'TimeInForce',
+    'AlertManager',
+    'Alert',
+    'AlertType',
+    'AlertStatus',
 ]

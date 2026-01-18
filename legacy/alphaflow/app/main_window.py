@@ -13,10 +13,11 @@ from PyQt6.QtGui import QAction, QKeySequence
 from app.styles import get_stylesheet, COLORS
 from app.widgets import MetricCard, StatusBadge, BloombergDataGrid, OrderEntryDialog
 from app.controllers import DataController, TradingController
-from app.pages import TradingPage, SettingsPage
+from app.pages import TradingPage, SettingsPage, BacktestPage, StrategyPage
 from core import (
     TradingMode, TradingConfig, setup_logging, WATCHLISTS,
-    is_market_open, get_market_status_message
+    is_market_open, get_market_status_message,
+    AlertManager, Alert, AlertType
 )
 
 
@@ -42,6 +43,7 @@ class AlphaFlowMainWindow(QMainWindow):
         # Initialize controllers
         self.data_controller = DataController(use_alpaca=True)
         self.trading_controller = TradingController(self.trading_mode)
+        self.alert_manager = AlertManager()
 
         # Connect controller signals
         self._connect_controller_signals()
@@ -70,6 +72,12 @@ class AlphaFlowMainWindow(QMainWindow):
         self.trading_controller.order_filled.connect(self._on_order_filled)
         self.trading_controller.order_rejected.connect(self._on_order_rejected)
         self.trading_controller.error_occurred.connect(self._on_trading_error)
+
+        # Alert manager signals
+        self.alert_manager.alert_triggered.connect(self._on_alert_triggered)
+
+        # Connect data updates to alert manager
+        self.data_controller.data_updated.connect(self.alert_manager.update_market_data)
 
     def _load_watchlist(self):
         """Load default watchlist and start fetching data."""
@@ -199,6 +207,7 @@ class AlphaFlowMainWindow(QMainWindow):
         self.tab_widget.addTab(self._create_trading_tab(), "💹 Trading")
         self.tab_widget.addTab(self._create_positions_tab(), "💼 Positions")
         self.tab_widget.addTab(self._create_orders_tab(), "📋 Orders")
+        self.tab_widget.addTab(self._create_strategies_tab(), "🤖 Strategies")
         self.tab_widget.addTab(self._create_backtest_tab(), "📈 Backtest")
         self.tab_widget.addTab(self._create_settings_tab(), "⚙️ Settings")
 
@@ -337,38 +346,24 @@ class AlphaFlowMainWindow(QMainWindow):
         widget.setLayout(layout)
         return widget
 
+    def _create_strategies_tab(self) -> QWidget:
+        """Create the strategies tab."""
+        self.strategy_page = StrategyPage()
+
+        # Connect strategy page signals
+        self.strategy_page.strategy_started.connect(self._on_strategy_started)
+        self.strategy_page.strategy_stopped.connect(self._on_strategy_stopped)
+
+        return self.strategy_page
+
     def _create_backtest_tab(self) -> QWidget:
         """Create the backtest tab."""
-        widget = QWidget()
-        layout = QVBoxLayout()
+        self.backtest_page = BacktestPage()
 
-        label = QLabel("Strategy Backtesting")
-        label.setStyleSheet(f"""
-            QLabel {{
-                font-size: 20px;
-                font-weight: bold;
-                color: {COLORS['text_primary']};
-                padding: 16px;
-            }}
-        """)
-        layout.addWidget(label)
+        # Connect backtest page signals
+        self.backtest_page.backtest_started.connect(self._on_backtest_started)
 
-        # Placeholder
-        info_label = QLabel("Backtesting interface coming soon...")
-        info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        info_label.setStyleSheet(f"""
-            QLabel {{
-                color: {COLORS['text_secondary']};
-                font-size: 14px;
-                padding: 32px;
-            }}
-        """)
-        layout.addWidget(info_label)
-
-        layout.addStretch()
-
-        widget.setLayout(layout)
-        return widget
+        return self.backtest_page
 
     def _create_settings_tab(self) -> QWidget:
         """Create the settings tab."""
@@ -675,6 +670,40 @@ class AlphaFlowMainWindow(QMainWindow):
                 self,
                 "Connection Test",
                 f"✗ Connection failed!\n\nError: {str(e)}"
+            )
+
+    def _on_strategy_started(self, strategy_id: str):
+        """Handle strategy started."""
+        self.logger.info(f"Strategy {strategy_id} started")
+        self.statusBar().showMessage(f"Strategy {strategy_id} started", 3000)
+
+    def _on_strategy_stopped(self, strategy_id: str):
+        """Handle strategy stopped."""
+        self.logger.info(f"Strategy {strategy_id} stopped")
+        self.statusBar().showMessage(f"Strategy {strategy_id} stopped", 3000)
+
+    def _on_backtest_started(self, params: dict):
+        """Handle backtest started."""
+        symbols = params.get('symbols', [])
+        self.logger.info(f"Backtest started for {len(symbols)} symbols")
+        self.statusBar().showMessage("Running backtest...", 5000)
+
+    def _on_alert_triggered(self, alert: Alert):
+        """Handle alert triggered."""
+        self.logger.info(f"Alert triggered: {alert.symbol} {alert.alert_type.value}")
+
+        # Show notification
+        message = alert.message if alert.message else f"{alert.symbol}: {alert.alert_type.value}"
+
+        # Show in status bar
+        self.statusBar().showMessage(f"🔔 Alert: {message}", 10000)
+
+        # Show message box for important alerts
+        if alert.alert_type in [AlertType.PRICE_ABOVE, AlertType.PRICE_BELOW]:
+            QMessageBox.information(
+                self,
+                "Price Alert",
+                f"Alert triggered for {alert.symbol}!\n\n{message}"
             )
 
     def closeEvent(self, event):
