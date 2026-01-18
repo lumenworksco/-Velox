@@ -2,10 +2,10 @@
 
 A professional algorithmic trading platform for macOS, featuring a Bloomberg Terminal-inspired interface and comprehensive trading capabilities.
 
-![Version](https://img.shields.io/badge/version-6.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-6.2.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.10+-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
-![Progress](https://img.shields.io/badge/progress-85%25-brightgreen.svg)
+![Progress](https://img.shields.io/badge/progress-95%25-brightgreen.svg)
 
 ---
 
@@ -14,18 +14,22 @@ A professional algorithmic trading platform for macOS, featuring a Bloomberg Ter
 ### 🎯 Trading Capabilities
 - **Live Trading** - Execute trades on Alpaca Markets (live account)
 - **Paper Trading** - Risk-free strategy testing (Alpaca paper account)
-- **Backtesting** - Historical strategy validation with performance metrics
+- **Backtesting** - Historical strategy validation with equity curves and metrics
+- **Strategy Management** - Deploy, monitor, and control automated trading strategies
 - **Analysis Mode** - Market analysis with 20+ technical indicators
 - **Real-Time Streaming** - WebSocket streaming for live quotes and trades
 - **Quick Order Entry** - Market and limit orders from Trading page
+- **Alert System** - Price alerts, technical indicators, and custom notifications
 
 ### 📊 Professional Interface
 - **Bloomberg-Style UI** - Dark theme with professional data grids
 - **Real-time Data** - Live price streaming via WebSocket
 - **Professional Charts** - Candlestick charts with technical indicators
-- **Multi-Panel Layout** - Customizable workspace with tabs
-- **Keyboard Shortcuts** - Fast navigation (Cmd+1-6 for tabs)
+- **Multi-Panel Layout** - 7 professional tabs (Dashboard, Trading, Positions, Orders, Strategies, Backtest, Settings)
+- **Keyboard Shortcuts** - Fast navigation (Cmd+1-7 for tabs)
 - **Settings Management** - Complete UI for API and risk configuration
+- **Visual Strategy Cards** - Monitor automated strategies at a glance
+- **Backtest Interface** - Full-featured strategy testing with results visualization
 
 ### 🧠 Advanced Analytics
 - **Technical Indicators** - RSI, MACD, Bollinger Bands, ADX, Stochastic, and 15+ more
