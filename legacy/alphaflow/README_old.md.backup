@@ -1,0 +1,145 @@
+# 🚀 AlphaFlow
+
+A professional algorithmic trading platform — native macOS app with advanced ML capabilities.
+
+---
+
+## 💻 Quick Start
+
+### Launch the App
+From Terminal:
+```bash
+python3 main.py
+```
+
+Or double-click `scripts/Launch Trading App.command` in Finder
+
+### Web Browser (Streamlit Alternative)
+```bash
+python3 -m streamlit run app/streamlit_app.py
+```
+
+---
+
+## 📦 Installation
+
+### Step 1: Install Dependencies
+```bash
+pip3 install -r requirements.txt
+```
+
+### Step 2: Launch
+```bash
+python3 main.py
+```
+
+---
+
+## ✨ Features
+
+### 📊 14 Feature Pages
+
+| Page | Description |
+|------|-------------|
+| 📈 **Dashboard** | Portfolio overview, market analysis, trading signals |
+| 🔍 **Analysis** | Deep-dive technical analysis with 20+ indicators |
+| 💼 **Portfolio** | Position tracking and allocation management |
+| 📊 **Backtest** | Test strategies on historical data |
+| 🧠 **Deep Learning** | LSTM/Transformer predictions |
+| ⏰ **Multi-Timeframe** | Cross-timeframe analysis |
+| 💬 **Sentiment** | Market sentiment scoring |
+| 📉 **Options** | Black-Scholes pricing and Greeks |
+| 📝 **Trade Journal** | Log trades with psychology tracking |
+| 🔔 **Alerts** | Price, RSI, MACD, volume alerts |
+| ⚠️ **Risk Analytics** | VaR calculator and scenario analysis |
+| 🧪 **Strategy Lab** | Visual strategy builder |
+| ⚙️ **Settings** | Configuration and API keys |
+| ℹ️ **About** | Version info and help |
+
+---
+
+## 📁 Project Structure
+
+```
+AlphaFlow/
+├── main.py                     # Entry point - run this
+├── requirements.txt            # Python dependencies
+├── README.md                   # This file
+├── CHANGELOG.md                # Version history
+├── LICENSE                     # MIT License
+│
+├── core/                       # Trading algorithms (priority)
+│   ├── __init__.py             # Package exports
+│   ├── config.py               # Configuration & dependency checks
+│   ├── data_structures.py      # Data models & types
+│   ├── data_fetcher.py         # Market data retrieval
+│   ├── indicators.py           # Technical indicators (20+)
+│   ├── strategies.py           # Trading strategies
+│   ├── trading_engine.py       # Core trading logic
+│   ├── ml_predictor.py         # ML predictions
+│   ├── risk_manager.py         # Risk calculations
+│   ├── portfolio_manager.py    # Portfolio management
+│   ├── backtester.py           # Backtesting engine
+│   ├── deep_learning.py        # LSTM/Transformer models
+│   ├── multi_timeframe.py      # Multi-timeframe analysis
+│   ├── options_trading.py      # Options (Black-Scholes)
+│   └── sentiment_analysis.py   # Sentiment scoring
+│
+├── app/                        # User interfaces
+│   ├── __init__.py             # Package exports
+│   ├── alphaflow_mac.py        # Native macOS app (PyQt6)
+│   └── streamlit_app.py        # Web interface (Streamlit)
+│
+├── scripts/                    # Build & launch scripts
+│   ├── build_app.sh            # Build .app bundle
+│   ├── build_dmg.sh            # Create DMG installer
+│   └── Launch Trading App.command
+│
+├── logs/                       # Application logs
+├── .env                        # API keys (gitignored)
+└── .env.example                # API keys template
+```
+
+---
+
+## ⚙️ Configuration
+
+Edit `.env` for API keys:
+```
+ALPACA_API_KEY=your_key
+ALPACA_SECRET_KEY=your_secret
+```
+
+Edit `config.py` for trading settings:
+- Initial capital
+- Default symbols
+- Risk parameters
+- Trading mode (simulation/paper/live)
+
+---
+
+## 🔧 Troubleshooting
+
+### App won't open on macOS
+Right-click → "Open" → Click "Open" in dialog
+
+### "Python not found"
+Install Python 3.8+ from [python.org](https://python.org)
+
+### Missing packages
+```bash
+pip3 install -r requirements.txt
+pip3 install pywebview streamlit
+```
+
+---
+
+## 📝 License
+
+MIT License - See [LICENSE](LICENSE)
+
+**⚠️ Disclaimer:** This software is for educational purposes only. Trading involves significant risk of loss. Use at your own risk.
+
+---
+
+**Built with ❤️ using Streamlit, PyWebView, and Python.**

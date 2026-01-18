@@ -1,0 +1,505 @@
+"""Main window for AlphaFlow Trading Platform."""
+
+import sys
+import logging
+from PyQt6.QtWidgets import (
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QTabWidget, QMenuBar, QStatusBar, QLabel, QPushButton,
+    QMessageBox
+)
+from PyQt6.QtCore import Qt, QTimer, QSettings
+from PyQt6.QtGui import QAction, QKeySequence
+
+from app.styles import get_stylesheet, COLORS
+from app.widgets import MetricCard, StatusBadge, BloombergDataGrid
+from core import (
+    TradingMode, TradingConfig, setup_logging,
+    is_market_open, get_market_status_message
+)
+
+
+class AlphaFlowMainWindow(QMainWindow):
+    """
+    Main window for AlphaFlow Trading Platform.
+
+    Provides a Bloomberg Terminal-style interface with:
+    - Professional dark theme
+    - Multi-panel layout
+    - Real-time data display
+    - Trading capabilities
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.logger = logging.getLogger(__name__)
+
+        # Application state
+        self.trading_mode = TradingMode.PAPER
+        self.settings = QSettings('AlphaFlow', 'TradingPlatform')
+
+        # Setup
+        self._setup_window()
+        self._create_menu_bar()
+        self._create_central_widget()
+        self._create_status_bar()
+        self._setup_keyboard_shortcuts()
+        self._start_update_timers()
+
+        self.logger.info("AlphaFlow initialized")
+
+    def _setup_window(self):
+        """Setup main window properties."""
+        self.setWindowTitle("AlphaFlow Trading Platform")
+        self.setMinimumSize(1400, 900)
+
+        # Apply Bloomberg-inspired stylesheet
+        self.setStyleSheet(get_stylesheet())
+
+        # Restore window geometry if available
+        geometry = self.settings.value('geometry')
+        if geometry:
+            self.restoreGeometry(geometry)
+        else:
+            # Default size and position
+            self.resize(1600, 1000)
+
+    def _create_menu_bar(self):
+        """Create the application menu bar."""
+        menubar = self.menuBar()
+
+        # File menu
+        file_menu = menubar.addMenu('&File')
+
+        new_order_action = QAction('&New Order', self)
+        new_order_action.setShortcut(QKeySequence('Ctrl+N'))
+        new_order_action.triggered.connect(self._on_new_order)
+        file_menu.addAction(new_order_action)
+
+        file_menu.addSeparator()
+
+        refresh_action = QAction('&Refresh Data', self)
+        refresh_action.setShortcut(QKeySequence('Ctrl+R'))
+        refresh_action.triggered.connect(self._on_refresh_data)
+        file_menu.addAction(refresh_action)
+
+        file_menu.addSeparator()
+
+        exit_action = QAction('E&xit', self)
+        exit_action.setShortcut(QKeySequence('Ctrl+Q'))
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+
+        # Trading menu
+        trading_menu = menubar.addMenu('&Trading')
+
+        paper_mode_action = QAction('&Paper Trading Mode', self)
+        paper_mode_action.setCheckable(True)
+        paper_mode_action.setChecked(self.trading_mode == TradingMode.PAPER)
+        paper_mode_action.triggered.connect(lambda: self._set_trading_mode(TradingMode.PAPER))
+        trading_menu.addAction(paper_mode_action)
+
+        live_mode_action = QAction('&Live Trading Mode', self)
+        live_mode_action.setCheckable(True)
+        live_mode_action.setChecked(self.trading_mode == TradingMode.LIVE)
+        live_mode_action.triggered.connect(lambda: self._set_trading_mode(TradingMode.LIVE))
+        trading_menu.addAction(live_mode_action)
+
+        # View menu
+        view_menu = menubar.addMenu('&View')
+
+        fullscreen_action = QAction('&Full Screen', self)
+        fullscreen_action.setShortcut(QKeySequence('Ctrl+F'))
+        fullscreen_action.setCheckable(True)
+        fullscreen_action.triggered.connect(self._toggle_fullscreen)
+        view_menu.addAction(fullscreen_action)
+
+        # Help menu
+        help_menu = menubar.addMenu('&Help')
+
+        about_action = QAction('&About AlphaFlow', self)
+        about_action.triggered.connect(self._show_about_dialog)
+        help_menu.addAction(about_action)
+
+    def _create_central_widget(self):
+        """Create the central widget with tabs."""
+        central_widget = QWidget()
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        # Create tab widget
+        self.tab_widget = QTabWidget()
+        self.tab_widget.setDocumentMode(True)
+
+        # Add tabs
+        self.tab_widget.addTab(self._create_dashboard_tab(), "📊 Dashboard")
+        self.tab_widget.addTab(self._create_trading_tab(), "💹 Trading")
+        self.tab_widget.addTab(self._create_positions_tab(), "💼 Positions")
+        self.tab_widget.addTab(self._create_orders_tab(), "📋 Orders")
+        self.tab_widget.addTab(self._create_backtest_tab(), "📈 Backtest")
+        self.tab_widget.addTab(self._create_settings_tab(), "⚙️ Settings")
+
+        layout.addWidget(self.tab_widget)
+        central_widget.setLayout(layout)
+
+        self.setCentralWidget(central_widget)
+
+    def _create_dashboard_tab(self) -> QWidget:
+        """Create the dashboard tab."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+
+        # Header
+        header = QLabel("Portfolio Overview")
+        header.setStyleSheet(f"""
+            QLabel {{
+                font-size: 20px;
+                font-weight: bold;
+                color: {COLORS['text_primary']};
+                padding: 16px;
+            }}
+        """)
+        layout.addWidget(header)
+
+        # Metrics row
+        metrics_layout = QHBoxLayout()
+
+        self.portfolio_value_card = MetricCard("Portfolio Value", "$100,000.00", 0.0)
+        self.day_pnl_card = MetricCard("Day P&L", "$0.00", 0.0)
+        self.total_return_card = MetricCard("Total Return", "0.00%", 0.0)
+        self.win_rate_card = MetricCard("Win Rate", "0.0%", 0.0)
+
+        metrics_layout.addWidget(self.portfolio_value_card)
+        metrics_layout.addWidget(self.day_pnl_card)
+        metrics_layout.addWidget(self.total_return_card)
+        metrics_layout.addWidget(self.win_rate_card)
+
+        layout.addLayout(metrics_layout)
+
+        # Watchlist grid
+        watchlist_label = QLabel("Watchlist")
+        watchlist_label.setStyleSheet(f"""
+            QLabel {{
+                font-size: 16px;
+                font-weight: 600;
+                color: {COLORS['text_primary']};
+                padding: 16px;
+            }}
+        """)
+        layout.addWidget(watchlist_label)
+
+        self.watchlist_grid = BloombergDataGrid()
+        self.watchlist_grid.set_columns(
+            ['Symbol', 'Price', 'Change', 'Change %', 'Volume'],
+            numeric_columns=['Price', 'Change', 'Change %', 'Volume']
+        )
+
+        # Add sample data
+        self._populate_sample_watchlist()
+
+        layout.addWidget(self.watchlist_grid)
+
+        layout.addStretch()
+
+        widget.setLayout(layout)
+        return widget
+
+    def _create_trading_tab(self) -> QWidget:
+        """Create the trading tab."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+
+        label = QLabel("Trading Interface")
+        label.setStyleSheet(f"""
+            QLabel {{
+                font-size: 20px;
+                font-weight: bold;
+                color: {COLORS['text_primary']};
+                padding: 16px;
+            }}
+        """)
+        layout.addWidget(label)
+
+        # Placeholder for trading interface
+        info_label = QLabel("Active trading interface coming soon...")
+        info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        info_label.setStyleSheet(f"""
+            QLabel {{
+                color: {COLORS['text_secondary']};
+                font-size: 14px;
+                padding: 32px;
+            }}
+        """)
+        layout.addWidget(info_label)
+
+        layout.addStretch()
+
+        widget.setLayout(layout)
+        return widget
+
+    def _create_positions_tab(self) -> QWidget:
+        """Create the positions tab."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+
+        label = QLabel("Open Positions")
+        label.setStyleSheet(f"""
+            QLabel {{
+                font-size: 20px;
+                font-weight: bold;
+                color: {COLORS['text_primary']};
+                padding: 16px;
+            }}
+        """)
+        layout.addWidget(label)
+
+        # Positions grid
+        self.positions_grid = BloombergDataGrid()
+        self.positions_grid.set_columns(
+            ['Symbol', 'Quantity', 'Avg Price', 'Current Price', 'P&L', 'P&L %'],
+            numeric_columns=['Quantity', 'Avg Price', 'Current Price', 'P&L', 'P&L %']
+        )
+
+        layout.addWidget(self.positions_grid)
+
+        widget.setLayout(layout)
+        return widget
+
+    def _create_orders_tab(self) -> QWidget:
+        """Create the orders tab."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+
+        label = QLabel("Order History")
+        label.setStyleSheet(f"""
+            QLabel {{
+                font-size: 20px;
+                font-weight: bold;
+                color: {COLORS['text_primary']};
+                padding: 16px;
+            }}
+        """)
+        layout.addWidget(label)
+
+        # Orders grid
+        self.orders_grid = BloombergDataGrid()
+        self.orders_grid.set_columns(
+            ['Time', 'Symbol', 'Side', 'Quantity', 'Price', 'Status'],
+            numeric_columns=['Quantity', 'Price']
+        )
+
+        layout.addWidget(self.orders_grid)
+
+        widget.setLayout(layout)
+        return widget
+
+    def _create_backtest_tab(self) -> QWidget:
+        """Create the backtest tab."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+
+        label = QLabel("Strategy Backtesting")
+        label.setStyleSheet(f"""
+            QLabel {{
+                font-size: 20px;
+                font-weight: bold;
+                color: {COLORS['text_primary']};
+                padding: 16px;
+            }}
+        """)
+        layout.addWidget(label)
+
+        # Placeholder
+        info_label = QLabel("Backtesting interface coming soon...")
+        info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        info_label.setStyleSheet(f"""
+            QLabel {{
+                color: {COLORS['text_secondary']};
+                font-size: 14px;
+                padding: 32px;
+            }}
+        """)
+        layout.addWidget(info_label)
+
+        layout.addStretch()
+
+        widget.setLayout(layout)
+        return widget
+
+    def _create_settings_tab(self) -> QWidget:
+        """Create the settings tab."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+
+        label = QLabel("Settings & Configuration")
+        label.setStyleSheet(f"""
+            QLabel {{
+                font-size: 20px;
+                font-weight: bold;
+                color: {COLORS['text_primary']};
+                padding: 16px;
+            }}
+        """)
+        layout.addWidget(label)
+
+        # Placeholder
+        info_label = QLabel("Settings interface coming soon...")
+        info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        info_label.setStyleSheet(f"""
+            QLabel {{
+                color: {COLORS['text_secondary']};
+                font-size: 14px;
+                padding: 32px;
+            }}
+        """)
+        layout.addWidget(info_label)
+
+        layout.addStretch()
+
+        widget.setLayout(layout)
+        return widget
+
+    def _create_status_bar(self):
+        """Create the status bar."""
+        statusbar = self.statusBar()
+
+        # Market status
+        self.market_status_badge = StatusBadge('MARKET_CLOSED')
+        statusbar.addPermanentWidget(self.market_status_badge)
+
+        # Trading mode
+        self.trading_mode_label = QLabel(f"Mode: {self.trading_mode.value.upper()}")
+        self.trading_mode_label.setStyleSheet(f"""
+            QLabel {{
+                color: {COLORS['warning']};
+                font-weight: bold;
+                padding: 4px 12px;
+            }}
+        """)
+        statusbar.addPermanentWidget(self.trading_mode_label)
+
+        # Connection status
+        self.connection_status = StatusBadge('DISCONNECTED')
+        statusbar.addPermanentWidget(self.connection_status)
+
+    def _setup_keyboard_shortcuts(self):
+        """Setup global keyboard shortcuts."""
+        # Tab navigation (Cmd+1 through Cmd+6)
+        for i in range(6):
+            shortcut = QKeySequence(f'Ctrl+{i+1}')
+            action = QAction(self)
+            action.setShortcut(shortcut)
+            action.triggered.connect(lambda checked, idx=i: self.tab_widget.setCurrentIndex(idx))
+            self.addAction(action)
+
+    def _start_update_timers(self):
+        """Start timers for periodic updates."""
+        # Update market status every 60 seconds
+        self.market_status_timer = QTimer()
+        self.market_status_timer.timeout.connect(self._update_market_status)
+        self.market_status_timer.start(60000)  # 60 seconds
+
+        # Initial update
+        self._update_market_status()
+
+    def _update_market_status(self):
+        """Update market status indicator."""
+        message = get_market_status_message()
+
+        if is_market_open():
+            self.market_status_badge.set_status('MARKET_OPEN')
+        elif 'Pre-market' in message:
+            self.market_status_badge.set_status('PRE_MARKET')
+        elif 'After-hours' in message:
+            self.market_status_badge.set_status('AFTER_HOURS')
+        else:
+            self.market_status_badge.set_status('MARKET_CLOSED')
+
+        self.statusBar().showMessage(message, 5000)
+
+    def _populate_sample_watchlist(self):
+        """Populate watchlist with sample data."""
+        sample_data = [
+            {'Symbol': 'AAPL', 'Price': 185.22, 'Change': 2.34, 'Change %': 1.28, 'Volume': 52_000_000},
+            {'Symbol': 'MSFT', 'Price': 420.15, 'Change': -1.50, 'Change %': -0.36, 'Volume': 28_000_000},
+            {'Symbol': 'GOOGL', 'Price': 142.89, 'Change': 0.75, 'Change %': 0.53, 'Volume': 31_000_000},
+            {'Symbol': 'TSLA', 'Price': 285.50, 'Change': -5.20, 'Change %': -1.79, 'Volume': 95_000_000},
+            {'Symbol': 'NVDA', 'Price': 495.30, 'Change': 8.45, 'Change %': 1.74, 'Volume': 42_000_000},
+        ]
+
+        for data in sample_data:
+            self.watchlist_grid.add_row(data)
+
+    # Event handlers
+    def _on_new_order(self):
+        """Handle new order action."""
+        QMessageBox.information(self, "New Order", "Order entry interface coming soon!")
+
+    def _on_refresh_data(self):
+        """Handle refresh data action."""
+        self.statusBar().showMessage("Refreshing data...", 2000)
+        self.logger.info("Data refresh requested")
+
+    def _set_trading_mode(self, mode: TradingMode):
+        """Set trading mode."""
+        self.trading_mode = mode
+        self.trading_mode_label.setText(f"Mode: {mode.value.upper()}")
+
+        # Update label color
+        color = COLORS['negative'] if mode == TradingMode.LIVE else COLORS['warning']
+        self.trading_mode_label.setStyleSheet(f"""
+            QLabel {{
+                color: {color};
+                font-weight: bold;
+                padding: 4px 12px;
+            }}
+        """)
+
+        self.logger.info(f"Trading mode set to: {mode.value}")
+
+    def _toggle_fullscreen(self, checked: bool):
+        """Toggle fullscreen mode."""
+        if checked:
+            self.showFullScreen()
+        else:
+            self.showNormal()
+
+    def _show_about_dialog(self):
+        """Show about dialog."""
+        about_text = """
+        <h2>AlphaFlow Trading Platform</h2>
+        <p>Version 6.0.0</p>
+        <p>Professional algorithmic trading platform for macOS</p>
+        <br>
+        <p>Built with PyQt6 and Python</p>
+        <p>© 2024 AlphaFlow</p>
+        """
+        QMessageBox.about(self, "About AlphaFlow", about_text)
+
+    # Window events
+    def closeEvent(self, event):
+        """Handle window close event."""
+        # Save window geometry
+        self.settings.setValue('geometry', self.saveGeometry())
+
+        self.logger.info("AlphaFlow shutting down")
+        event.accept()
+
+
+def main():
+    """Main entry point for AlphaFlow."""
+    from PyQt6.QtWidgets import QApplication
+
+    # Setup logging
+    setup_logging()
+
+    # Create application
+    app = QApplication(sys.argv)
+    app.setApplicationName("AlphaFlow")
+    app.setOrganizationName("AlphaFlow")
+
+    # Create and show main window
+    window = AlphaFlowMainWindow()
+    window.show()
+
+    # Run application
+    sys.exit(app.exec())

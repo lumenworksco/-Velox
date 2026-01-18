@@ -19,6 +19,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.mypy_cache/
 
 # Virtual Environment
 venv/
@@ -49,6 +50,7 @@ results/
 
 # API Keys and Credentials (IMPORTANT!)
 .env
+!.env.example
 config_local.py
 *_credentials.json
 api_keys.txt
@@ -72,3 +74,9 @@ test_*.py
 # Project-specific files
 Unknown.pdf
 *.pdf
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
