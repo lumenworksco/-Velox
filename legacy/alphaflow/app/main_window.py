@@ -13,7 +13,7 @@ from PyQt6.QtGui import QAction, QKeySequence
 from app.styles import get_stylesheet, COLORS
 from app.widgets import MetricCard, StatusBadge, BloombergDataGrid, OrderEntryDialog
 from app.controllers import DataController, TradingController
-from app.pages import TradingPage, SettingsPage, BacktestPage, StrategyPage
+from app.pages import TradingPage, SettingsPage, BacktestPage, StrategyPage, AnalyticsPage
 from core import (
     TradingMode, TradingConfig, setup_logging, WATCHLISTS,
     is_market_open, get_market_status_message,
@@ -205,7 +205,7 @@ class AlphaFlowMainWindow(QMainWindow):
         # Add tabs
         self.tab_widget.addTab(self._create_dashboard_tab(), "📊 Dashboard")
         self.tab_widget.addTab(self._create_trading_tab(), "💹 Trading")
-        self.tab_widget.addTab(self._create_positions_tab(), "💼 Positions")
+        self.tab_widget.addTab(self._create_positions_tab(), "📊 Analytics")
         self.tab_widget.addTab(self._create_orders_tab(), "📋 Orders")
         self.tab_widget.addTab(self._create_strategies_tab(), "🤖 Strategies")
         self.tab_widget.addTab(self._create_backtest_tab(), "📈 Backtest")
@@ -291,32 +291,9 @@ class AlphaFlowMainWindow(QMainWindow):
         return self.trading_page
 
     def _create_positions_tab(self) -> QWidget:
-        """Create the positions tab."""
-        widget = QWidget()
-        layout = QVBoxLayout()
-
-        label = QLabel("Open Positions")
-        label.setStyleSheet(f"""
-            QLabel {{
-                font-size: 20px;
-                font-weight: bold;
-                color: {COLORS['text_primary']};
-                padding: 16px;
-            }}
-        """)
-        layout.addWidget(label)
-
-        # Positions grid
-        self.positions_grid = BloombergDataGrid()
-        self.positions_grid.set_columns(
-            ['Symbol', 'Quantity', 'Avg Price', 'Current Price', 'P&L', 'P&L %'],
-            numeric_columns=['Quantity', 'Avg Price', 'Current Price', 'P&L', 'P&L %']
-        )
-
-        layout.addWidget(self.positions_grid)
-
-        widget.setLayout(layout)
-        return widget
+        """Create the positions/analytics tab."""
+        self.analytics_page = AnalyticsPage()
+        return self.analytics_page
 
     def _create_orders_tab(self) -> QWidget:
         """Create the orders tab."""
