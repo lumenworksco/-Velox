@@ -1,192 +1,263 @@
-# 🚀 AlphaFlow Trading Platform
+# 🚀 AlphaFlow v7.0 - Professional Trading Platform
 
-A professional algorithmic trading platform for macOS, featuring a Bloomberg Terminal-inspired interface and comprehensive trading capabilities.
-
-![Version](https://img.shields.io/badge/version-6.3.0-blue.svg)
-![Python](https://img.shields.io/badge/python-3.10+-green.svg)
-![License](https://img.shields.io/badge/license-MIT-yellow.svg)
-![Progress](https://img.shields.io/badge/progress-100%25%20COMPLETE-success.svg)
-
----
+A professional algorithmic trading platform built with **FastAPI** + **React** + **TypeScript**.
 
 ## ✨ Features
 
-### 🎯 Trading Capabilities
-- **Live Trading** - Execute trades on Alpaca Markets (live account)
-- **Paper Trading** - Risk-free strategy testing (Alpaca paper account)
-- **Backtesting** - Historical strategy validation with equity curves and metrics
-- **Strategy Management** - Deploy, monitor, and control automated trading strategies
-- **Analysis Mode** - Market analysis with 20+ technical indicators
-- **Real-Time Streaming** - WebSocket streaming for live quotes and trades
-- **Quick Order Entry** - Market and limit orders from Trading page
-- **Alert System** - Price alerts, technical indicators, and custom notifications
+- **📊 Real-time Market Data** - Live quotes and WebSocket streaming
+- **💼 Portfolio Management** - Track positions, P&L, and performance
+- **📈 Advanced Charting** - Professional charts with Recharts
+- **🤖 Strategy Automation** - Deploy and manage trading algorithms
+- **📉 Backtesting** - Test strategies on historical data
+- **🎨 Bloomberg-Inspired UI** - Clean, professional dark theme
+- **⚡ Fast & Modern** - FastAPI backend, React frontend with Vite
 
-### 📊 Professional Interface
-- **Bloomberg-Style UI** - Dark theme with professional data grids
-- **Real-time Data** - Live price streaming via WebSocket
-- **Professional Charts** - Candlestick charts with technical indicators
-- **Multi-Panel Layout** - 7 professional tabs (Dashboard, Trading, Positions, Orders, Strategies, Backtest, Settings)
-- **Keyboard Shortcuts** - Fast navigation (Cmd+1-7 for tabs)
-- **Settings Management** - Complete UI for API and risk configuration
-- **Visual Strategy Cards** - Monitor automated strategies at a glance
-- **Backtest Interface** - Full-featured strategy testing with results visualization
+## 🏗️ Architecture
 
-### 🧠 Advanced Analytics
-- **Technical Indicators** - RSI, MACD, Bollinger Bands, ADX, Stochastic, and 15+ more
-- **Machine Learning** - Gradient Boosting and Random Forest predictions
-- **Deep Learning** - LSTM and Transformer models for price forecasting
-- **Sentiment Analysis** - News and social media sentiment scoring
-- **Multi-Timeframe Analysis** - Analyze trends across 1m, 5m, 15m, 1h, 1d
-- **Options Trading** - Black-Scholes pricing with Greeks (Delta, Gamma, Theta, Vega)
+### Backend (FastAPI)
+- **Framework**: FastAPI (Python 3.10+)
+- **Real-time**: WebSocket for live data streaming
+- **Trading**: Alpaca API integration
+- **Data**: yfinance for market data
 
-### ⚠️ Risk Management
-- **Position Sizing** - Automatic calculation based on risk parameters
-- **Stop-Loss/Take-Profit** - Automated risk controls
-- **Daily Loss Limits** - Prevent catastrophic losses
-- **Portfolio VaR** - Value at Risk calculations
-- **Correlation Analysis** - Portfolio diversification metrics
+### Frontend (React + TypeScript)
+- **Framework**: React 18 + TypeScript
+- **Build Tool**: Vite (ultra-fast)
+- **Styling**: TailwindCSS (Bloomberg-inspired theme)
+- **Charts**: Recharts for visualizations
+- **State**: React Query for server state
+- **Routing**: React Router
 
----
+## 🚀 Quick Start
 
-## 📦 Installation
+### Prerequisites
+- Python 3.10+
+- Node.js 18+ and npm
+- Alpaca API keys (paper or live)
 
-### Requirements
-- **macOS 12+** (Monterey or later)
-- **Python 3.10+**
-- **Alpaca Markets Account** (for trading)
-
-### Quick Start
+### 1. Clone & Setup
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/yourusername/AlphaFlow.git
-cd AlphaFlow
+cd "/Volumes/File System/Algorithmic Trading"
 
-# 2. Create virtual environment
+# Create virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
 
-# 3. Install dependencies
-pip install -r requirements.txt
+# Install backend dependencies
+pip install -r requirements-backend.txt
 
-# 4. Configure API keys
-cp .env.example .env
-# Edit .env with your Alpaca API credentials
-
-# 5. Launch AlphaFlow
-python3 main.py
+# Install frontend dependencies
+cd frontend
+npm install
+cd ..
 ```
 
----
+### 2. Configure API Keys
 
-## 🔑 API Configuration
-
-AlphaFlow requires Alpaca Markets API credentials. Sign up for free at [alpaca.markets](https://alpaca.markets).
-
-### Get Your API Keys
-
-1. Create an Alpaca account
-2. Generate API keys (both paper and live)
-3. Add them to `.env`:
-
-```env
-# Alpaca API Credentials
-ALPACA_API_KEY=your_api_key_here
-ALPACA_SECRET_KEY=your_secret_key_here
-
-# Optional: News API (for sentiment analysis)
-NEWS_API_KEY=your_newsapi_key_here
-
-# Optional: Twitter API (for social sentiment)
-TWITTER_API_KEY=your_twitter_key_here
-TWITTER_API_SECRET=your_twitter_secret_here
-```
-
-### Trading Modes
-
-- **Paper Trading** (Default) - Uses Alpaca paper trading endpoint, no real money
-- **Live Trading** - Uses Alpaca live trading endpoint, **real money at risk**
-- **Backtest** - Simulated historical trading
-- **Analysis** - Read-only market analysis
-
-⚠️ **Always test strategies in paper trading mode first!**
-
----
-
-## ⌨️ Keyboard Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| `Cmd+1` - `Cmd+6` | Navigate between tabs |
-| `Cmd+N` | New order |
-| `Cmd+R` | Refresh data |
-| `Cmd+F` | Toggle fullscreen |
-| `Cmd+Q` | Quit application |
-
----
-
-## 🔒 Security & Safety
-
-### Critical Safeguards
-
-1. **Trading Mode Validation**
-   - Clear visual indicator (LIVE vs PAPER)
-   - Confirmation dialogs for live trades
-   - Mode displayed in status bar
-
-2. **API Key Security**
-   - Never commit `.env` file
-   - Keys loaded from environment variables
-   - Sensitive data encrypted in memory
-
-3. **Risk Controls**
-   - Position size limits enforced
-   - Daily loss limits prevent runaway losses
-   - Emergency kill switch halts all trading
-
-### Best Practices
-
-- ✅ Start with paper trading
-- ✅ Test strategies thoroughly in backtest mode
-- ✅ Set conservative risk limits
-- ✅ Monitor positions regularly
-- ✅ Keep API keys secure
-- ❌ Never share API keys
-- ❌ Never run untested strategies with real money
-- ❌ Never exceed risk tolerance
-
----
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
----
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**App won't launch**
 ```bash
-# Check Python version
-python3 --version  # Should be 3.10+
+# Copy environment template
+cp .env.example .env
 
-# Verify dependencies
-pip install -r requirements.txt
-
-# Check logs
-tail -f logs/trading_app_v6_*.log
+# Edit .env and add your Alpaca API keys
+nano .env
 ```
 
-**API connection fails**
-- Verify API keys in `.env`
-- Check internet connection
-- Ensure Alpaca API is accessible
-- Verify trading mode (paper vs live endpoint)
+### 3. Start the Application
+
+**Option A: Run Both (Recommended)**
+```bash
+# Terminal 1 - Backend
+./start_backend.sh
+
+# Terminal 2 - Frontend
+cd frontend && npm run dev
+```
+
+**Option B: Development Mode**
+```bash
+# Backend with auto-reload
+cd backend && python -m uvicorn main:app --reload
+
+# Frontend with hot reload
+cd frontend && npm run dev
+```
+
+### 4. Access the Application
+
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/api/docs
+- **ReDoc**: http://localhost:8000/api/redoc
+
+## 📁 Project Structure
+
+```
+AlphaFlow/
+├── backend/                 # FastAPI Backend
+│   ├── main.py             # Main FastAPI app
+│   ├── api/                # API endpoints
+│   │   ├── trading.py      # Order management
+│   │   ├── market_data.py  # Market data & quotes
+│   │   ├── backtest.py     # Backtesting
+│   │   ├── portfolio.py    # Portfolio metrics
+│   │   └── strategies.py   # Strategy management
+│   └── core/               # Core utilities
+│       └── websocket_manager.py
+│
+├── frontend/               # React Frontend
+│   ├── src/
+│   │   ├── pages/         # Page components
+│   │   ├── components/    # Reusable components
+│   │   ├── api/          # API client
+│   │   └── App.tsx       # Main app
+│   ├── package.json
+│   └── vite.config.ts
+│
+├── core/                  # Shared trading logic
+│   ├── backtester.py     # Backtest engine
+│   ├── indicators.py     # Technical indicators
+│   ├── strategies.py     # Trading strategies
+│   └── ...
+│
+├── requirements-backend.txt
+├── start_backend.sh
+└── README.md
+```
+
+## 🎨 UI Preview
+
+### Bloomberg-Inspired Design
+- **Dark Theme**: Professional dark color scheme
+- **Clean Typography**: SF Pro Display + SF Mono
+- **Real-time Updates**: Live data with color flash animations
+- **Responsive Tables**: Professional data grids
+- **Modern Charts**: Interactive visualizations
+
+### Pages
+1. **Dashboard** - Portfolio overview, watchlist, equity curve
+2. **Trading** - Order placement and management
+3. **Analytics** - Performance metrics and analytics
+4. **Backtest** - Strategy backtesting interface
+5. **Strategies** - Deploy and manage algorithms
+6. **Settings** - Configuration and preferences
+
+## 🔌 API Endpoints
+
+### Trading
+- `POST /api/trading/orders` - Place order
+- `GET /api/trading/orders` - Get orders
+- `DELETE /api/trading/orders/{id}` - Cancel order
+- `GET /api/trading/positions` - Get positions
+
+### Market Data
+- `GET /api/market/quote/{symbol}` - Get quote
+- `GET /api/market/quotes` - Get multiple quotes
+- `GET /api/market/history/{symbol}` - Get historical data
+- `GET /api/market/search` - Search symbols
+
+### Backtest
+- `POST /api/backtest/run` - Start backtest
+- `GET /api/backtest/status/{id}` - Get status
+- `GET /api/backtest/results/{id}` - Get results
+
+### Portfolio
+- `GET /api/portfolio/summary` - Portfolio summary
+- `GET /api/portfolio/performance` - Performance metrics
+- `GET /api/portfolio/history` - Equity curve
+
+## 🔧 Development
+
+### Backend Development
+```bash
+# Auto-reload on code changes
+python -m uvicorn backend.main:app --reload --port 8000
+
+# Run tests
+pytest tests/
+```
+
+### Frontend Development
+```bash
+cd frontend
+
+# Development server with hot reload
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+## 📦 Deployment
+
+### Backend (Production)
+```bash
+# Using Gunicorn
+gunicorn backend.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+
+# Using Docker
+docker build -t alphaflow-backend .
+docker run -p 8000:8000 alphaflow-backend
+```
+
+### Frontend (Production)
+```bash
+cd frontend
+npm run build
+
+# Serve dist/ folder with nginx, Vercel, or Netlify
+```
+
+## 🛠️ Tech Stack
+
+### Backend
+- FastAPI - Modern, fast web framework
+- Uvicorn - ASGI server
+- WebSockets - Real-time communication
+- Alpaca API - Trading execution
+- yfinance - Market data
+- pandas - Data manipulation
+- scikit-learn - Machine learning
+
+### Frontend
+- React 18 - UI framework
+- TypeScript - Type safety
+- Vite - Build tool
+- TailwindCSS - Styling
+- React Query - Server state
+- React Router - Navigation
+- Recharts - Charts
+- Lucide React - Icons
+- Axios - HTTP client
+
+## 🔐 Security
+
+- API keys stored in `.env` (never committed)
+- CORS configured for frontend origin
+- Input validation with Pydantic
+- Type safety with TypeScript
+
+## 📝 License
+
+MIT License - See LICENSE file
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+## 📧 Support
+
+For issues and questions:
+- Open an issue on GitHub
+- Check API documentation at `/api/docs`
 
 ---
 
-**Built with ❤️ for algorithmic traders**
-
-*Disclaimer: Trading involves risk. Past performance does not guarantee future results. Use at your own risk.*
+**Made with FastAPI + React** | **Version 7.0.0** | **Professional Trading Platform**
