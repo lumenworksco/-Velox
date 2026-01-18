@@ -7,14 +7,13 @@ python-multipart==0.0.6
 websockets==12.0
 
 # Data & Trading
-pandas==2.1.3
-numpy==1.26.2
-yfinance==0.2.32
-alpaca-trade-api==3.0.2
+pandas>=2.2.0
+numpy>=1.26.0
+yfinance>=0.2.32
+alpaca-trade-api>=3.0.2
 
 # Machine Learning
-scikit-learn==1.3.2
-tensorflow==2.15.0
+scikit-learn>=1.3.0
 
 # Database (optional - for storing trade history)
 sqlalchemy==2.0.23
