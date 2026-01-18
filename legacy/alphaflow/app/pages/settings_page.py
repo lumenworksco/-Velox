@@ -134,7 +134,7 @@ class SettingsPage(QWidget):
         test_btn = QPushButton("Test Connection")
         test_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: {COLORS['accent_blue']};
+                background-color: {COLORS['accent_alt']};
                 color: {COLORS['text_primary']};
                 border: none;
                 border-radius: 6px;
@@ -350,7 +350,7 @@ class SettingsPage(QWidget):
                 font-weight: 600;
             }}
             QPushButton:hover {{
-                border-color: {COLORS['accent_blue']};
+                border-color: {COLORS['accent_alt']};
                 color: {COLORS['text_primary']};
             }}
         """)
@@ -389,7 +389,7 @@ class SettingsPage(QWidget):
                 font-size: 14px;
             }}
             QLineEdit:focus {{
-                border-color: {COLORS['accent_blue']};
+                border-color: {COLORS['accent_alt']};
             }}
         """)
 
@@ -405,7 +405,7 @@ class SettingsPage(QWidget):
                 font-size: 14px;
             }}
             QComboBox:focus {{
-                border-color: {COLORS['accent_blue']};
+                border-color: {COLORS['accent_alt']};
             }}
             QComboBox::drop-down {{
                 border: none;
@@ -413,7 +413,7 @@ class SettingsPage(QWidget):
             QComboBox QAbstractItemView {{
                 background-color: {COLORS['bg_elevated']};
                 color: {COLORS['text_primary']};
-                selection-background-color: {COLORS['accent_blue']};
+                selection-background-color: {COLORS['accent_alt']};
             }}
         """)
 
@@ -429,7 +429,7 @@ class SettingsPage(QWidget):
                 font-size: 14px;
             }}
             QSpinBox:focus {{
-                border-color: {COLORS['accent_blue']};
+                border-color: {COLORS['accent_alt']};
             }}
         """)
 

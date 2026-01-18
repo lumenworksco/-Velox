@@ -117,7 +117,7 @@ class StrategyCard(QWidget):
         edit_btn = QPushButton("Edit")
         edit_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: {COLORS['accent_blue']};
+                background-color: {COLORS['accent_alt']};
                 color: white;
                 border: none;
                 border-radius: 4px;

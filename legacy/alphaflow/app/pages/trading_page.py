@@ -133,7 +133,7 @@ class TradingPage(QWidget):
                 font-size: 14px;
             }}
             QLineEdit:focus {{
-                border-color: {COLORS['accent_blue']};
+                border-color: {COLORS['accent_alt']};
             }}
         """)
         self.symbol_input.returnPressed.connect(self._on_symbol_search)
@@ -142,7 +142,7 @@ class TradingPage(QWidget):
         search_btn = QPushButton("Search")
         search_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: {COLORS['accent_blue']};
+                background-color: {COLORS['accent_alt']};
                 color: {COLORS['text_primary']};
                 border: none;
                 border-radius: 6px;

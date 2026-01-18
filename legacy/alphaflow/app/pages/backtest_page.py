@@ -17,7 +17,7 @@ from PyQt6.QtGui import QPainter, QColor, QPen, QBrush
 
 from app.styles.colors import COLORS
 from app.widgets import MetricCard, BloombergDataGrid
-from core import BacktestEngine, TradingStrategy
+from core import BacktestEngine
 
 
 class BacktestWorker(QThread):
@@ -499,7 +499,7 @@ class BacktestPage(QWidget):
         series.setName("Portfolio Value")
 
         # Set color
-        pen = QPen(QColor(COLORS['accent_blue']))
+        pen = QPen(QColor(COLORS['accent_alt']))
         pen.setWidth(2)
         series.setPen(pen)
 
@@ -569,7 +569,7 @@ class BacktestPage(QWidget):
             QComboBox QAbstractItemView {{
                 background-color: {COLORS['bg_elevated']};
                 color: {COLORS['text_primary']};
-                selection-background-color: {COLORS['accent_blue']};
+                selection-background-color: {COLORS['accent_alt']};
             }}
         """)
 

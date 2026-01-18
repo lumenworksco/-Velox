@@ -385,9 +385,9 @@ class AnalyticsPage(QWidget):
         series = QPieSeries()
 
         colors = [
-            QColor(COLORS['accent_blue']),
+            QColor(COLORS['accent_alt']),
             QColor(COLORS['positive']),
-            QColor(COLORS['accent_purple']),
+            QColor(COLORS['accent_alt']),
             QColor(COLORS['accent_gold']),
         ]
 

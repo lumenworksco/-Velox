@@ -115,7 +115,7 @@ class ChartPanel(QWidget):
 
         # Indicator toggles
         self.sma_20_btn = self._create_indicator_button("SMA 20", COLORS['neutral'])
-        self.sma_50_btn = self._create_indicator_button("SMA 50", COLORS['accent_purple'])
+        self.sma_50_btn = self._create_indicator_button("SMA 50", COLORS['accent_alt'])
         self.bollinger_btn = self._create_indicator_button("BB", COLORS['accent_gold'])
 
         layout.addWidget(self.sma_20_btn)
@@ -387,7 +387,7 @@ class ChartPanel(QWidget):
         series.setName(f"SMA {period}")
 
         # Set color
-        color = COLORS['neutral'] if period == 20 else COLORS['accent_purple']
+        color = COLORS['neutral'] if period == 20 else COLORS['accent_alt']
         pen = QPen(QColor(color))
         pen.setWidth(2)
         series.setPen(pen)
