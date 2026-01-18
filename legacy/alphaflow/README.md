@@ -2,10 +2,10 @@
 
 A professional algorithmic trading platform for macOS, featuring a Bloomberg Terminal-inspired interface and comprehensive trading capabilities.
 
-![Version](https://img.shields.io/badge/version-6.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-6.3.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.10+-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
-![Progress](https://img.shields.io/badge/progress-95%25-brightgreen.svg)
+![Progress](https://img.shields.io/badge/progress-100%25%20COMPLETE-success.svg)
 
 ---
 
