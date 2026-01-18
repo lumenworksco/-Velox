@@ -1,279 +1,234 @@
-# ⚡ AlphaFlow Quick Start Guide
+# ⚡ AlphaFlow - Quick Start Guide
 
-Get AlphaFlow running in 5 minutes!
+**Version:** 6.3.0 | **Status:** ✅ Ready to Launch
 
 ---
 
-## 🚀 Installation
+## 🚀 Launch in 3 Steps
 
-### 1. Prerequisites
-- macOS 12+ (Monterey or later)
-- Python 3.10 or higher
-- Terminal access
-
-### 2. Install Dependencies
-
+### Step 1: Install Dependencies
 ```bash
-cd "/Volumes/File System/Algorithmic Trading"
-
-# Create virtual environment (recommended)
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Install all dependencies
 pip install -r requirements.txt
 ```
 
-**Expected output:** All packages install successfully
-
----
-
-## 🔑 Configuration (Optional)
-
-AlphaFlow works out-of-the-box with yfinance (no API keys needed), but for full functionality:
-
-### For Paper Trading (Recommended)
-
-1. Sign up for free Alpaca account: https://alpaca.markets
-2. Generate paper trading API keys
-3. Configure environment:
-
+### Step 2: Launch AlphaFlow
 ```bash
-cp .env.example .env
-nano .env  # or use any text editor
+python3 run_alphaflow.py
 ```
 
-4. Add your keys:
-```env
-ALPACA_API_KEY=your_paper_key_here
-ALPACA_SECRET_KEY=your_paper_secret_here
-```
-
-**Note:** Start with paper trading! Never use live trading with untested strategies.
+### Step 3: Start Trading
+The app will open automatically. You're ready to go!
 
 ---
 
-## 🎮 Launch AlphaFlow
+## 📱 Interface Overview
 
-```bash
-python3 main.py
-```
+### 7 Tabs (Use Cmd+1 through Cmd+7)
 
-**What happens:**
-1. App window opens (1600x1000 pixels)
-2. Bloomberg-style dark theme loads
-3. Dashboard shows with 6 tabs
-4. Watchlist automatically fetches real data for:
-   - AAPL (Apple)
-   - MSFT (Microsoft)
-   - GOOGL (Google)
-   - TSLA (Tesla)
-   - NVDA (NVIDIA)
-5. Data updates every 60 seconds
+1. **📊 Dashboard** (Cmd+1)
+   - Portfolio overview
+   - Real-time watchlist
+   - Key metrics at a glance
+
+2. **💹 Trading** (Cmd+2)
+   - Search symbols
+   - View charts with indicators
+   - Place orders (Market/Limit)
+
+3. **📈 Analytics** (Cmd+3)
+   - Position breakdown
+   - Risk metrics (Sharpe, VaR, etc.)
+   - Performance charts
+
+4. **📋 Orders** (Cmd+4)
+   - Order history
+   - Track status
+   - Monitor fills
+
+5. **🤖 Strategies** (Cmd+5)
+   - Deploy automated strategies
+   - Monitor performance
+   - Start/Stop controls
+
+6. **🔬 Backtest** (Cmd+6)
+   - Test strategies historically
+   - View equity curves
+   - Analyze results
+
+7. **⚙️ Settings** (Cmd+7)
+   - Configure API keys
+   - Set risk limits
+   - Trading mode selection
 
 ---
 
-## 🎯 First Steps
+## 🎯 First Trade (Paper Mode)
 
-### 1. Explore the Dashboard
-- **Portfolio Value** - Shows current total value
-- **Day P&L** - Daily profit/loss
-- **Watchlist** - Real-time stock prices
+1. Click **💹 Trading** tab (or press Cmd+2)
+2. Enter symbol: `AAPL`
+3. Click **Search**
+4. Review chart and signals
+5. Enter quantity: `1`
+6. Click **BUY**
+7. Confirm order
+8. Check **📋 Orders** tab to see fill
 
-### 2. Place Your First Order
+**Safe!** Default mode is PAPER (no real money)
 
-**Method 1: Keyboard Shortcut**
-- Press `Cmd+N` (or `Ctrl+N` on non-Mac)
+---
 
-**Method 2: Menu**
-- File → New Order
-
-**Order Entry:**
-1. Enter symbol (e.g., "AAPL")
-2. Choose BUY or SELL
-3. Select MARKET or LIMIT
-4. Enter quantity (shares)
-5. Click "Place Order"
-
-**Result:** Order appears in Orders tab, position in Positions tab!
-
-### 3. Navigate with Keyboard
+## ⌨️ Essential Shortcuts
 
 | Shortcut | Action |
 |----------|--------|
-| `Cmd+1` | Dashboard tab |
-| `Cmd+2` | Trading tab |
-| `Cmd+3` | Positions tab |
-| `Cmd+4` | Orders tab |
-| `Cmd+5` | Backtest tab |
-| `Cmd+6` | Settings tab |
-| `Cmd+N` | New order |
-| `Cmd+R` | Refresh data |
-| `Cmd+Q` | Quit app |
+| Cmd+1    | Dashboard |
+| Cmd+2    | Trading |
+| Cmd+3    | Analytics |
+| Cmd+N    | New Order |
+| Cmd+R    | Refresh Data |
+| Cmd+Q    | Quit |
 
 ---
 
-## 📊 Understanding the Interface
+## 🔧 Optional: Add API Keys
 
-### Dashboard Tab
-- **Metric Cards** (top) - Portfolio overview
-- **Watchlist** (bottom) - Real-time stock prices with:
-  - Symbol
-  - Current price
-  - Price change ($)
-  - Change percentage (%)
-  - Volume
+For live trading with Alpaca:
 
-### Trading Tab
-*Coming soon* - Will show charts and order entry
-
-### Positions Tab
-Shows your current holdings:
-- Symbol
-- Quantity (shares)
-- Average price paid
-- Current price
-- P&L (profit/loss)
-- P&L % (percentage)
-
-### Orders Tab
-Shows order history:
-- Time placed
-- Symbol
-- Side (BUY/SELL)
-- Quantity
-- Price
-- Status (PENDING/FILLED/CANCELED/REJECTED)
+1. Copy template: `cp .env.example .env`
+2. Edit `.env`:
+   ```
+   ALPACA_API_KEY=your_key_here
+   ALPACA_SECRET_KEY=your_secret_here
+   ```
+3. Go to **⚙️ Settings** tab
+4. Enter keys
+5. Click **Test Connection**
+6. Click **Save Settings**
 
 ---
 
-## 🛡️ Safety Features
+## 🧪 Try a Backtest
 
-### Trading Mode Indicator
-Look at the **status bar** (bottom-right):
-- **🟡 PAPER** - Safe! Virtual money only
-- **🔴 LIVE** - Real money! Be careful!
-
-**Default:** PAPER mode (virtual $100,000)
-
-### Risk Limits (Automatic)
-- **Max position size:** 10% of portfolio
-- **Max daily loss:** 2% of portfolio
-- **Validation:** Orders rejected if limits exceeded
+1. Go to **🔬 Backtest** tab (Cmd+6)
+2. Select strategy: **MA Crossover**
+3. Choose date range: Last 3 months
+4. Enter symbol: `AAPL`
+5. Click **Run Backtest**
+6. Review equity curve and metrics
 
 ---
 
-## 🐛 Troubleshooting
+## 📊 Features Highlights
 
-### App won't launch
+### Real-Time Data
+- Live price updates
+- Auto-refresh every 60 seconds
+- WebSocket streaming (enable in Settings)
 
-**Issue:** `python3: command not found`  
-**Fix:** Install Python 3.10+ from python.org
+### Professional Charts
+- Candlestick + Volume
+- SMA 20/50, Bollinger Bands
+- Multiple timeframes (1D to ALL)
 
-**Issue:** `ModuleNotFoundError: No module named 'PyQt6'`  
-**Fix:** Run `pip install -r requirements.txt`
+### Risk Analytics
+- Sharpe Ratio, Sortino Ratio
+- Value at Risk (VaR)
+- Correlation matrix
+- Position sizing limits
 
-### No data in watchlist
-
-**Issue:** Blank watchlist or errors  
-**Check:**
-1. Internet connection working?
-2. Wait 10 seconds for initial data load
-3. Check logs: `tail -f logs/trading_app_v6_*.log`
-
-**Fix:** Press `Cmd+R` to refresh data
-
-### Order fails
-
-**Issue:** "Insufficient cash balance"  
-**Reason:** Not enough virtual cash (you start with $100k)
-**Fix:** Reduce order quantity or sell some positions
-
-**Issue:** "Order rejected: ..."  
-**Reason:** Various (see error message)
-**Common:** Invalid symbol, market closed, exceeded position size limit
-
-### Font warning
-
-**Warning:** `Populating font family aliases took X ms...`  
-**Impact:** None - just a cosmetic warning
-**Reason:** "Inter" font not installed (app uses fallback)
-**Fix:** Optional - install Inter font from https://rsms.me/inter/
+### Automated Trading
+- Deploy strategies with 1 click
+- Monitor in real-time
+- Backtest before deploying
+- Full control (Start/Stop)
 
 ---
 
-## 💡 Tips & Best Practices
+## ⚠️ Safety First
 
-### 1. Start Small
-- Begin with small quantities (1-10 shares)
-- Test different order types
-- Understand the interface before scaling up
+✅ **Always start in PAPER mode**
+- Test strategies thoroughly
+- Understand all features
+- Set conservative risk limits
 
-### 2. Use Paper Trading
-- **Always** test strategies in paper mode first
-- Verify everything works as expected
-- Only switch to live when confident
+✅ **Use risk parameters**
+- Max position size: 10% or less
+- Daily loss limit: 2% or less
+- Always use stop losses
 
-### 3. Monitor Positions
-- Check Positions tab regularly
-- Understand your P&L
-- Set mental stop-losses
-
-### 4. Leverage Keyboard Shortcuts
-- Much faster than clicking
-- Learn `Cmd+1` through `Cmd+6` for tab navigation
-- `Cmd+N` for quick order entry
-
-### 5. Refresh Data
-- Press `Cmd+R` if data seems stale
-- Auto-refresh runs every 60 seconds
-- Check status bar for market hours
+✅ **Never share API keys**
+- Keep `.env` file secure
+- Don't commit to git
+- Rotate keys regularly
 
 ---
 
-## 📚 Next Steps
+## 🆘 Troubleshooting
 
-### Learn More
-- Read full `README.md` for comprehensive features
-- Check `IMPLEMENTATION_STATUS.md` for roadmap
-- Review `CONTRIBUTING.md` if you want to extend
+### App Won't Launch?
+```bash
+# Install missing dependencies
+pip install PyQt6 PyQt6-Charts pandas
+```
 
-### Explore Features
-- Place different order types (market vs limit)
-- Track multiple positions
-- Monitor portfolio value changes
-- Experiment with different symbols
+### Charts Not Showing?
+```bash
+# Install PyQt6-Charts
+pip install "PyQt6-Charts>=6.5.0"
+```
 
-### Get Advanced (When Ready)
-- Configure Alpaca API for paper trading
-- Explore backtesting (when implemented)
-- Deploy automated strategies (when implemented)
+### Data Not Updating?
+- Check internet connection
+- Press Cmd+R to refresh
+- Enable WebSocket in Settings
+
+### Orders Not Working?
+- Verify trading mode (PAPER vs LIVE)
+- Check account balance
+- Ensure market is open
+- Review Settings → Risk Parameters
 
 ---
 
-## 🆘 Getting Help
+## 📚 More Help
 
-**Questions?**
-- Check logs: `logs/trading_app_v6_*.log`
-- Review `README.md` troubleshooting section
-- File GitHub issue (if applicable)
+- **Full Guide:** USER_GUIDE.md (562 lines)
+- **Launch Help:** LAUNCH_INSTRUCTIONS.md
+- **Tech Status:** IMPLEMENTATION_STATUS.md
+- **Changes:** CHANGELOG.md
 
-**Feedback?**
-- Feature requests welcome
-- Bug reports appreciated
-- Contributions encouraged (see CONTRIBUTING.md)
+---
+
+## ✨ What You Can Do Right Now
+
+✅ View real-time data for 5 tech stocks
+✅ Place paper trades (100% safe)
+✅ View professional candlestick charts
+✅ Backtest trading strategies
+✅ Monitor portfolio analytics
+✅ Deploy automated strategies
+✅ Track risk metrics (Sharpe, VaR)
 
 ---
 
 ## 🎉 You're Ready!
 
-You now know how to:
-- ✅ Launch AlphaFlow
-- ✅ Navigate the interface
-- ✅ Place orders
-- ✅ Track positions
-- ✅ Monitor portfolio
+AlphaFlow v6.3.0 is **production-ready** with:
+- 7 complete pages
+- Real-time trading
+- Professional charts
+- Advanced analytics
+- Strategy automation
+- Comprehensive backtesting
 
-**Happy trading!** 📈
+**Launch now and start exploring!**
 
-*Remember: This is for educational purposes. Always understand the risks before trading with real money.*
+```bash
+python3 run_alphaflow.py
+```
+
+---
+
+**Happy Trading! 📈**
+
+*Remember: Paper trade first, set risk limits, never invest more than you can afford to lose.*
