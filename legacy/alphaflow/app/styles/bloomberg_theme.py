@@ -271,28 +271,34 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
 QTabWidget::pane {{
     background-color: {COLORS['bg_primary']};
     border: 1px solid {COLORS['border']};
-    border-radius: 6px;
+    border-radius: 0px;
+    border-top: 2px solid {COLORS['accent_alt']};
 }}
 
 QTabBar::tab {{
     background-color: {COLORS['bg_secondary']};
     color: {COLORS['text_secondary']};
-    border: 1px solid {COLORS['border']};
-    border-bottom: none;
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    padding: 8px 16px;
-    margin-right: 2px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+    padding: 14px 24px;
+    margin-right: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 100px;
 }}
 
 QTabBar::tab:selected {{
     background-color: {COLORS['bg_primary']};
-    color: {COLORS['text_primary']};
-    font-weight: 600;
+    color: {COLORS['accent_alt']};
+    font-weight: 700;
+    border-bottom: 3px solid {COLORS['accent_alt']};
 }}
 
 QTabBar::tab:hover {{
     background-color: {COLORS['bg_hover']};
+    color: {COLORS['text_primary']};
 }}
 
 /* ========== Progress Bar ========== */

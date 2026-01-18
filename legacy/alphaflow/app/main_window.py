@@ -121,8 +121,8 @@ class AlphaFlowMainWindow(QMainWindow):
 
     def _setup_window(self):
         """Setup main window properties."""
-        self.setWindowTitle("AlphaFlow Trading Platform")
-        self.setMinimumSize(1400, 900)
+        self.setWindowTitle("AlphaFlow | Professional Trading Platform v6.3.0")
+        self.setMinimumSize(1600, 1000)
 
         # Apply Bloomberg-inspired stylesheet
         self.setStyleSheet(get_stylesheet())
@@ -133,7 +133,13 @@ class AlphaFlowMainWindow(QMainWindow):
             self.restoreGeometry(geometry)
         else:
             # Default size and position
-            self.resize(1600, 1000)
+            self.resize(1800, 1100)
+            # Center on screen
+            from PyQt6.QtWidgets import QApplication
+            screen = QApplication.primaryScreen().geometry()
+            x = (screen.width() - 1800) // 2
+            y = (screen.height() - 1100) // 2
+            self.move(x, y)
 
     def _create_menu_bar(self):
         """Create the application menu bar."""
@@ -220,21 +226,25 @@ class AlphaFlowMainWindow(QMainWindow):
         """Create the dashboard tab."""
         widget = QWidget()
         layout = QVBoxLayout()
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(20)
 
         # Header
         header = QLabel("Portfolio Overview")
         header.setStyleSheet(f"""
             QLabel {{
-                font-size: 20px;
-                font-weight: bold;
+                font-size: 24px;
+                font-weight: 700;
                 color: {COLORS['text_primary']};
-                padding: 16px;
+                padding: 0px 0px 12px 0px;
+                border-bottom: 2px solid {COLORS['border']};
             }}
         """)
         layout.addWidget(header)
 
         # Metrics row
         metrics_layout = QHBoxLayout()
+        metrics_layout.setSpacing(16)
 
         self.portfolio_value_card = MetricCard("Portfolio Value", "$100,000.00", 0.0)
         self.day_pnl_card = MetricCard("Day P&L", "$0.00", 0.0)
@@ -249,13 +259,13 @@ class AlphaFlowMainWindow(QMainWindow):
         layout.addLayout(metrics_layout)
 
         # Watchlist grid
-        watchlist_label = QLabel("Watchlist")
+        watchlist_label = QLabel("Market Watchlist")
         watchlist_label.setStyleSheet(f"""
             QLabel {{
-                font-size: 16px;
-                font-weight: 600;
+                font-size: 18px;
+                font-weight: 700;
                 color: {COLORS['text_primary']};
-                padding: 16px;
+                padding: 20px 0px 8px 0px;
             }}
         """)
         layout.addWidget(watchlist_label)
