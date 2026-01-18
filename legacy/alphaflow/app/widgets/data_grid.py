@@ -84,8 +84,17 @@ class BloombergDataGrid(QTableWidget):
         # Store column indices
         self.column_map = {header: idx for idx, header in enumerate(headers)}
 
-        # Resize columns to content
-        self.resizeColumnsToContents()
+        # Set fixed column widths to prevent truncation
+        for idx, header in enumerate(headers):
+            if header in self.numeric_columns:
+                self.setColumnWidth(idx, 150)  # Wider for numbers
+            elif header.lower() == 'symbol':
+                self.setColumnWidth(idx, 100)  # Narrower for symbols
+            else:
+                self.setColumnWidth(idx, 130)  # Standard width
+
+        # Allow last column to stretch
+        self.horizontalHeader().setStretchLastSection(True)
 
     def add_row(self, data: Dict[str, Any]):
         """

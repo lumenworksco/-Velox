@@ -16,11 +16,12 @@ from .data_structures import SignalAction
 
 class BacktestEngine:
     """Comprehensive backtesting engine for Version 6."""
-    
-    def __init__(self, initial_capital: float = 100000):
+
+    def __init__(self, initial_capital: float = 100000, commission: float = 0.001):
         self.initial_capital = initial_capital
+        self.commission = commission
         self.logger = logging.getLogger(__name__)
-        
+
         # Initialize components
         self.data_fetcher = SimplifiedDataFetcher()
         self.ml_predictor = MLPredictor()
@@ -32,12 +33,15 @@ class BacktestEngine:
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
         strategy: str = "Technical Momentum",
-        commission: float = 0.0
+        commission: Optional[float] = None
     ) -> Dict:
         """Run comprehensive backtest on multiple symbols."""
-        
-        self.logger.info(f"Starting backtest for symbols: {symbols}")
-        
+
+        # Use provided commission or fall back to instance commission
+        comm = commission if commission is not None else self.commission
+
+        self.logger.info(f"Starting backtest for symbols: {symbols} with commission: {comm}")
+
         # Determine data period
         period = self._determine_period(start_date, end_date)
         
