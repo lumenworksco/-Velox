@@ -237,6 +237,13 @@ AlphaFlow is now 100% feature-complete and production-ready!
 ### Critical 🔴
 - None currently
 
+### Recently Fixed (2026-01-18)
+- ✅ Fixed ImportError: TradingStrategy not found (removed unused import)
+- ✅ Fixed KeyError: 'accent_purple' color palette issue
+- ✅ Fixed KeyError: 'accent_blue' color palette issue
+- ✅ Installed missing PyQt6-Charts dependency
+- ✅ App now launches successfully without crashes
+
 ### High 🟡
 1. **Alpaca API not integrated in DataController** - Using yfinance only
 2. **No real-time WebSocket streaming** - Data refreshes every 60s only
