@@ -38,36 +38,41 @@ class MetricCard(QFrame):
     def _setup_ui(self):
         """Setup the UI components."""
         layout = QVBoxLayout()
-        layout.setContentsMargins(16, 12, 16, 12)
-        layout.setSpacing(4)
+        layout.setContentsMargins(20, 16, 20, 16)
+        layout.setSpacing(8)
 
         # Label (metric name)
         self.label_widget = QLabel(self.label_text)
         self.label_widget.setObjectName("MetricLabel")
+        self.label_widget.setWordWrap(False)
         label_font = QFont()
-        label_font.setFamilies(['Inter', 'SF Pro Display', 'Segoe UI'])
-        label_font.setPointSize(10)
-        label_font.setWeight(QFont.Weight.Medium)
+        label_font.setFamilies(['-apple-system', 'SF Pro Display', 'Segoe UI'])
+        label_font.setPointSize(11)
+        label_font.setWeight(QFont.Weight.DemiBold)
         self.label_widget.setFont(label_font)
         self.label_widget.setStyleSheet(f"""
             QLabel {{
                 color: {COLORS['text_secondary']};
                 text-transform: uppercase;
-                letter-spacing: 0.5px;
+                letter-spacing: 1px;
+                padding: 0px;
             }}
         """)
 
         # Value (main metric)
         self.value_widget = QLabel(self.value_text)
         self.value_widget.setObjectName("MetricValue")
+        self.value_widget.setWordWrap(False)
+        self.value_widget.setMinimumHeight(50)
         value_font = QFont()
-        value_font.setFamilies(['Menlo', 'Monaco', 'Consolas'])
-        value_font.setPointSize(24)
+        value_font.setFamilies(['SF Mono', 'Menlo', 'Monaco', 'Consolas', 'monospace'])
+        value_font.setPointSize(28)
         value_font.setWeight(QFont.Weight.Bold)
         self.value_widget.setFont(value_font)
         self.value_widget.setStyleSheet(f"""
             QLabel {{
                 color: {COLORS['text_primary']};
+                padding: 4px 0px;
             }}
         """)
 
@@ -98,15 +103,15 @@ class MetricCard(QFrame):
                 background-color: {COLORS['bg_secondary']};
                 border: 1px solid {COLORS['border']};
                 border-radius: 12px;
-                padding: 4px;
+                padding: 8px;
             }}
             QFrame#CardFrame:hover {{
                 background-color: {COLORS['bg_hover']};
                 border-color: {COLORS['border_light']};
             }}
         """)
-        self.setMinimumHeight(120)
-        self.setMaximumHeight(150)
+        self.setMinimumSize(200, 140)
+        self.setMaximumHeight(180)
 
     def _update_change_display(self, change: float):
         """Update the change indicator display."""

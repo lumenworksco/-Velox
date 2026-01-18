@@ -45,7 +45,10 @@ class BloombergDataGrid(QTableWidget):
         # Header settings
         self.horizontalHeader().setStretchLastSection(True)
         self.horizontalHeader().setSectionsMovable(False)
+        self.horizontalHeader().setDefaultSectionSize(120)
+        self.horizontalHeader().setMinimumSectionSize(80)
         self.verticalHeader().setVisible(False)
+        self.verticalHeader().setDefaultSectionSize(44)  # Row height
 
         # Enable sorting
         self.setSortingEnabled(True)
@@ -58,13 +61,13 @@ class BloombergDataGrid(QTableWidget):
         """Setup fonts for different column types."""
         # Regular font for text columns
         self.text_font = QFont()
-        self.text_font.setFamilies(['Inter', 'SF Pro Display', 'Segoe UI', 'Arial'])
-        self.text_font.setPointSize(12)
+        self.text_font.setFamilies(['-apple-system', 'SF Pro Display', 'Segoe UI', 'Arial'])
+        self.text_font.setPointSize(13)
 
         # Monospace font for numeric columns
         self.mono_font = QFont()
-        self.mono_font.setFamilies(['Menlo', 'Monaco', 'Consolas', 'Courier New'])
-        self.mono_font.setPointSize(12)
+        self.mono_font.setFamilies(['SF Mono', 'Menlo', 'Monaco', 'Consolas', 'monospace'])
+        self.mono_font.setPointSize(13)
 
     def set_columns(self, headers: List[str], numeric_columns: Optional[List[str]] = None):
         """

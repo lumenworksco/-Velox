@@ -11,8 +11,13 @@ BLOOMBERG_STYLESHEET = f"""
 QWidget {{
     background-color: {COLORS['bg_primary']};
     color: {COLORS['text_primary']};
-    font-family: 'Inter', 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
-    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+}}
+
+QMainWindow {{
+    background-color: {COLORS['bg_primary']};
 }}
 
 /* ========== Frames/Panels ========== */
@@ -45,16 +50,21 @@ QLabel {{
 }}
 
 QLabel#MetricValue {{
-    font-size: 24px;
-    font-weight: bold;
+    font-size: 32px;
+    font-weight: 700;
     color: {COLORS['text_primary']};
+    padding: 4px 0px;
+    min-height: 40px;
 }}
 
 QLabel#MetricLabel {{
-    font-size: 11px;
+    font-size: 12px;
+    font-weight: 500;
     color: {COLORS['text_secondary']};
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    padding: 2px 0px;
+    min-height: 20px;
 }}
 
 QLabel#SectionHeader {{
@@ -68,9 +78,11 @@ QPushButton {{
     background-color: {COLORS['bg_elevated']};
     color: {COLORS['text_primary']};
     border: 1px solid {COLORS['border']};
-    border-radius: 6px;
-    padding: 8px 16px;
-    font-weight: 500;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 600;
+    font-size: 14px;
+    min-height: 36px;
 }}
 
 QPushButton:hover {{
@@ -114,8 +126,10 @@ QLineEdit, QTextEdit, QPlainTextEdit {{
     background-color: {COLORS['bg_elevated']};
     color: {COLORS['text_primary']};
     border: 1px solid {COLORS['border']};
-    border-radius: 6px;
-    padding: 6px 12px;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    min-height: 36px;
     selection-background-color: {COLORS['accent_alt']};
 }}
 
@@ -173,14 +187,16 @@ QTableWidget, QTableView {{
     color: {COLORS['text_primary']};
     gridline-color: {COLORS['border']};
     border: 1px solid {COLORS['border']};
-    border-radius: 6px;
+    border-radius: 8px;
     selection-background-color: {COLORS['accent_alt']};
     selection-color: #FFFFFF;
+    font-size: 13px;
 }}
 
 QTableWidget::item, QTableView::item {{
-    padding: 6px;
+    padding: 12px 14px;
     border: none;
+    min-height: 40px;
 }}
 
 QTableWidget::item:selected, QTableView::item:selected {{
@@ -194,11 +210,12 @@ QHeaderView::section {{
     border: none;
     border-right: 1px solid {COLORS['border']};
     border-bottom: 1px solid {COLORS['border']};
-    padding: 8px;
+    padding: 12px 14px;
     font-weight: 600;
-    font-size: 11px;
+    font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    min-height: 40px;
 }}
 
 QHeaderView::section:hover {{
