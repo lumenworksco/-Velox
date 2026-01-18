@@ -53,11 +53,11 @@ class BacktestWorker(QThread):
             self.progress_updated.emit(50, "Running strategy...")
 
             # Run backtest
-            results = engine.run(
+            results = engine.run_backtest(
                 symbols=self.backtest_params['symbols'],
-                start_date=self.backtest_params['start_date'],
-                end_date=self.backtest_params['end_date'],
-                strategy=self.strategy_config
+                start_date=str(self.backtest_params['start_date']),
+                end_date=str(self.backtest_params['end_date']),
+                strategy=self.strategy_config['type']
             )
 
             self.progress_updated.emit(100, "Backtest complete!")
