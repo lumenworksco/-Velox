@@ -208,14 +208,14 @@ class AlphaFlowMainWindow(QMainWindow):
         self.tab_widget = QTabWidget()
         self.tab_widget.setDocumentMode(True)
 
-        # Add tabs
-        self.tab_widget.addTab(self._create_dashboard_tab(), "📊 Dashboard")
-        self.tab_widget.addTab(self._create_trading_tab(), "💹 Trading")
-        self.tab_widget.addTab(self._create_positions_tab(), "📊 Analytics")
-        self.tab_widget.addTab(self._create_orders_tab(), "📋 Orders")
-        self.tab_widget.addTab(self._create_strategies_tab(), "🤖 Strategies")
-        self.tab_widget.addTab(self._create_backtest_tab(), "📈 Backtest")
-        self.tab_widget.addTab(self._create_settings_tab(), "⚙️ Settings")
+        # Add tabs (clean, professional names without emojis)
+        self.tab_widget.addTab(self._create_dashboard_tab(), "Dashboard")
+        self.tab_widget.addTab(self._create_trading_tab(), "Trading")
+        self.tab_widget.addTab(self._create_positions_tab(), "Analytics")
+        self.tab_widget.addTab(self._create_orders_tab(), "Orders")
+        self.tab_widget.addTab(self._create_strategies_tab(), "Strategies")
+        self.tab_widget.addTab(self._create_backtest_tab(), "Backtest")
+        self.tab_widget.addTab(self._create_settings_tab(), "Settings")
 
         layout.addWidget(self.tab_widget)
         central_widget.setLayout(layout)

@@ -38,8 +38,8 @@ class MetricCard(QFrame):
     def _setup_ui(self):
         """Setup the UI components."""
         layout = QVBoxLayout()
-        layout.setContentsMargins(20, 16, 20, 16)
-        layout.setSpacing(8)
+        layout.setContentsMargins(24, 20, 24, 20)
+        layout.setSpacing(12)
 
         # Label (metric name)
         self.label_widget = QLabel(self.label_text)
@@ -63,16 +63,17 @@ class MetricCard(QFrame):
         self.value_widget = QLabel(self.value_text)
         self.value_widget.setObjectName("MetricValue")
         self.value_widget.setWordWrap(False)
-        self.value_widget.setMinimumHeight(50)
+        self.value_widget.setMinimumHeight(56)
         value_font = QFont()
         value_font.setFamilies(['SF Mono', 'Menlo', 'Monaco', 'Consolas', 'monospace'])
-        value_font.setPointSize(28)
+        value_font.setPointSize(32)
         value_font.setWeight(QFont.Weight.Bold)
+        value_font.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 98)
         self.value_widget.setFont(value_font)
         self.value_widget.setStyleSheet(f"""
             QLabel {{
                 color: {COLORS['text_primary']};
-                padding: 4px 0px;
+                padding: 6px 0px;
             }}
         """)
 
@@ -102,16 +103,16 @@ class MetricCard(QFrame):
             QFrame#CardFrame {{
                 background-color: {COLORS['bg_secondary']};
                 border: 1px solid {COLORS['border']};
-                border-radius: 12px;
-                padding: 8px;
+                border-radius: 10px;
+                padding: 4px;
             }}
             QFrame#CardFrame:hover {{
                 background-color: {COLORS['bg_hover']};
-                border-color: {COLORS['border_light']};
+                border-color: {COLORS['accent_alt']};
             }}
         """)
-        self.setMinimumSize(200, 140)
-        self.setMaximumHeight(180)
+        self.setMinimumSize(220, 160)
+        self.setMaximumHeight(200)
 
     def _update_change_display(self, change: float):
         """Update the change indicator display."""

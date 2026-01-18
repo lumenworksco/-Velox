@@ -12,8 +12,9 @@ QWidget {{
     background-color: {COLORS['bg_primary']};
     color: {COLORS['text_primary']};
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', 'Segoe UI', Arial, sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
+    font-size: 13px;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
 }}
 
 QMainWindow {{
@@ -50,21 +51,22 @@ QLabel {{
 }}
 
 QLabel#MetricValue {{
-    font-size: 32px;
+    font-size: 36px;
     font-weight: 700;
     color: {COLORS['text_primary']};
-    padding: 4px 0px;
-    min-height: 40px;
+    padding: 8px 0px;
+    min-height: 48px;
+    letter-spacing: -0.02em;
 }}
 
 QLabel#MetricLabel {{
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 11px;
+    font-weight: 600;
     color: {COLORS['text_secondary']};
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 1.2px;
     padding: 2px 0px;
-    min-height: 20px;
+    min-height: 18px;
 }}
 
 QLabel#SectionHeader {{
@@ -78,27 +80,31 @@ QPushButton {{
     background-color: {COLORS['bg_elevated']};
     color: {COLORS['text_primary']};
     border: 1px solid {COLORS['border']};
-    border-radius: 8px;
-    padding: 10px 20px;
+    border-radius: 6px;
+    padding: 11px 22px;
     font-weight: 600;
-    font-size: 14px;
-    min-height: 36px;
+    font-size: 13px;
+    min-height: 38px;
+    letter-spacing: 0.02em;
 }}
 
 QPushButton:hover {{
     background-color: {COLORS['accent_alt']};
     border-color: {COLORS['accent_alt']};
     color: #FFFFFF;
+    transform: translateY(-1px);
 }}
 
 QPushButton:pressed {{
     background-color: {COLORS['bg_hover']};
+    transform: translateY(0px);
 }}
 
 QPushButton:disabled {{
     background-color: {COLORS['bg_secondary']};
     color: {COLORS['text_tertiary']};
     border-color: {COLORS['border']};
+    opacity: 0.5;
 }}
 
 QPushButton#BuyButton {{
@@ -183,20 +189,20 @@ QSpinBox, QDoubleSpinBox {{
 /* ========== Tables ========== */
 QTableWidget, QTableView {{
     background-color: {COLORS['bg_primary']};
-    alternate-background-color: {COLORS['bg_secondary']};
+    alternate-background-color: rgba(35, 37, 38, 0.3);
     color: {COLORS['text_primary']};
     gridline-color: {COLORS['border']};
     border: 1px solid {COLORS['border']};
-    border-radius: 8px;
+    border-radius: 6px;
     selection-background-color: {COLORS['accent_alt']};
     selection-color: #FFFFFF;
     font-size: 13px;
 }}
 
 QTableWidget::item, QTableView::item {{
-    padding: 12px 14px;
+    padding: 14px 16px;
     border: none;
-    min-height: 40px;
+    min-height: 42px;
 }}
 
 QTableWidget::item:selected, QTableView::item:selected {{
@@ -209,13 +215,13 @@ QHeaderView::section {{
     color: {COLORS['text_secondary']};
     border: none;
     border-right: 1px solid {COLORS['border']};
-    border-bottom: 1px solid {COLORS['border']};
-    padding: 12px 14px;
-    font-weight: 600;
-    font-size: 12px;
+    border-bottom: 2px solid {COLORS['border']};
+    padding: 13px 16px;
+    font-weight: 700;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    min-height: 40px;
+    letter-spacing: 1.5px;
+    min-height: 42px;
 }}
 
 QHeaderView::section:hover {{
@@ -270,34 +276,34 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
 /* ========== Tab Widget ========== */
 QTabWidget::pane {{
     background-color: {COLORS['bg_primary']};
-    border: 1px solid {COLORS['border']};
-    border-radius: 0px;
-    border-top: 2px solid {COLORS['accent_alt']};
+    border: none;
+    border-top: 1px solid {COLORS['border']};
 }}
 
 QTabBar::tab {{
-    background-color: {COLORS['bg_secondary']};
+    background-color: transparent;
     color: {COLORS['text_secondary']};
     border: none;
-    border-bottom: 2px solid transparent;
+    border-bottom: 3px solid transparent;
     border-top-left-radius: 0px;
     border-top-right-radius: 0px;
-    padding: 14px 24px;
-    margin-right: 4px;
-    font-size: 14px;
+    padding: 16px 28px;
+    margin-right: 2px;
+    font-size: 13px;
     font-weight: 500;
-    min-width: 100px;
+    min-width: 80px;
+    letter-spacing: 0.03em;
 }}
 
 QTabBar::tab:selected {{
-    background-color: {COLORS['bg_primary']};
-    color: {COLORS['accent_alt']};
-    font-weight: 700;
+    background-color: transparent;
+    color: {COLORS['text_primary']};
+    font-weight: 600;
     border-bottom: 3px solid {COLORS['accent_alt']};
 }}
 
 QTabBar::tab:hover {{
-    background-color: {COLORS['bg_hover']};
+    background-color: {COLORS['bg_secondary']};
     color: {COLORS['text_primary']};
 }}
 
