@@ -13,6 +13,7 @@ from PyQt6.QtGui import QAction, QKeySequence
 from app.styles import get_stylesheet, COLORS
 from app.widgets import MetricCard, StatusBadge, BloombergDataGrid, OrderEntryDialog
 from app.controllers import DataController, TradingController
+from app.pages import TradingPage, SettingsPage
 from core import (
     TradingMode, TradingConfig, setup_logging, WATCHLISTS,
     is_market_open, get_market_status_message
@@ -268,36 +269,17 @@ class AlphaFlowMainWindow(QMainWindow):
 
     def _create_trading_tab(self) -> QWidget:
         """Create the trading tab."""
-        widget = QWidget()
-        layout = QVBoxLayout()
+        self.trading_page = TradingPage()
 
-        label = QLabel("Trading Interface")
-        label.setStyleSheet(f"""
-            QLabel {{
-                font-size: 20px;
-                font-weight: bold;
-                color: {COLORS['text_primary']};
-                padding: 16px;
-            }}
-        """)
-        layout.addWidget(label)
+        # Connect trading page signals
+        self.trading_page.symbol_changed.connect(self._on_trading_symbol_changed)
+        self.trading_page.order_requested.connect(self._on_trading_order_requested)
+        self.trading_page.data_refresh_requested.connect(self._on_trading_data_refresh)
 
-        # Placeholder for trading interface
-        info_label = QLabel("Active trading interface coming soon...")
-        info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        info_label.setStyleSheet(f"""
-            QLabel {{
-                color: {COLORS['text_secondary']};
-                font-size: 14px;
-                padding: 32px;
-            }}
-        """)
-        layout.addWidget(info_label)
+        # Connect data updates to trading page
+        self.data_controller.data_updated.connect(self.trading_page.update_data)
 
-        layout.addStretch()
-
-        widget.setLayout(layout)
-        return widget
+        return self.trading_page
 
     def _create_positions_tab(self) -> QWidget:
         """Create the positions tab."""
@@ -390,36 +372,13 @@ class AlphaFlowMainWindow(QMainWindow):
 
     def _create_settings_tab(self) -> QWidget:
         """Create the settings tab."""
-        widget = QWidget()
-        layout = QVBoxLayout()
+        self.settings_page = SettingsPage()
 
-        label = QLabel("Settings & Configuration")
-        label.setStyleSheet(f"""
-            QLabel {{
-                font-size: 20px;
-                font-weight: bold;
-                color: {COLORS['text_primary']};
-                padding: 16px;
-            }}
-        """)
-        layout.addWidget(label)
+        # Connect settings page signals
+        self.settings_page.settings_changed.connect(self._on_settings_changed)
+        self.settings_page.test_connection_requested.connect(self._on_test_connection)
 
-        # Placeholder
-        info_label = QLabel("Settings interface coming soon...")
-        info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        info_label.setStyleSheet(f"""
-            QLabel {{
-                color: {COLORS['text_secondary']};
-                font-size: 14px;
-                padding: 32px;
-            }}
-        """)
-        layout.addWidget(info_label)
-
-        layout.addStretch()
-
-        widget.setLayout(layout)
-        return widget
+        return self.settings_page
 
     def _create_status_bar(self):
         """Create the status bar."""
@@ -638,6 +597,86 @@ class AlphaFlowMainWindow(QMainWindow):
             self.orders_grid.add_row(order_data)
 
     # Window events
+    def _on_trading_symbol_changed(self, symbol: str):
+        """Handle symbol changed in trading page."""
+        self.logger.info(f"Trading page symbol changed to: {symbol}")
+
+    def _on_trading_order_requested(self, order_params: dict):
+        """Handle order request from trading page."""
+        try:
+            # Place order via trading controller
+            if order_params['order_type'] == 'MARKET':
+                order = self.trading_controller.place_market_order(
+                    order_params['symbol'],
+                    order_params['side'],
+                    order_params['quantity']
+                )
+            else:  # LIMIT
+                order = self.trading_controller.place_limit_order(
+                    order_params['symbol'],
+                    order_params['side'],
+                    order_params['quantity'],
+                    order_params['limit_price']
+                )
+
+            if order:
+                self.statusBar().showMessage(
+                    f"Order placed: {order.side.value} {order.quantity} {order.symbol}",
+                    3000
+                )
+        except Exception as e:
+            self.logger.error(f"Error placing order: {e}")
+            QMessageBox.critical(self, "Order Error", str(e))
+
+    def _on_trading_data_refresh(self, symbol: str):
+        """Handle data refresh request from trading page."""
+        self.data_controller.fetch_symbol(symbol)
+
+    def _on_settings_changed(self, settings: dict):
+        """Handle settings changed."""
+        self.logger.info("Settings changed")
+
+        # Update trading mode if changed
+        mode_str = settings.get('trading_mode', 'PAPER')
+        new_mode = TradingMode[mode_str]
+        if new_mode != self.trading_mode:
+            self._set_trading_mode(new_mode)
+
+        # Update data controller settings
+        if settings.get('enable_streaming'):
+            self.data_controller.enable_realtime_streaming(True)
+        else:
+            self.data_controller.enable_realtime_streaming(False)
+
+        # Update refresh interval
+        refresh_interval = settings.get('refresh_interval', 60) * 1000  # Convert to ms
+        self.data_controller.stop_auto_refresh()
+        self.data_controller.start_auto_refresh(refresh_interval)
+
+    def _on_test_connection(self):
+        """Handle test connection request."""
+        # Simple test - try to fetch data for a known symbol
+        try:
+            data = self.data_controller.fetch_symbol('AAPL')
+            if data:
+                QMessageBox.information(
+                    self,
+                    "Connection Test",
+                    "✓ Successfully connected to data source!\n\nData fetched for AAPL."
+                )
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Connection Test",
+                    "⚠️ Could not fetch data.\n\nPlease check your API credentials."
+                )
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Connection Test",
+                f"✗ Connection failed!\n\nError: {str(e)}"
+            )
+
     def closeEvent(self, event):
         """Handle window close event."""
         # Save window geometry

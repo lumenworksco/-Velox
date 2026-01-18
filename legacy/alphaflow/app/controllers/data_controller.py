@@ -9,6 +9,7 @@ from core import (
     SimplifiedDataFetcher, AlpacaDataFetcher, AdvancedIndicators,
     ALPACA_AVAILABLE, YF_AVAILABLE
 )
+from .websocket_stream import WebSocketStreamManager
 
 
 class DataFetchWorker(QThread):
@@ -88,11 +89,13 @@ class DataController(QObject):
     batch_update_complete = pyqtSignal(dict)  # all_data
     error_occurred = pyqtSignal(str, str)  # symbol, error_message
     fetch_progress = pyqtSignal(int)  # progress percentage
+    realtime_quote_updated = pyqtSignal(str, dict)  # symbol, quote (real-time from WebSocket)
 
-    def __init__(self, use_alpaca: bool = True):
+    def __init__(self, use_alpaca: bool = True, enable_streaming: bool = False):
         super().__init__()
         self.logger = logging.getLogger(__name__)
         self.use_alpaca = use_alpaca and ALPACA_AVAILABLE
+        self.enable_streaming = enable_streaming
 
         # Data cache
         self.cache: Dict[str, dict] = {}
@@ -100,6 +103,14 @@ class DataController(QObject):
 
         # Workers
         self.fetch_worker: Optional[DataFetchWorker] = None
+
+        # WebSocket streaming
+        self.stream_manager: Optional[WebSocketStreamManager] = None
+        if self.enable_streaming and self.use_alpaca:
+            self.stream_manager = WebSocketStreamManager(use_paper=True)
+            self.stream_manager.quote_updated.connect(self._on_realtime_quote)
+            self.stream_manager.trade_updated.connect(self._on_realtime_trade)
+            self.stream_manager.error_occurred.connect(self._on_stream_error)
 
         # Auto-refresh timer
         self.refresh_timer = QTimer()
@@ -118,6 +129,10 @@ class DataController(QObject):
         """
         self.watchlist = symbols
         self.logger.info(f"Watchlist updated: {symbols}")
+
+        # Start streaming for watchlist if enabled
+        if self.stream_manager and self.enable_streaming:
+            self.stream_manager.start_stream(symbols)
 
     def fetch_symbols(self, symbols: List[str], callback: Optional[Callable] = None):
         """
@@ -237,6 +252,94 @@ class DataController(QObject):
         self.cache.clear()
         self.logger.info("Data cache cleared")
 
+    def _on_realtime_quote(self, symbol: str, quote_data: dict):
+        """
+        Handle real-time quote update from WebSocket.
+
+        Args:
+            symbol: Stock symbol
+            quote_data: Quote data dictionary
+        """
+        self.logger.debug(f"Real-time quote: {symbol} - Bid: {quote_data.get('bid')}, Ask: {quote_data.get('ask')}")
+
+        # Update cache with latest quote
+        if symbol in self.cache:
+            # Calculate mid-price
+            bid = quote_data.get('bid', 0)
+            ask = quote_data.get('ask', 0)
+            mid_price = (bid + ask) / 2 if bid > 0 and ask > 0 else 0
+
+            # Update cached quote
+            cached_data = self.cache[symbol]
+            if 'quote' in cached_data:
+                old_price = cached_data['quote'].get('price', 0)
+                change = mid_price - old_price if old_price > 0 else 0
+                change_pct = (change / old_price * 100) if old_price > 0 else 0
+
+                cached_data['quote'].update({
+                    'price': mid_price,
+                    'bid': bid,
+                    'ask': ask,
+                    'change': change,
+                    'change_percent': change_pct
+                })
+
+        # Emit real-time quote signal
+        self.realtime_quote_updated.emit(symbol, quote_data)
+
+    def _on_realtime_trade(self, symbol: str, trade_data: dict):
+        """
+        Handle real-time trade update from WebSocket.
+
+        Args:
+            symbol: Stock symbol
+            trade_data: Trade data dictionary
+        """
+        self.logger.debug(f"Real-time trade: {symbol} - Price: {trade_data.get('price')}, Size: {trade_data.get('size')}")
+
+        # Update cache with latest trade price
+        if symbol in self.cache:
+            cached_data = self.cache[symbol]
+            if 'quote' in cached_data:
+                price = trade_data.get('price', 0)
+                old_price = cached_data['quote'].get('price', 0)
+                change = price - old_price if old_price > 0 else 0
+                change_pct = (change / old_price * 100) if old_price > 0 else 0
+
+                cached_data['quote'].update({
+                    'price': price,
+                    'change': change,
+                    'change_percent': change_pct
+                })
+
+                # Emit update
+                self.data_updated.emit(symbol, cached_data)
+
+    def _on_stream_error(self, error: str):
+        """Handle streaming error."""
+        self.logger.error(f"Streaming error: {error}")
+        self.error_occurred.emit("STREAM", error)
+
+    def enable_realtime_streaming(self, enable: bool = True):
+        """
+        Enable or disable real-time WebSocket streaming.
+
+        Args:
+            enable: True to enable streaming, False to disable
+        """
+        self.enable_streaming = enable
+
+        if enable and not self.stream_manager:
+            self.stream_manager = WebSocketStreamManager(use_paper=True)
+            self.stream_manager.quote_updated.connect(self._on_realtime_quote)
+            self.stream_manager.trade_updated.connect(self._on_realtime_trade)
+            self.stream_manager.error_occurred.connect(self._on_stream_error)
+
+            if self.watchlist:
+                self.stream_manager.start_stream(self.watchlist)
+        elif not enable and self.stream_manager:
+            self.stream_manager.stop_stream()
+
     def cleanup(self):
         """Clean up resources."""
         self.stop_auto_refresh()
@@ -244,3 +347,6 @@ class DataController(QObject):
         if self.fetch_worker and self.fetch_worker.isRunning():
             self.fetch_worker.stop()
             self.fetch_worker.wait()
+
+        if self.stream_manager:
+            self.stream_manager.cleanup()
