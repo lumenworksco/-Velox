@@ -13,7 +13,7 @@ Your AlphaFlow platform is now **fully production-ready** with enterprise-grade 
 **File**: `backend/trade_history.py`
 
 **Features**:
-- JSON file-based trade database (`logs/trade_history.json`)
+- JSON file-based trade database (`trade_history.json`)
 - Comprehensive trade logging with all details
 - Performance analytics (win rate, P&L, profit factor)
 - Export to CSV for analysis
@@ -365,8 +365,8 @@ curl http://localhost:8000/api/trades/export/csv?filename=my_trades.csv
 - Profit factor (gross profit / gross loss)
 
 **Trade History Location**:
-- JSON Database: `logs/trade_history.json`
-- CSV Exports: `logs/*.csv`
+- JSON Database: `trade_history.json`
+- CSV Exports: `trade_history.json in root (runtime)*.csv`
 
 ---
 
@@ -434,7 +434,7 @@ notification_system.alert_strategy_started('test', ['AAPL'])
 
 **Logs Location**:
 - Backend logs: Console output
-- Trade history: `logs/trade_history.json`
+- Trade history: `trade_history.json`
 - System logs: Check terminal output
 
 **API Documentation**:

@@ -13,7 +13,7 @@ AlphaFlow/
 ├── backend/                 # FastAPI backend server (8 core modules + 9 API endpoints)
 ├── frontend/                # React + TypeScript UI (6 pages, 4 components)
 ├── core/                    # Core trading engine (9 essential modules ONLY)
-├── logs/                    # Application logs (gitignored, only .gitkeep tracked)
+├── trade_history.json in root (runtime)                    # Application logs (gitignored, only .gitkeep tracked)
 ├── .env.example             # Environment variables template
 ├── .gitignore               # Git ignore rules
 ├── requirements.txt         # Python dependencies (29 packages)
@@ -181,7 +181,7 @@ Total: 18 directories, 49 files (CLEANED - removed 20+ unused files)
 
 | File | Purpose |
 |------|---------|
-| `.gitkeep` | Ensures logs/ directory is tracked by git |
+| `.gitkeep` | Ensures trade_history.json in root (runtime) directory is tracked by git |
 | `trade_history.json` | **Trade database** - Every trade logged with full details |
 | `*.log` | Application logs (gitignored, not committed) |
 
@@ -286,14 +286,14 @@ npm run dev
 
 **NEVER commit**:
 - `.env` file (contains API keys)
-- `logs/*.log` files (temporary logs)
+- `` files (temporary logs)
 - `frontend/node_modules/` (dependencies)
 - `frontend/.vite/` (build cache)
 - `__pycache__/` (Python cache)
 
 **ALWAYS commit**:
 - `.env.example` (template for other developers)
-- `logs/.gitkeep` (ensures logs directory exists)
+- `trade_history.json in root (runtime).gitkeep` (ensures logs directory exists)
 - Source code changes
 - Documentation updates
 

@@ -65,7 +65,7 @@ trading_app_v6_20260119_*.log (42 files)
 
 **After**: Clean logs directory with just .gitkeep
 ```
-logs/
+trade_history.json in root (runtime)
 └── .gitkeep
 ```
 
@@ -101,7 +101,7 @@ logs/
 ### 5. Enhanced .gitignore
 
 **Added rules for**:
-- `logs/*.log` (while keeping `logs/.gitkeep`)
+- `` (while keeping `trade_history.json in root (runtime).gitkeep`)
 - `frontend/node_modules/`
 - `frontend/dist/`
 - `frontend/.vite/`
@@ -160,7 +160,7 @@ AlphaFlow/
 │   └── [Config files]           # package.json, vite.config.ts
 │
 ├── docs/                        # Additional documentation (7 files)
-├── logs/                        # Application logs
+├── trade_history.json in root (runtime)                        # Application logs
 │   ├── .gitkeep                 # Ensures directory is tracked
 │   └── trade_history.json       # Trade database
 │
@@ -184,11 +184,11 @@ AlphaFlow/
 - Configuration templates (.env.example)
 - Package files (requirements.txt, package.json)
 - .gitignore (properly configured)
-- Empty logs/ directory (with .gitkeep)
+- Empty trade_history.json in root (runtime) directory (with .gitkeep)
 
 **Never committed** (gitignored):
 - `.env` (contains API keys - CRITICAL!)
-- `logs/*.log` (temporary logs)
+- `` (temporary logs)
 - `frontend/node_modules/` (dependencies)
 - `frontend/.vite/` (build cache)
 - `__pycache__/` (Python cache)

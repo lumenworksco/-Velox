@@ -133,7 +133,7 @@ AlphaFlow/
 │   │   └── styles/              # 1 style file
 │   └── [Config files]           # 7 config files
 │
-├── logs/
+├── trade_history.json in root (runtime)
 │   └── .gitkeep                 # Only tracking marker
 │
 └── [Root]                       # 11 essential docs + 3 config files
@@ -202,13 +202,13 @@ All essential production guides - no duplicates.
 - [x] tests/ removed (was empty)
 - [x] scripts/ removed (only mock generator)
 - [x] docs/ removed (outdated)
-- [x] logs/ kept (with .gitkeep for git tracking)
+- [x] trade_history.json in root (runtime) kept (with .gitkeep for git tracking)
 
 ### ✅ Logical Structure
 - [x] backend/ - Production API server
 - [x] core/ - Essential trading logic
 - [x] frontend/ - React UI
-- [x] logs/ - Runtime logs (gitignored)
+- [x] trade_history.json in root (runtime) - Runtime logs (gitignored)
 - [x] Root - Documentation + config
 
 ---
@@ -268,7 +268,7 @@ All files render UI pages and components.
 
 ### ✅ Git Repository Ready
 - [x] .env gitignored
-- [x] logs/*.log gitignored
+- [x]  gitignored
 - [x] node_modules gitignored
 - [x] Build artifacts gitignored
 - [x] Only source code + docs committed

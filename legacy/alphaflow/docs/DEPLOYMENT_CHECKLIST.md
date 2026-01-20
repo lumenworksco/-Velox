@@ -326,7 +326,7 @@ If performance is good, consider:
 
 **Log Locations**:
 - Backend logs: Terminal/console output
-- Trade history: `logs/trade_history.json`
+- Trade history: `trade_history.json`
 - System diagnostics: `/api/system/diagnostics`
 
 **Common Issues**:

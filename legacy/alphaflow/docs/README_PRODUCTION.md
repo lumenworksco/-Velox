@@ -244,7 +244,7 @@ Every trade automatically logged with:
 
 **Access Trade History**:
 - API: `GET /api/trades/history`
-- File: `logs/trade_history.json`
+- File: `trade_history.json`
 - Export: `GET /api/trades/export/csv`
 
 ### Performance Metrics
@@ -363,7 +363,7 @@ Automatically calculated:
 
 **Logs**:
 - Backend: Console output
-- Trade History: `logs/trade_history.json`
+- Trade History: `trade_history.json`
 - Diagnostics: `GET /api/system/diagnostics`
 
 **Resources**:
@@ -500,4 +500,4 @@ Your AlphaFlow platform is now **production-ready** with institutional-grade fea
 **Version**: 7.0.0 - Production Release
 **Status**: ✅ LIVE TRADING READY
 
-For questions or issues, review logs at `logs/trade_history.json` and system diagnostics at `/api/system/diagnostics`.
+For questions or issues, review logs at `trade_history.json` and system diagnostics at `/api/system/diagnostics`.
