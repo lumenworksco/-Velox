@@ -135,7 +135,7 @@ async def get_performance_metrics():
                 orders = alpaca_api.list_orders(
                     status='closed',
                     limit=500,
-                    after=start_date.isoformat()
+                    after=start_date.strftime('%Y-%m-%dT%H:%M:%SZ')
                 )
 
                 # Filter for filled orders only
