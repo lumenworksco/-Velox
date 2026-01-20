@@ -184,8 +184,9 @@ class BacktestEngine:
                     position_size = int(max_position_value / current_price)
                     
                     if position_size > 0:
-                        cost = position_size * current_price + commission
-                        
+                        comm_cost = commission if commission is not None else 0
+                        cost = position_size * current_price + comm_cost
+
                         if cost <= capital:
                             position = {
                                 'symbol': symbol,
@@ -201,9 +202,10 @@ class BacktestEngine:
                 # Execute sell signals
                 elif (best_signal.action in [SignalAction.SELL, SignalAction.STRONG_SELL]
                       and position is not None):
-                    
+
                     exit_price = current_price
-                    proceeds = position['quantity'] * exit_price - commission
+                    comm_cost = commission if commission is not None else 0
+                    proceeds = position['quantity'] * exit_price - comm_cost
                     pnl = proceeds - (position['quantity'] * position['entry_price'])
                     capital += proceeds
                     
@@ -230,7 +232,8 @@ class BacktestEngine:
                     exit_price = position['take_profit']
                 
                 if exit_triggered:
-                    proceeds = position['quantity'] * exit_price - commission
+                    comm_cost = commission if commission is not None else 0
+                    proceeds = position['quantity'] * exit_price - comm_cost
                     pnl = proceeds - (position['quantity'] * position['entry_price'])
                     capital += proceeds
                     
@@ -244,8 +247,9 @@ class BacktestEngine:
         if position:
             final_price = data_with_indicators.iloc[-1]['close']
             final_date = data_with_indicators.index[-1]
-            
-            proceeds = position['quantity'] * final_price - commission
+
+            comm_cost = commission if commission is not None else 0
+            proceeds = position['quantity'] * final_price - comm_cost
             pnl = proceeds - (position['quantity'] * position['entry_price'])
             capital += proceeds
             

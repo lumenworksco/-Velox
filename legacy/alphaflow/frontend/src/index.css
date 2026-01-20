@@ -2,15 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global styles */
+/*
+ * Professional Financial Terminal Theme
+ * Inspired by Bloomberg Terminal and Saxo Bank Trader
+ */
+
 :root {
+  /* Color palette - Deep navy financial terminal theme */
+  --bg-primary: #0a0e27;
+  --bg-secondary: #0f1629;
+  --bg-tertiary: #1a1f3a;
+  --bg-overlay: rgba(10, 14, 39, 0.95);
+
+  --border-primary: #1e2442;
+  --border-secondary: #2a3150;
+  --border-accent: #3d4463;
+
+  --text-primary: #e5e7eb;
+  --text-secondary: #9ca3af;
+  --text-tertiary: #6b7280;
+
+  --accent-primary: #ff8c00;    /* Bloomberg orange */
+  --accent-secondary: #ffa500;
+  --accent-hover: #ff9500;
+
+  --positive: #10b981;
+  --negative: #ef4444;
+
+  /* Typography */
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
-  line-height: 1.6;
+  line-height: 1.5;
   font-weight: 400;
 
   color-scheme: dark;
-  color: #E0E3EB;
-  background-color: #0A0E27;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -24,48 +50,77 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
-  height: 100%;
-  width: 100%;
+html, body {
+  height: 100vh;
+  width: 100vw;
   margin: 0;
   padding: 0;
   overflow: hidden;
+  background: var(--bg-primary);
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  background: var(--bg-primary);
 }
 
 body {
   min-width: 1280px;
 }
 
-/* Custom scrollbar */
+/* Professional scrollbar - Bloomberg style */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #131722;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-primary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2A2E39;
-  border-radius: 4px;
+  background: var(--border-accent);
+  border-radius: 2px;
+  border: 2px solid var(--bg-secondary);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2962FF;
+  background: var(--accent-primary);
 }
 
-/* Number formatting */
+::-webkit-scrollbar-corner {
+  background: var(--bg-secondary);
+}
+
+/* Number formatting - Tabular nums for financial data */
 .tabular-nums {
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums slashed-zero;
+  font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', 'Roboto Mono', monospace;
+  letter-spacing: -0.02em;
+}
+
+/* Financial data styling */
+.financial-positive {
+  color: var(--positive);
+}
+
+.financial-negative {
+  color: var(--negative);
+}
+
+/* Monospace for symbols and codes */
+.mono {
   font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -74,7 +129,22 @@ body {
 }
 
 .fade-in {
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
 }
 
 @keyframes pulse {
@@ -82,7 +152,7 @@ body {
     opacity: 1;
   }
   50% {
-    opacity: 0.5;
+    opacity: 0.6;
   }
 }
 
@@ -90,21 +160,80 @@ body {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Price flash animation */
-@keyframes flash-green {
-  0% { background-color: rgba(38, 166, 154, 0.3); }
-  100% { background-color: transparent; }
+/* Price flash animations - Financial terminal style */
+@keyframes flash-up {
+  0% {
+    background-color: rgba(16, 185, 129, 0.25);
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.4);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
 }
 
-@keyframes flash-red {
-  0% { background-color: rgba(239, 83, 80, 0.3); }
-  100% { background-color: transparent; }
+@keyframes flash-down {
+  0% {
+    background-color: rgba(239, 68, 68, 0.25);
+    box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.4);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
 }
 
-.flash-green {
-  animation: flash-green 0.5s ease-out;
+.flash-up {
+  animation: flash-up 0.6s ease-out;
 }
 
-.flash-red {
-  animation: flash-red 0.5s ease-out;
+.flash-down {
+  animation: flash-down 0.6s ease-out;
+}
+
+/* Glow effect for active elements */
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(255, 140, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(255, 140, 0, 0.5);
+  }
+}
+
+.glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Loading shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 0%,
+    var(--bg-tertiary) 50%,
+    var(--bg-secondary) 100%
+  );
+  background-size: 1000px 100%;
+}
+
+/* Focus visible for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* Selection color */
+::selection {
+  background: rgba(255, 140, 0, 0.3);
+  color: var(--text-primary);
 }

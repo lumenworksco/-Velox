@@ -21,7 +21,6 @@ export default function OrderEntry({ symbol, currentPrice }: OrderEntryProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] })
       queryClient.invalidateQueries({ queryKey: ['positions'] })
-      // Reset form
       setQuantity('10')
     },
   })
@@ -43,63 +42,119 @@ export default function OrderEntry({ symbol, currentPrice }: OrderEntryProps) {
     : '0.00'
 
   return (
-    <div className="bg-primary-surface rounded-lg border border-primary-border p-6">
-      <h3 className="text-lg font-semibold text-text-primary mb-4">Place Order</h3>
+    <div style={{ backgroundColor: '#0d1117', borderRadius: '6px', border: '1px solid #30363d', padding: '24px' }}>
+      <div style={{ borderBottom: '1px solid #30363d', paddingBottom: '12px', marginBottom: '16px' }}>
+        <h3 style={{ fontSize: '12px', fontWeight: 700, color: '#c9d1d9', letterSpacing: '0.03em', margin: 0 }}>PLACE ORDER</h3>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {/* Side Selection */}
-        <div className="grid grid-cols-2 gap-2">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
           <button
             type="button"
             onClick={() => setSide('buy')}
-            className={`py-3 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 ${
-              side === 'buy'
-                ? 'bg-semantic-positive text-white'
-                : 'bg-primary-elevated text-text-secondary hover:bg-primary-hover'
-            }`}
+            style={{
+              padding: '12px',
+              borderRadius: '6px',
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              backgroundColor: side === 'buy' ? '#3fb950' : '#161b22',
+              color: side === 'buy' ? '#ffffff' : '#8b949e',
+              transition: 'all 0.1s'
+            }}
+            onMouseEnter={(e) => {
+              if (side !== 'buy') e.currentTarget.style.backgroundColor = '#21262d'
+            }}
+            onMouseLeave={(e) => {
+              if (side !== 'buy') e.currentTarget.style.backgroundColor = '#161b22'
+            }}
           >
-            <TrendingUp className="w-5 h-5" />
+            <TrendingUp style={{ width: '18px', height: '18px' }} />
             <span>BUY</span>
           </button>
           <button
             type="button"
             onClick={() => setSide('sell')}
-            className={`py-3 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 ${
-              side === 'sell'
-                ? 'bg-semantic-negative text-white'
-                : 'bg-primary-elevated text-text-secondary hover:bg-primary-hover'
-            }`}
+            style={{
+              padding: '12px',
+              borderRadius: '6px',
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              backgroundColor: side === 'sell' ? '#f85149' : '#161b22',
+              color: side === 'sell' ? '#ffffff' : '#8b949e',
+              transition: 'all 0.1s'
+            }}
+            onMouseEnter={(e) => {
+              if (side !== 'sell') e.currentTarget.style.backgroundColor = '#21262d'
+            }}
+            onMouseLeave={(e) => {
+              if (side !== 'sell') e.currentTarget.style.backgroundColor = '#161b22'
+            }}
           >
-            <TrendingDown className="w-5 h-5" />
+            <TrendingDown style={{ width: '18px', height: '18px' }} />
             <span>SELL</span>
           </button>
         </div>
 
         {/* Order Type */}
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">
-            Order Type
+          <label style={{ display: 'block', fontSize: '11px', fontFamily: 'monospace', color: '#8b949e', marginBottom: '8px', letterSpacing: '0.05em' }}>
+            ORDER TYPE
           </label>
-          <div className="grid grid-cols-2 gap-2">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <button
               type="button"
               onClick={() => setOrderType('market')}
-              className={`py-2 rounded-lg text-sm font-medium transition-colors ${
-                orderType === 'market'
-                  ? 'bg-accent-blue text-white'
-                  : 'bg-primary-elevated text-text-secondary hover:bg-primary-hover'
-              }`}
+              style={{
+                padding: '8px',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: 500,
+                border: 'none',
+                cursor: 'pointer',
+                backgroundColor: orderType === 'market' ? '#58a6ff' : '#161b22',
+                color: orderType === 'market' ? '#ffffff' : '#8b949e',
+                transition: 'all 0.1s'
+              }}
+              onMouseEnter={(e) => {
+                if (orderType !== 'market') e.currentTarget.style.backgroundColor = '#21262d'
+              }}
+              onMouseLeave={(e) => {
+                if (orderType !== 'market') e.currentTarget.style.backgroundColor = '#161b22'
+              }}
             >
               Market
             </button>
             <button
               type="button"
               onClick={() => setOrderType('limit')}
-              className={`py-2 rounded-lg text-sm font-medium transition-colors ${
-                orderType === 'limit'
-                  ? 'bg-accent-blue text-white'
-                  : 'bg-primary-elevated text-text-secondary hover:bg-primary-hover'
-              }`}
+              style={{
+                padding: '8px',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: 500,
+                border: 'none',
+                cursor: 'pointer',
+                backgroundColor: orderType === 'limit' ? '#58a6ff' : '#161b22',
+                color: orderType === 'limit' ? '#ffffff' : '#8b949e',
+                transition: 'all 0.1s'
+              }}
+              onMouseEnter={(e) => {
+                if (orderType !== 'limit') e.currentTarget.style.backgroundColor = '#21262d'
+              }}
+              onMouseLeave={(e) => {
+                if (orderType !== 'limit') e.currentTarget.style.backgroundColor = '#161b22'
+              }}
             >
               Limit
             </button>
@@ -108,16 +163,26 @@ export default function OrderEntry({ symbol, currentPrice }: OrderEntryProps) {
 
         {/* Quantity */}
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">
-            Quantity
+          <label style={{ display: 'block', fontSize: '11px', fontFamily: 'monospace', color: '#8b949e', marginBottom: '8px', letterSpacing: '0.05em' }}>
+            QUANTITY
           </label>
-          <div className="relative">
-            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
+          <div style={{ position: 'relative' }}>
+            <Hash style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '18px', height: '18px', color: '#8b949e' }} />
             <input
               type="number"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              className="w-full bg-primary-elevated border border-primary-border rounded-lg py-3 pl-10 pr-4 text-text-primary focus:outline-none focus:border-accent-blue"
+              style={{
+                width: '100%',
+                backgroundColor: '#161b22',
+                border: '1px solid #30363d',
+                borderRadius: '6px',
+                padding: '10px 16px 10px 38px',
+                color: '#c9d1d9',
+                fontSize: '14px',
+                outline: 'none',
+                fontFamily: 'monospace'
+              }}
               placeholder="10"
               min="1"
               required
@@ -125,19 +190,29 @@ export default function OrderEntry({ symbol, currentPrice }: OrderEntryProps) {
           </div>
         </div>
 
-        {/* Limit Price (if limit order) */}
+        {/* Limit Price */}
         {orderType === 'limit' && (
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">
-              Limit Price
+            <label style={{ display: 'block', fontSize: '11px', fontFamily: 'monospace', color: '#8b949e', marginBottom: '8px', letterSpacing: '0.05em' }}>
+              LIMIT PRICE
             </label>
-            <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
+            <div style={{ position: 'relative' }}>
+              <DollarSign style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '18px', height: '18px', color: '#8b949e' }} />
               <input
                 type="number"
                 value={limitPrice}
                 onChange={(e) => setLimitPrice(e.target.value)}
-                className="w-full bg-primary-elevated border border-primary-border rounded-lg py-3 pl-10 pr-4 text-text-primary focus:outline-none focus:border-accent-blue"
+                style={{
+                  width: '100%',
+                  backgroundColor: '#161b22',
+                  border: '1px solid #30363d',
+                  borderRadius: '6px',
+                  padding: '10px 16px 10px 38px',
+                  color: '#c9d1d9',
+                  fontSize: '14px',
+                  outline: 'none',
+                  fontFamily: 'monospace'
+                }}
                 placeholder={currentPrice?.toFixed(2)}
                 step="0.01"
                 required
@@ -147,19 +222,19 @@ export default function OrderEntry({ symbol, currentPrice }: OrderEntryProps) {
         )}
 
         {/* Order Summary */}
-        <div className="bg-primary-elevated rounded-lg p-4 space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-text-secondary">Current Price</span>
-            <span className="text-text-primary font-mono">${currentPrice?.toFixed(2) || '—'}</span>
+        <div style={{ backgroundColor: '#161b22', borderRadius: '6px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+            <span style={{ color: '#8b949e' }}>Current Price</span>
+            <span style={{ color: '#c9d1d9', fontFamily: 'monospace' }}>${currentPrice?.toFixed(2) || '—'}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-text-secondary">Quantity</span>
-            <span className="text-text-primary font-mono">{quantity}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+            <span style={{ color: '#8b949e' }}>Quantity</span>
+            <span style={{ color: '#c9d1d9', fontFamily: 'monospace' }}>{quantity}</span>
           </div>
-          <div className="h-px bg-primary-border my-2" />
-          <div className="flex justify-between">
-            <span className="text-text-primary font-medium">Estimated {side === 'buy' ? 'Cost' : 'Proceeds'}</span>
-            <span className="text-text-primary font-bold font-mono">${estimatedCost}</span>
+          <div style={{ height: '1px', backgroundColor: '#30363d', margin: '8px 0' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: '#c9d1d9', fontWeight: 500 }}>Estimated {side === 'buy' ? 'Cost' : 'Proceeds'}</span>
+            <span style={{ color: '#c9d1d9', fontWeight: 700, fontFamily: 'monospace' }}>${estimatedCost}</span>
           </div>
         </div>
 
@@ -167,25 +242,34 @@ export default function OrderEntry({ symbol, currentPrice }: OrderEntryProps) {
         <button
           type="submit"
           disabled={placeOrderMutation.isPending}
-          className={`w-full py-4 rounded-lg font-bold text-white transition-all ${
-            side === 'buy'
-              ? 'bg-semantic-positive hover:bg-semantic-positive/90'
-              : 'bg-semantic-negative hover:bg-semantic-negative/90'
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
+          style={{
+            width: '100%',
+            padding: '14px',
+            borderRadius: '6px',
+            fontWeight: 700,
+            fontSize: '14px',
+            border: 'none',
+            cursor: placeOrderMutation.isPending ? 'not-allowed' : 'pointer',
+            backgroundColor: side === 'buy' ? '#3fb950' : '#f85149',
+            color: '#ffffff',
+            opacity: placeOrderMutation.isPending ? 0.5 : 1,
+            transition: 'all 0.1s',
+            letterSpacing: '0.03em'
+          }}
         >
-          {placeOrderMutation.isPending ? 'Placing Order...' : `${side.toUpperCase()} ${symbol}`}
+          {placeOrderMutation.isPending ? 'PLACING ORDER...' : `${side.toUpperCase()} ${symbol}`}
         </button>
 
         {/* Error Message */}
         {placeOrderMutation.isError && (
-          <div className="bg-semantic-negative/10 border border-semantic-negative/30 rounded-lg p-3 text-semantic-negative text-sm">
+          <div style={{ backgroundColor: 'rgba(248, 81, 73, 0.1)', border: '1px solid rgba(248, 81, 73, 0.3)', borderRadius: '6px', padding: '12px', color: '#f85149', fontSize: '13px' }}>
             Failed to place order. Please try again.
           </div>
         )}
 
         {/* Success Message */}
         {placeOrderMutation.isSuccess && (
-          <div className="bg-semantic-positive/10 border border-semantic-positive/30 rounded-lg p-3 text-semantic-positive text-sm">
+          <div style={{ backgroundColor: 'rgba(63, 185, 80, 0.1)', border: '1px solid rgba(63, 185, 80, 0.3)', borderRadius: '6px', padding: '12px', color: '#3fb950', fontSize: '13px' }}>
             Order placed successfully!
           </div>
         )}

@@ -1,11 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import EquityChart from '../components/EquityChart'
 import WatchlistTable from '../components/WatchlistTable'
-import { getPortfolioSummary, getEquityHistory } from '../api/portfolio'
+import { getPortfolioSummary, getEquityHistory, getPerformanceMetrics } from '../api/portfolio'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 
 export default function Dashboard() {
-  const { data: portfolio } = useQuery({
+  const [watchlistSymbols, setWatchlistSymbols] = useState(['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'NVDA', 'AMZN', 'META', 'NFLX'])
+
+  const { data: portfolio, isLoading: portfolioLoading } = useQuery({
     queryKey: ['portfolio'],
     queryFn: getPortfolioSummary,
     refetchInterval: 5000,
@@ -16,142 +19,218 @@ export default function Dashboard() {
     queryFn: () => getEquityHistory(30),
   })
 
-  const dayPnlPositive = (portfolio?.day_pnl || 0) >= 0
-  const totalPnlPositive = (portfolio?.total_pnl || 0) >= 0
+  const { data: performance } = useQuery({
+    queryKey: ['performance-metrics'],
+    queryFn: getPerformanceMetrics,
+    refetchInterval: 30000, // Refresh every 30 seconds
+  })
+
+  const dayPnlPositive = (portfolio?.day_pnl ?? 0) >= 0
+  const totalPnlPositive = (portfolio?.total_pnl ?? 0) >= 0
+
+  // Calculate equity curve statistics
+  const equityStats = equityHistory ? {
+    high: Math.max(...equityHistory.map(d => d.equity)),
+    low: Math.min(...equityHistory.map(d => d.equity)),
+    avg: equityHistory.reduce((sum, d) => sum + d.equity, 0) / equityHistory.length
+  } : null
 
   return (
-    <div className="h-full flex flex-col bg-[#0A0E27]">
-      {/* Top Metrics Bar - Bloomberg Style */}
-      <div className="bg-[#000000] border-b border-[#1a1a1a] px-4 py-2">
-        <div className="grid grid-cols-4 gap-6">
+    <div style={{
+      height: '100%',
+      width: '100%',
+      display: 'grid',
+      gridTemplateRows: 'auto 1fr',
+      backgroundColor: '#0d1117',
+      overflow: 'hidden'
+    }}>
+      {/* Top Metrics Bar */}
+      <div style={{
+        backgroundColor: '#161b22',
+        borderBottom: '1px solid #30363d',
+        padding: '12px 24px'
+      }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '32px'
+        }}>
           {/* Portfolio Value */}
-          <div className="flex items-baseline space-x-3">
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
             <div>
-              <div className="text-[10px] font-mono text-[#666] tracking-wider mb-0.5">PORTFOLIO VALUE</div>
-              <div className="text-[22px] font-bold text-white tabular-nums tracking-tight">
-                ${(portfolio?.total_value || 105000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <div style={{ fontSize: '10px', fontFamily: 'monospace', color: '#8b949e', letterSpacing: '0.05em', marginBottom: '2px' }}>PORTFOLIO VALUE</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: '#c9d1d9', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em' }}>
+                {portfolioLoading ? '—' : `$${(portfolio?.total_value ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               </div>
             </div>
-            <div className={`flex items-center text-[13px] font-semibold ${totalPnlPositive ? 'text-[#00D25B]' : 'text-[#FF4C4C]'}`}>
-              {totalPnlPositive ? <TrendingUp className="w-3.5 h-3.5 mr-1" /> : <TrendingDown className="w-3.5 h-3.5 mr-1" />}
-              {totalPnlPositive ? '+' : ''}{((portfolio?.total_pnl_percent || 5.0)).toFixed(2)}%
-            </div>
+            {!portfolioLoading && portfolio && (
+              <div style={{ display: 'flex', alignItems: 'center', fontSize: '13px', fontWeight: 600, color: totalPnlPositive ? '#3fb950' : '#f85149' }}>
+                {totalPnlPositive ? <TrendingUp style={{ width: '14px', height: '14px', marginRight: '4px' }} /> : <TrendingDown style={{ width: '14px', height: '14px', marginRight: '4px' }} />}
+                {totalPnlPositive ? '+' : ''}{(portfolio.total_pnl_percent).toFixed(2)}%
+              </div>
+            )}
           </div>
 
           {/* Day P&L */}
-          <div className="flex items-baseline space-x-3">
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
             <div>
-              <div className="text-[10px] font-mono text-[#666] tracking-wider mb-0.5">DAY P&L</div>
-              <div className={`text-[22px] font-bold tabular-nums tracking-tight ${dayPnlPositive ? 'text-[#00D25B]' : 'text-[#FF4C4C]'}`}>
-                {dayPnlPositive ? '+' : ''}${Math.abs(portfolio?.day_pnl || 1250).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <div style={{ fontSize: '10px', fontFamily: 'monospace', color: '#8b949e', letterSpacing: '0.05em', marginBottom: '2px' }}>DAY P&L</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em', color: portfolioLoading ? '#8b949e' : (dayPnlPositive ? '#3fb950' : '#f85149') }}>
+                {portfolioLoading ? '—' : `${dayPnlPositive ? '+' : ''}$${Math.abs(portfolio?.day_pnl ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               </div>
             </div>
-            <div className={`flex items-center text-[13px] font-semibold ${dayPnlPositive ? 'text-[#00D25B]' : 'text-[#FF4C4C]'}`}>
-              {dayPnlPositive ? <TrendingUp className="w-3.5 h-3.5 mr-1" /> : <TrendingDown className="w-3.5 h-3.5 mr-1" />}
-              {dayPnlPositive ? '+' : ''}{((portfolio?.day_pnl_percent || 1.2)).toFixed(2)}%
-            </div>
+            {!portfolioLoading && portfolio && (
+              <div style={{ display: 'flex', alignItems: 'center', fontSize: '13px', fontWeight: 600, color: dayPnlPositive ? '#3fb950' : '#f85149' }}>
+                {dayPnlPositive ? <TrendingUp style={{ width: '14px', height: '14px', marginRight: '4px' }} /> : <TrendingDown style={{ width: '14px', height: '14px', marginRight: '4px' }} />}
+                {dayPnlPositive ? '+' : ''}{(portfolio.day_pnl_percent).toFixed(2)}%
+              </div>
+            )}
           </div>
 
           {/* Total P&L */}
-          <div className="flex items-baseline space-x-3">
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
             <div>
-              <div className="text-[10px] font-mono text-[#666] tracking-wider mb-0.5">TOTAL P&L</div>
-              <div className={`text-[22px] font-bold tabular-nums tracking-tight ${totalPnlPositive ? 'text-[#00D25B]' : 'text-[#FF4C4C]'}`}>
-                {totalPnlPositive ? '+' : ''}${Math.abs(portfolio?.total_pnl || 5000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <div style={{ fontSize: '10px', fontFamily: 'monospace', color: '#8b949e', letterSpacing: '0.05em', marginBottom: '2px' }}>TOTAL P&L</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em', color: portfolioLoading ? '#8b949e' : (totalPnlPositive ? '#3fb950' : '#f85149') }}>
+                {portfolioLoading ? '—' : `${totalPnlPositive ? '+' : ''}$${Math.abs(portfolio?.total_pnl ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               </div>
             </div>
           </div>
 
           {/* Buying Power */}
           <div>
-            <div className="text-[10px] font-mono text-[#666] tracking-wider mb-0.5">BUYING POWER</div>
-            <div className="text-[22px] font-bold text-white tabular-nums tracking-tight">
-              ${(portfolio?.buying_power || 200000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <div style={{ fontSize: '10px', fontFamily: 'monospace', color: '#8b949e', letterSpacing: '0.05em', marginBottom: '2px' }}>BUYING POWER</div>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: '#c9d1d9', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em' }}>
+              {portfolioLoading ? '—' : `$${(portfolio?.buying_power ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content Grid */}
-      <div className="flex-1 grid grid-cols-3 gap-px bg-[#1a1a1a] overflow-auto">
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '2fr 1fr',
+        gridTemplateRows: 'minmax(400px, 1fr) minmax(0, 350px)',
+        gap: '1px',
+        backgroundColor: '#30363d',
+        overflow: 'hidden'
+      }}>
         {/* Left Panel - Equity Curve */}
-        <div className="col-span-2 bg-[#131722] flex flex-col">
-          <div className="border-b border-[#1a1a1a] px-4 py-2 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <h2 className="text-[12px] font-bold text-white tracking-wide">EQUITY CURVE</h2>
-              <span className="text-[10px] font-mono text-[#666]">30D</span>
+        <div style={{
+          gridColumn: '1',
+          gridRow: '1',
+          backgroundColor: '#0d1117',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0
+        }}>
+          <div style={{
+            borderBottom: '1px solid #30363d',
+            padding: '8px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <h2 style={{ fontSize: '12px', fontWeight: 700, color: '#c9d1d9', letterSpacing: '0.03em', margin: 0 }}>EQUITY CURVE</h2>
+              <span style={{ fontSize: '10px', fontFamily: 'monospace', color: '#8b949e' }}>30D</span>
             </div>
-            <div className="flex items-center space-x-4 text-[11px] font-mono">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '11px', fontFamily: 'monospace' }}>
               <div>
-                <span className="text-[#666]">HIGH</span>
-                <span className="text-[#00D25B] ml-2 font-semibold">$107,245</span>
+                <span style={{ color: '#8b949e' }}>HIGH</span>
+                <span style={{ color: '#3fb950', marginLeft: '8px', fontWeight: 600 }}>
+                  {equityStats ? `$${equityStats.high.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                </span>
               </div>
               <div>
-                <span className="text-[#666]">LOW</span>
-                <span className="text-[#FF4C4C] ml-2 font-semibold">$98,120</span>
+                <span style={{ color: '#8b949e' }}>LOW</span>
+                <span style={{ color: '#f85149', marginLeft: '8px', fontWeight: 600 }}>
+                  {equityStats ? `$${equityStats.low.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                </span>
               </div>
               <div>
-                <span className="text-[#666]">AVG</span>
-                <span className="text-white ml-2 font-semibold">$102,480</span>
+                <span style={{ color: '#8b949e' }}>AVG</span>
+                <span style={{ color: '#c9d1d9', marginLeft: '8px', fontWeight: 600 }}>
+                  {equityStats ? `$${equityStats.avg.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                </span>
               </div>
             </div>
           </div>
-          <div className="flex-1 p-4">
+          <div style={{ flex: 1, padding: '16px', minHeight: 0 }}>
             <EquityChart data={equityHistory || []} />
           </div>
         </div>
 
-        {/* Right Panel - Quick Stats */}
-        <div className="bg-[#131722] flex flex-col">
-          <div className="border-b border-[#1a1a1a] px-4 py-2">
-            <h2 className="text-[12px] font-bold text-white tracking-wide">PERFORMANCE</h2>
+        {/* Right Panel - Performance Stats */}
+        <div style={{
+          gridColumn: '2',
+          gridRow: '1',
+          backgroundColor: '#0d1117',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0
+        }}>
+          <div style={{
+            borderBottom: '1px solid #30363d',
+            padding: '8px 16px'
+          }}>
+            <h2 style={{ fontSize: '12px', fontWeight: 700, color: '#c9d1d9', letterSpacing: '0.03em', margin: 0 }}>PERFORMANCE</h2>
           </div>
-          <div className="flex-1 overflow-auto">
-            <div className="p-4 space-y-3">
-              {/* Metric Row */}
-              <div className="flex justify-between items-center pb-2 border-b border-[#1a1a1a]">
-                <span className="text-[11px] font-mono text-[#888]">SHARPE RATIO</span>
-                <span className="text-[13px] font-bold text-white tabular-nums">1.84</span>
-              </div>
-              <div className="flex justify-between items-center pb-2 border-b border-[#1a1a1a]">
-                <span className="text-[11px] font-mono text-[#888]">MAX DRAWDOWN</span>
-                <span className="text-[13px] font-bold text-[#FF4C4C] tabular-nums">-8.42%</span>
-              </div>
-              <div className="flex justify-between items-center pb-2 border-b border-[#1a1a1a]">
-                <span className="text-[11px] font-mono text-[#888]">WIN RATE</span>
-                <span className="text-[13px] font-bold text-[#00D25B] tabular-nums">67.3%</span>
-              </div>
-              <div className="flex justify-between items-center pb-2 border-b border-[#1a1a1a]">
-                <span className="text-[11px] font-mono text-[#888]">PROFIT FACTOR</span>
-                <span className="text-[13px] font-bold text-white tabular-nums">2.14</span>
-              </div>
-              <div className="flex justify-between items-center pb-2 border-b border-[#1a1a1a]">
-                <span className="text-[11px] font-mono text-[#888]">TOTAL TRADES</span>
-                <span className="text-[13px] font-bold text-white tabular-nums">142</span>
-              </div>
-              <div className="flex justify-between items-center pb-2 border-b border-[#1a1a1a]">
-                <span className="text-[11px] font-mono text-[#888]">AVG TRADE</span>
-                <span className="text-[13px] font-bold text-[#00D25B] tabular-nums">+$35.21</span>
-              </div>
-              <div className="flex justify-between items-center pb-2 border-[#1a1a1a]">
-                <span className="text-[11px] font-mono text-[#888]">BEST TRADE</span>
-                <span className="text-[13px] font-bold text-[#00D25B] tabular-nums">+$428.50</span>
-              </div>
-              <div className="flex justify-between items-center pb-2">
-                <span className="text-[11px] font-mono text-[#888]">WORST TRADE</span>
-                <span className="text-[13px] font-bold text-[#FF4C4C] tabular-nums">-$192.30</span>
-              </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {performance ? (
+                performance.total_trades === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '32px 0', color: '#8b949e', fontSize: '11px', fontFamily: 'monospace' }}>
+                    NO TRADING ACTIVITY
+                    <div style={{ marginTop: '8px', fontSize: '10px' }}>
+                      Execute trades to see performance metrics
+                    </div>
+                  </div>
+                ) : [
+                  { label: 'SHARPE RATIO', value: performance.sharpe_ratio !== 0 ? performance.sharpe_ratio.toFixed(2) : 'N/A', color: '#c9d1d9' },
+                  { label: 'MAX DRAWDOWN', value: performance.max_drawdown !== 0 ? `-${performance.max_drawdown.toFixed(2)}%` : 'N/A', color: '#f85149' },
+                  { label: 'WIN RATE', value: performance.win_rate !== 0 ? `${performance.win_rate.toFixed(1)}%` : 'N/A', color: performance.win_rate >= 50 ? '#3fb950' : '#8b949e' },
+                  { label: 'PROFIT FACTOR', value: performance.profit_factor !== 0 ? performance.profit_factor.toFixed(2) : 'N/A', color: '#c9d1d9' },
+                  { label: 'TOTAL TRADES', value: performance.total_trades.toString(), color: '#c9d1d9' },
+                  { label: 'AVG WIN', value: performance.avg_win !== 0 ? `+$${performance.avg_win.toFixed(2)}` : 'N/A', color: '#3fb950' },
+                  { label: 'AVG LOSS', value: performance.avg_loss !== 0 ? `-$${performance.avg_loss.toFixed(2)}` : 'N/A', color: '#f85149' },
+                ].map((stat, idx) => (
+                  <div key={stat.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '8px', borderBottom: idx < 6 ? '1px solid #30363d' : 'none' }}>
+                    <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#8b949e' }}>{stat.label}</span>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: stat.color, fontVariantNumeric: 'tabular-nums' }}>{stat.value}</span>
+                  </div>
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', padding: '32px 0', color: '#8b949e', fontSize: '11px' }}>
+                  LOADING METRICS...
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Bottom Panel - Watchlist */}
-        <div className="col-span-3 bg-[#131722] flex flex-col max-h-[400px]">
-          <div className="border-b border-[#1a1a1a] px-4 py-2">
-            <h2 className="text-[12px] font-bold text-white tracking-wide">WATCHLIST</h2>
+        <div style={{
+          gridColumn: '1 / -1',
+          gridRow: '2',
+          backgroundColor: '#0d1117',
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: '400px',
+          minHeight: 0
+        }}>
+          <div style={{
+            borderBottom: '1px solid #30363d',
+            padding: '8px 16px'
+          }}>
+            <h2 style={{ fontSize: '12px', fontWeight: 700, color: '#c9d1d9', letterSpacing: '0.03em', margin: 0 }}>WATCHLIST</h2>
           </div>
-          <div className="flex-1 overflow-auto">
-            <WatchlistTable symbols={['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'NVDA', 'AMZN', 'META', 'NFLX']} />
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            <WatchlistTable
+              symbols={watchlistSymbols}
+              onSymbolsChange={setWatchlistSymbols}
+            />
           </div>
         </div>
       </div>

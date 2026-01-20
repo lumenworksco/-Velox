@@ -38,15 +38,24 @@ env/
 # Logs
 *.log
 trading_bot*.log
-logs/
+logs/*.log
+!logs/.gitkeep
 *.log.*
 
 # Trading data and reports
 performance_report_*.txt
 backtest_results_*.txt
+backtest_performance_results.json
 trades_*.csv
 results/
 !results/.gitkeep
+
+# Frontend build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+frontend/.turbo/
 
 # API Keys and Credentials (IMPORTANT!)
 .env

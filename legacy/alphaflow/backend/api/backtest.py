@@ -135,6 +135,9 @@ async def cancel_backtest(backtest_id: str):
 
 async def execute_backtest(backtest_id: str, request: BacktestRequest):
     """Execute backtest in background"""
+    import time
+    start_time = time.time()
+
     try:
         # Update progress
         active_backtests[backtest_id]['progress'] = 10
@@ -150,12 +153,44 @@ async def execute_backtest(backtest_id: str, request: BacktestRequest):
         active_backtests[backtest_id]['message'] = "Running strategy..."
 
         # Run backtest
-        results = engine.run_backtest(
+        raw_results = engine.run_backtest(
             symbols=request.symbols,
             start_date=str(request.start_date),
             end_date=str(request.end_date),
             strategy=request.strategy
         )
+
+        # Extract overall results and format for API response
+        if raw_results.get('success'):
+            overall = raw_results.get('overall_results', {})
+
+            # Check if we actually got valid data
+            if not overall or overall.get('symbols_tested', 0) == 0:
+                # No valid symbols found
+                active_backtests[backtest_id]['status'] = 'failed'
+                active_backtests[backtest_id]['message'] = f"No valid data found for symbols: {', '.join(request.symbols)}. Please check symbol names."
+                active_backtests[backtest_id]['progress'] = 0
+                return
+
+            execution_time = time.time() - start_time
+
+            # Format results for API
+            results = {
+                'total_return': overall.get('total_return', 0.0) / 100,  # Convert to decimal
+                'sharpe_ratio': overall.get('avg_sharpe_ratio', 0.0),
+                'max_drawdown': overall.get('max_drawdown', 0.0) / 100,  # Convert to decimal
+                'win_rate': overall.get('avg_win_rate', 0.0) / 100,  # Convert to decimal
+                'total_trades': overall.get('total_trades', 0),
+                'final_equity': overall.get('final_capital', request.initial_capital),
+                'execution_time': execution_time
+            }
+        else:
+            # Backtest failed - check the error message
+            error_msg = raw_results.get('error', 'Unknown error')
+            active_backtests[backtest_id]['status'] = 'failed'
+            active_backtests[backtest_id]['message'] = error_msg
+            active_backtests[backtest_id]['progress'] = 0
+            return
 
         # Store results
         active_backtests[backtest_id]['progress'] = 100
@@ -166,7 +201,7 @@ async def execute_backtest(backtest_id: str, request: BacktestRequest):
         logger.info(f"Backtest {backtest_id} completed successfully")
 
     except Exception as e:
-        logger.error(f"Backtest {backtest_id} failed: {e}")
+        logger.error(f"Backtest {backtest_id} failed: {e}", exc_info=True)
         active_backtests[backtest_id]['status'] = 'failed'
-        active_backtests[backtest_id]['message'] = str(e)
+        active_backtests[backtest_id]['message'] = f"Backtest error: {str(e)}"
         active_backtests[backtest_id]['progress'] = 0

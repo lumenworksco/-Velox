@@ -5,8 +5,9 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 import logging
+import os
 
-from core import TradingEngine, TradingMode, TradingConfig
+from core import TradingEngine
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -19,8 +20,19 @@ def get_trading_engine():
     """Get or create trading engine instance"""
     global trading_engine
     if trading_engine is None:
-        config = TradingConfig(mode=TradingMode.PAPER)
-        trading_engine = TradingEngine(config)
+        # Get credentials from environment
+        api_key = os.getenv('ALPACA_API_KEY')
+        secret_key = os.getenv('ALPACA_SECRET_KEY')
+        paper = os.getenv('ALPACA_PAPER', 'true').lower() == 'true'
+        initial_capital = float(os.getenv('INITIAL_CAPITAL', '100000'))
+
+        # Initialize trading engine
+        trading_engine = TradingEngine(
+            api_key=api_key,
+            secret_key=secret_key,
+            paper=paper,
+            initial_capital=initial_capital
+        )
     return trading_engine
 
 

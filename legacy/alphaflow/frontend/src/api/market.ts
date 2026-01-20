@@ -6,6 +6,8 @@ export interface Quote {
   change: number
   change_percent: number
   volume: number
+  high?: number
+  low?: number
   bid?: number
   ask?: number
   timestamp: string

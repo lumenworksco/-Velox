@@ -259,3 +259,196 @@ class TradingEngine:
     def is_market_open(self) -> bool:
         """Check if market is open."""
         return is_market_open()
+
+    # ========================================================================
+    # Order Management Methods
+    # ========================================================================
+
+    def place_order(
+        self,
+        symbol: str,
+        side: str,
+        quantity: int,
+        order_type: str = 'market',
+        limit_price: Optional[float] = None,
+        stop_price: Optional[float] = None
+    ) -> Dict:
+        """
+        Place a trading order.
+
+        Args:
+            symbol: Stock symbol
+            side: 'buy' or 'sell'
+            quantity: Number of shares
+            order_type: 'market', 'limit', or 'stop'
+            limit_price: Limit price for limit orders
+            stop_price: Stop price for stop orders
+
+        Returns:
+            Order information dictionary
+        """
+        if not self.api:
+            raise Exception("Alpaca API not initialized. Please configure API keys.")
+
+        try:
+            # Prepare order parameters
+            order_params = {
+                'symbol': symbol,
+                'qty': quantity,
+                'side': side,
+                'type': order_type,
+                'time_in_force': 'day'
+            }
+
+            # Add price parameters for limit/stop orders
+            if order_type == 'limit' and limit_price:
+                order_params['limit_price'] = limit_price
+            elif order_type == 'stop' and stop_price:
+                order_params['stop_price'] = stop_price
+
+            # Submit order to Alpaca
+            order = self.api.submit_order(**order_params)
+
+            self.logger.info(f"Order placed: {side.upper()} {quantity} {symbol} @ {order_type}")
+
+            return {
+                'id': order.id,
+                'status': order.status,
+                'symbol': order.symbol,
+                'side': order.side,
+                'quantity': int(order.qty),
+                'filled_qty': int(order.filled_qty) if order.filled_qty else 0,
+                'avg_price': float(order.filled_avg_price) if order.filled_avg_price else None,
+                'created_at': order.created_at
+            }
+
+        except Exception as e:
+            self.logger.error(f"Failed to place order: {e}")
+            raise
+
+    def get_orders(self, status: Optional[str] = None) -> List[Dict]:
+        """
+        Get orders, optionally filtered by status.
+
+        Args:
+            status: Filter by status ('open', 'closed', 'all')
+
+        Returns:
+            List of order dictionaries
+        """
+        if not self.api:
+            return []
+
+        try:
+            # Get orders from Alpaca
+            orders = self.api.list_orders(status=status or 'all', limit=100)
+
+            return [
+                {
+                    'id': order.id,
+                    'status': order.status,
+                    'symbol': order.symbol,
+                    'side': order.side,
+                    'quantity': int(order.qty),
+                    'filled_qty': int(order.filled_qty) if order.filled_qty else 0,
+                    'avg_price': float(order.filled_avg_price) if order.filled_avg_price else None,
+                    'created_at': order.created_at
+                }
+                for order in orders
+            ]
+
+        except Exception as e:
+            self.logger.error(f"Failed to get orders: {e}")
+            return []
+
+    def cancel_order(self, order_id: str) -> Dict:
+        """
+        Cancel an open order.
+
+        Args:
+            order_id: Order ID to cancel
+
+        Returns:
+            Cancellation confirmation
+        """
+        if not self.api:
+            raise Exception("Alpaca API not initialized. Please configure API keys.")
+
+        try:
+            self.api.cancel_order(order_id)
+            self.logger.info(f"Order canceled: {order_id}")
+
+            return {
+                'success': True,
+                'order_id': order_id,
+                'status': 'canceled'
+            }
+
+        except Exception as e:
+            self.logger.error(f"Failed to cancel order: {e}")
+            raise
+
+    def get_positions(self) -> List[Dict]:
+        """
+        Get all open positions.
+
+        Returns:
+            List of position dictionaries
+        """
+        if not self.api:
+            return []
+
+        try:
+            # Get positions from Alpaca
+            positions = self.api.list_positions()
+
+            return [
+                {
+                    'symbol': pos.symbol,
+                    'quantity': int(pos.qty),
+                    'avg_entry_price': float(pos.avg_entry_price),
+                    'current_price': float(pos.current_price),
+                    'market_value': float(pos.market_value),
+                    'unrealized_pnl': float(pos.unrealized_pl),
+                    'unrealized_pnl_percent': float(pos.unrealized_plpc) * 100
+                }
+                for pos in positions
+            ]
+
+        except Exception as e:
+            self.logger.error(f"Failed to get positions: {e}")
+            return []
+
+    def close_position(self, symbol: str) -> Dict:
+        """
+        Close an entire position.
+
+        Args:
+            symbol: Stock symbol to close
+
+        Returns:
+            Closure confirmation
+        """
+        if not self.api:
+            raise Exception("Alpaca API not initialized. Please configure API keys.")
+
+        try:
+            # Close position via Alpaca
+            self.api.close_position(symbol)
+            self.logger.info(f"Position closed: {symbol}")
+
+            # Update internal portfolio manager
+            if symbol in self.portfolio_manager.positions:
+                current_price = self.data_fetcher.fetch_realtime_price(symbol)
+                if current_price:
+                    self.portfolio_manager.close_position(symbol, current_price['price'])
+
+            return {
+                'success': True,
+                'symbol': symbol,
+                'message': f'Position closed for {symbol}'
+            }
+
+        except Exception as e:
+            self.logger.error(f"Failed to close position: {e}")
+            raise

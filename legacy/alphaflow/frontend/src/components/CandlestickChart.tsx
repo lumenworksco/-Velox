@@ -14,39 +14,43 @@ export default function CandlestickChart({ data, symbol }: CandlestickChartProps
   useEffect(() => {
     if (!chartContainerRef.current) return
 
-    // Create chart
-    const chart = createChart(chartContainerRef.current, {
-      width: chartContainerRef.current.clientWidth,
-      height: 500,
+    const container = chartContainerRef.current
+    const width = container.clientWidth
+    const height = container.clientHeight || 400
+
+    // Create chart with new color scheme
+    const chart = createChart(container, {
+      width,
+      height,
       layout: {
-        background: { color: '#131722' },
-        textColor: '#848E9C',
+        background: { color: '#0d1117' },
+        textColor: '#8b949e',
       },
       grid: {
-        vertLines: { color: '#2A2E39' },
-        horzLines: { color: '#2A2E39' },
+        vertLines: { color: '#30363d' },
+        horzLines: { color: '#30363d' },
       },
       crosshair: {
         mode: 1,
       },
       rightPriceScale: {
-        borderColor: '#2A2E39',
+        borderColor: '#30363d',
       },
       timeScale: {
-        borderColor: '#2A2E39',
+        borderColor: '#30363d',
         timeVisible: true,
         secondsVisible: false,
       },
     })
 
-    // Create candlestick series
+    // Create candlestick series with new colors
     const candlestickSeries = chart.addCandlestickSeries({
-      upColor: '#26A69A',
-      downColor: '#EF5350',
-      borderDownColor: '#EF5350',
-      borderUpColor: '#26A69A',
-      wickDownColor: '#EF5350',
-      wickUpColor: '#26A69A',
+      upColor: '#3fb950',
+      downColor: '#f85149',
+      borderDownColor: '#f85149',
+      borderUpColor: '#3fb950',
+      wickDownColor: '#f85149',
+      wickUpColor: '#3fb950',
     })
 
     chartRef.current = chart
@@ -55,15 +59,22 @@ export default function CandlestickChart({ data, symbol }: CandlestickChartProps
     // Handle resize
     const handleResize = () => {
       if (chartContainerRef.current) {
+        const newWidth = chartContainerRef.current.clientWidth
+        const newHeight = chartContainerRef.current.clientHeight || 400
         chart.applyOptions({
-          width: chartContainerRef.current.clientWidth,
+          width: newWidth,
+          height: newHeight,
         })
       }
     }
 
+    const resizeObserver = new ResizeObserver(handleResize)
+    resizeObserver.observe(container)
+
     window.addEventListener('resize', handleResize)
 
     return () => {
+      resizeObserver.disconnect()
       window.removeEventListener('resize', handleResize)
       chart.remove()
     }
@@ -78,16 +89,26 @@ export default function CandlestickChart({ data, symbol }: CandlestickChartProps
   }, [data])
 
   return (
-    <div className="relative">
-      <div className="absolute top-4 left-4 z-10 bg-primary-elevated/90 backdrop-blur px-4 py-2 rounded-lg border border-primary-border">
-        <div className="text-text-primary font-bold text-lg">{symbol}</div>
+    <div style={{ position: 'relative', height: '100%', width: '100%' }}>
+      <div style={{
+        position: 'absolute',
+        top: '16px',
+        left: '16px',
+        zIndex: 10,
+        backgroundColor: 'rgba(22, 27, 34, 0.9)',
+        backdropFilter: 'blur(8px)',
+        padding: '12px 16px',
+        borderRadius: '6px',
+        border: '1px solid #30363d'
+      }}>
+        <div style={{ color: '#c9d1d9', fontWeight: 700, fontSize: '16px' }}>{symbol}</div>
         {data.length > 0 && (
-          <div className="text-text-secondary text-sm mt-1">
+          <div style={{ color: '#8b949e', fontSize: '12px', marginTop: '4px', fontFamily: 'monospace' }}>
             O: ${data[data.length - 1].open.toFixed(2)} H: ${data[data.length - 1].high.toFixed(2)} L: ${data[data.length - 1].low.toFixed(2)} C: ${data[data.length - 1].close.toFixed(2)}
           </div>
         )}
       </div>
-      <div ref={chartContainerRef} className="rounded-lg overflow-hidden" />
+      <div ref={chartContainerRef} style={{ borderRadius: '6px', overflow: 'hidden', height: '100%' }} />
     </div>
   )
 }

@@ -22,6 +22,8 @@ class Quote(BaseModel):
     change: float
     change_percent: float
     volume: int
+    high: Optional[float] = None
+    low: Optional[float] = None
     bid: Optional[float] = None
     ask: Optional[float] = None
     timestamp: datetime
@@ -45,25 +47,20 @@ async def get_quote(symbol: str):
     Returns current price, change, volume, and bid/ask spread.
     """
     try:
-        data = data_fetcher.fetch_symbol(symbol)
+        data = data_fetcher.fetch_realtime_price(symbol)
 
         if data is None:
             raise HTTPException(status_code=404, detail=f"Symbol {symbol} not found")
 
-        current_price = data['current_price']
-        prev_close = data.get('prev_close', current_price)
-        change = current_price - prev_close
-        change_percent = (change / prev_close * 100) if prev_close != 0 else 0
-
         return Quote(
             symbol=symbol,
-            price=current_price,
-            change=change,
-            change_percent=change_percent,
-            volume=data.get('volume', 0),
+            price=data['price'],
+            change=data['change'],
+            change_percent=data['change_percent'],
+            volume=data['volume'],
             bid=data.get('bid'),
             ask=data.get('ask'),
-            timestamp=datetime.now()
+            timestamp=data['timestamp']
         )
 
     except Exception as e:
@@ -79,30 +76,24 @@ async def get_quotes(symbols: List[str] = Query(...)):
     **Example**: /api/market/quotes?symbols=AAPL&symbols=MSFT&symbols=GOOGL
     """
     try:
+        # Use the parallel fetching method
+        data_dict = data_fetcher.fetch_multiple_realtime(symbols)
+
         quotes = []
-
-        for symbol in symbols:
-            try:
-                data = data_fetcher.fetch_symbol(symbol)
-                if data:
-                    current_price = data['current_price']
-                    prev_close = data.get('prev_close', current_price)
-                    change = current_price - prev_close
-                    change_percent = (change / prev_close * 100) if prev_close != 0 else 0
-
-                    quotes.append(Quote(
-                        symbol=symbol,
-                        price=current_price,
-                        change=change,
-                        change_percent=change_percent,
-                        volume=data.get('volume', 0),
-                        bid=data.get('bid'),
-                        ask=data.get('ask'),
-                        timestamp=datetime.now()
-                    ))
-            except Exception as e:
-                logger.error(f"Error fetching {symbol}: {e}")
-                continue
+        for symbol, data in data_dict.items():
+            if data:
+                quotes.append(Quote(
+                    symbol=symbol,
+                    price=data['price'],
+                    change=data['change'],
+                    change_percent=data['change_percent'],
+                    volume=data['volume'],
+                    high=data.get('high'),
+                    low=data.get('low'),
+                    bid=data.get('bid'),
+                    ask=data.get('ask'),
+                    timestamp=data['timestamp']
+                ))
 
         return quotes
 
@@ -123,13 +114,31 @@ async def get_history(
     **Timeframes**: 1Min, 5Min, 15Min, 1H, 1D
     """
     try:
+        # Map timeframe to yfinance parameters
+        interval_map = {
+            "1Min": "1m",
+            "5Min": "5m",
+            "15Min": "15m",
+            "1H": "1h",
+            "1D": "1d"
+        }
+
+        period_map = {
+            "1m": "1d",   # 1 minute data only available for last day
+            "5m": "5d",   # 5 minute data for last 5 days
+            "15m": "1mo", # 15 minute data for last month
+            "1h": "3mo",  # 1 hour data for last 3 months
+            "1d": "1y"    # 1 day data for last year
+        }
+
+        interval = interval_map.get(timeframe, "1d")
+        period = period_map.get(interval, "3mo")
+
         # Fetch historical data
-        data = data_fetcher.fetch_symbol(symbol)
+        df = data_fetcher.fetch_data(symbol, period=period, interval=interval)
 
-        if data is None or 'data' not in data:
+        if df is None or df.empty:
             raise HTTPException(status_code=404, detail=f"No historical data for {symbol}")
-
-        df = data['data']
 
         # Convert to OHLCV format
         bars = []
@@ -140,7 +149,7 @@ async def get_history(
                 high=row['high'],
                 low=row['low'],
                 close=row['close'],
-                volume=row.get('volume', 0)
+                volume=int(row.get('volume', 0))
             ))
 
         return bars

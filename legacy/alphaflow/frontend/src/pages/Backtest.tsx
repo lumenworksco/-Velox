@@ -1,347 +1,671 @@
-import { useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { format } from 'date-fns'
-import { Play, TrendingUp, Activity, Target, Award, Clock } from 'lucide-react'
-import { runBacktest, getBacktestStatus, getBacktestResults } from '../api/backtest'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
+import { useState, useEffect } from 'react'
+import { Play, StopCircle, TrendingUp, TrendingDown, Activity, Target, Clock, DollarSign } from 'lucide-react'
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
-const STRATEGIES = [
-  { id: 'Technical Momentum', name: 'Technical Momentum', description: 'Trend following with RSI and MACD' },
-  { id: 'Mean Reversion', name: 'Mean Reversion', description: 'Buy oversold, sell overbought' },
-  { id: 'Breakout Strategy', name: 'Breakout Strategy', description: 'Trade Bollinger Band breakouts' },
-  { id: 'ML Momentum', name: 'ML Momentum', description: 'Machine learning predictions' },
-  { id: 'Multi-Timeframe', name: 'Multi-Timeframe Trend', description: 'Analyze across multiple timeframes' },
+interface BacktestConfig {
+  symbols: string[]
+  strategy: string
+  startDate: string
+  endDate: string
+  initialCapital: number
+  commission: number
+}
+
+interface BacktestStatus {
+  backtest_id: string
+  status: string
+  progress: number
+  message: string
+}
+
+interface BacktestResult {
+  backtest_id: string
+  total_return: number
+  sharpe_ratio: number
+  max_drawdown: number
+  win_rate: number
+  total_trades: number
+  final_equity: number
+  execution_time: number
+}
+
+interface Strategy {
+  id: string
+  name: string
+  description: string
+}
+
+const strategies: Strategy[] = [
+  { id: 'multi_timeframe', name: '🚀 Multi-Timeframe Confluence', description: 'ADVANCED: Analyzes daily, hourly, and intraday timeframes' },
+  { id: 'volatility_breakout', name: '⚡ Volatility Breakout', description: 'ADVANCED: ATR-based breakout strategy with volume confirmation' },
+  { id: 'ma_crossover', name: 'Moving Average Crossover', description: 'Buy when fast MA crosses above slow MA' },
+  { id: 'rsi_mean_reversion', name: 'RSI Mean Reversion', description: 'Buy oversold, sell overbought based on RSI' },
+  { id: 'momentum', name: 'Momentum Strategy', description: 'Follow strong price trends' },
+  { id: 'mean_reversion', name: 'Mean Reversion', description: 'Fade extreme moves back to the mean' },
+  { id: 'quick_test', name: 'Quick Test Strategy', description: 'Fast executing test strategy with 1-minute bars' }
 ]
 
 export default function Backtest() {
-  const [symbols, setSymbols] = useState('AAPL\nMSFT\nGOOGL')
-  const [strategy, setStrategy] = useState('Technical Momentum')
-  const [startDate, setStartDate] = useState(
-    format(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
-  )
-  const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'))
-  const [initialCapital, setInitialCapital] = useState('100000')
-  const [commission, setCommission] = useState('0.001')
-  const [backtestId, setBacktestId] = useState<string | null>(null)
-
-  // Run backtest mutation
-  const runBacktestMutation = useMutation({
-    mutationFn: runBacktest,
-    onSuccess: (data) => {
-      setBacktestId(data.backtest_id)
-    },
+  const [config, setConfig] = useState<BacktestConfig>({
+    symbols: ['AAPL'],
+    strategy: 'ma_crossover',
+    startDate: '2024-01-01',
+    endDate: '2024-12-31',
+    initialCapital: 100000,
+    commission: 0.001
   })
 
-  // Poll backtest status
-  const { data: status } = useQuery({
-    queryKey: ['backtest-status', backtestId],
-    queryFn: () => getBacktestStatus(backtestId!),
-    enabled: !!backtestId,
-    refetchInterval: (data) => {
-      return data?.status === 'running' ? 1000 : false
-    },
-  })
+  const [running, setRunning] = useState(false)
+  const [currentBacktestId, setCurrentBacktestId] = useState<string | null>(null)
+  const [status, setStatus] = useState<BacktestStatus | null>(null)
+  const [result, setResult] = useState<BacktestResult | null>(null)
+  const [symbolInput, setSymbolInput] = useState('AAPL')
+  const [symbolError, setSymbolError] = useState<string | null>(null)
+  const [validatingSymbol, setValidatingSymbol] = useState(false)
 
-  // Get results when complete
-  const { data: results } = useQuery({
-    queryKey: ['backtest-results', backtestId],
-    queryFn: () => getBacktestResults(backtestId!),
-    enabled: !!backtestId && status?.status === 'completed',
-  })
+  useEffect(() => {
+    if (currentBacktestId && running) {
+      const interval = setInterval(checkStatus, 1000)
+      return () => clearInterval(interval)
+    }
+  }, [currentBacktestId, running])
 
-  const handleRunBacktest = () => {
-    const symbolList = symbols.split('\n').map(s => s.trim()).filter(s => s.length > 0)
+  const checkStatus = async () => {
+    if (!currentBacktestId) return
 
-    runBacktestMutation.mutate({
-      symbols: symbolList,
-      strategy,
-      start_date: startDate,
-      end_date: endDate,
-      initial_capital: parseFloat(initialCapital),
-      commission: parseFloat(commission),
-    })
+    try {
+      const res = await fetch(`http://localhost:8000/api/backtest/status/${currentBacktestId}`)
+      const statusData = await res.json()
+      setStatus(statusData)
+
+      if (statusData.status === 'completed') {
+        const resultRes = await fetch(`http://localhost:8000/api/backtest/results/${currentBacktestId}`)
+        const resultData = await resultRes.json()
+        setResult(resultData)
+        setRunning(false)
+      } else if (statusData.status === 'failed') {
+        setRunning(false)
+        setResult(null)
+      }
+    } catch (error) {
+      console.error('Failed to check backtest status:', error)
+      setRunning(false)
+    }
   }
 
-  const isRunning = status?.status === 'running'
-  const isComplete = status?.status === 'completed'
+  const runBacktest = async () => {
+    try {
+      setRunning(true)
+      setResult(null)
+      setStatus(null)
 
-  // Mock equity curve data for visualization
-  const equityCurveData = results ? Array.from({ length: 30 }, (_, i) => ({
-    day: i + 1,
-    equity: 100000 * (1 + (results.total_return / 100) * (i / 30) + (Math.random() - 0.5) * 0.02)
-  })) : []
+      const res = await fetch('http://localhost:8000/api/backtest/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbols: config.symbols,
+          strategy: config.strategy,
+          start_date: config.startDate,
+          end_date: config.endDate,
+          initial_capital: config.initialCapital,
+          commission: config.commission
+        })
+      })
+
+      const data = await res.json()
+      setCurrentBacktestId(data.backtest_id)
+      setStatus(data)
+    } catch (error) {
+      console.error('Failed to start backtest:', error)
+      setRunning(false)
+    }
+  }
+
+  const stopBacktest = async () => {
+    if (!currentBacktestId) return
+
+    try {
+      await fetch(`http://localhost:8000/api/backtest/${currentBacktestId}`, {
+        method: 'DELETE'
+      })
+      setRunning(false)
+      setStatus(null)
+    } catch (error) {
+      console.error('Failed to stop backtest:', error)
+    }
+  }
+
+  const addSymbol = async () => {
+    const symbol = symbolInput.trim().toUpperCase()
+
+    if (!symbol) {
+      setSymbolError('Please enter a symbol')
+      return
+    }
+
+    if (config.symbols.includes(symbol)) {
+      setSymbolError('Symbol already added')
+      return
+    }
+
+    // Validate symbol by checking if we can get quote data
+    setValidatingSymbol(true)
+    setSymbolError(null)
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/market/quote/${symbol}`)
+
+      if (!response.ok) {
+        setSymbolError(`Invalid symbol: ${symbol}`)
+        setValidatingSymbol(false)
+        return
+      }
+
+      const data = await response.json()
+
+      // Check if we got valid data
+      if (!data || !data.price || data.price === 0) {
+        setSymbolError(`No data available for: ${symbol}`)
+        setValidatingSymbol(false)
+        return
+      }
+
+      // Symbol is valid, add it
+      setConfig({ ...config, symbols: [...config.symbols, symbol] })
+      setSymbolInput('')
+      setSymbolError(null)
+    } catch (error) {
+      setSymbolError(`Failed to validate symbol: ${symbol}`)
+    } finally {
+      setValidatingSymbol(false)
+    }
+  }
+
+  const removeSymbol = (symbol: string) => {
+    setConfig({ ...config, symbols: config.symbols.filter(s => s !== symbol) })
+  }
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(value)
+  }
+
+  const formatPercent = (value: number) => {
+    return `${(value * 100).toFixed(2)}%`
+  }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-text-primary">Strategy Backtesting</h1>
-          <p className="text-text-secondary mt-1">Test your trading strategies on historical data</p>
-        </div>
+    <div style={{ height: '100%', overflow: 'auto', padding: '24px' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '32px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#c9d1d9', margin: '0 0 8px 0' }}>
+          Strategy Backtesting
+        </h1>
+        <p style={{ fontSize: '14px', color: '#8b949e', margin: 0 }}>
+          Test your trading strategies against historical data
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '24px' }}>
         {/* Configuration Panel */}
-        <div className="bg-primary-surface rounded-lg border border-primary-border p-6">
-          <h3 className="text-lg font-semibold text-text-primary mb-4">Configuration</h3>
+        <div style={{
+          backgroundColor: '#161b22',
+          border: '1px solid #30363d',
+          borderRadius: '8px',
+          padding: '24px',
+          height: 'fit-content'
+        }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#c9d1d9', margin: '0 0 24px 0' }}>
+            Configuration
+          </h2>
 
-          <div className="space-y-4">
-            {/* Strategy Selection */}
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Strategy
-              </label>
-              <select
-                value={strategy}
-                onChange={(e) => setStrategy(e.target.value)}
-                className="w-full bg-primary-elevated border border-primary-border rounded-lg py-2 px-3 text-text-primary focus:outline-none focus:border-accent-blue"
-              >
-                {STRATEGIES.map((strat) => (
-                  <option key={strat.id} value={strat.id}>
-                    {strat.name}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-text-tertiary mt-1">
-                {STRATEGIES.find(s => s.id === strategy)?.description}
-              </p>
-            </div>
-
-            {/* Symbols */}
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Symbols (one per line)
-              </label>
-              <textarea
-                value={symbols}
-                onChange={(e) => setSymbols(e.target.value)}
-                className="w-full bg-primary-elevated border border-primary-border rounded-lg py-2 px-3 text-text-primary focus:outline-none focus:border-accent-blue font-mono text-sm"
-                rows={4}
-                placeholder="AAPL&#10;MSFT&#10;GOOGL"
-              />
-            </div>
-
-            {/* Date Range */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full bg-primary-elevated border border-primary-border rounded-lg py-2 px-3 text-text-primary focus:outline-none focus:border-accent-blue"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full bg-primary-elevated border border-primary-border rounded-lg py-2 px-3 text-text-primary focus:outline-none focus:border-accent-blue"
-                />
-              </div>
-            </div>
-
-            {/* Parameters */}
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Initial Capital
-              </label>
-              <input
-                type="number"
-                value={initialCapital}
-                onChange={(e) => setInitialCapital(e.target.value)}
-                className="w-full bg-primary-elevated border border-primary-border rounded-lg py-2 px-3 text-text-primary focus:outline-none focus:border-accent-blue"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Commission (%)
-              </label>
-              <input
-                type="number"
-                value={commission}
-                onChange={(e) => setCommission(e.target.value)}
-                step="0.0001"
-                className="w-full bg-primary-elevated border border-primary-border rounded-lg py-2 px-3 text-text-primary focus:outline-none focus:border-accent-blue"
-              />
-            </div>
-
-            {/* Run Button */}
-            <button
-              onClick={handleRunBacktest}
-              disabled={isRunning}
-              className="w-full bg-accent-blue hover:bg-accent-blue-hover disabled:bg-primary-elevated disabled:text-text-tertiary text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center space-x-2"
+          {/* Strategy Selection */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontSize: '13px', color: '#8b949e', marginBottom: '8px' }}>
+              Strategy
+            </label>
+            <select
+              value={config.strategy}
+              onChange={(e) => setConfig({ ...config, strategy: e.target.value })}
+              disabled={running}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                backgroundColor: '#0d1117',
+                border: '1px solid #30363d',
+                borderRadius: '6px',
+                color: '#c9d1d9',
+                fontSize: '14px'
+              }}
             >
-              <Play className="w-5 h-5" />
-              <span>{isRunning ? 'Running...' : 'Run Backtest'}</span>
-            </button>
-
-            {/* Progress */}
-            {isRunning && status && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-text-secondary">{status.message}</span>
-                  <span className="text-text-primary font-semibold">{status.progress}%</span>
-                </div>
-                <div className="w-full bg-primary-elevated rounded-full h-2">
-                  <div
-                    className="bg-accent-blue h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${status.progress}%` }}
-                  />
-                </div>
-              </div>
-            )}
+              {strategies.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+            <p style={{ fontSize: '12px', color: '#8b949e', margin: '8px 0 0 0' }}>
+              {strategies.find(s => s.id === config.strategy)?.description}
+            </p>
           </div>
+
+          {/* Symbols */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontSize: '13px', color: '#8b949e', marginBottom: '8px' }}>
+              Symbols
+            </label>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+              <input
+                type="text"
+                value={symbolInput}
+                onChange={(e) => {
+                  setSymbolInput(e.target.value)
+                  setSymbolError(null)
+                }}
+                onKeyPress={(e) => e.key === 'Enter' && !validatingSymbol && addSymbol()}
+                placeholder="Add symbol (e.g. AAPL)"
+                disabled={running || validatingSymbol}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  backgroundColor: '#0d1117',
+                  border: `1px solid ${symbolError ? '#f85149' : '#30363d'}`,
+                  borderRadius: '6px',
+                  color: '#c9d1d9',
+                  fontSize: '14px'
+                }}
+              />
+              <button
+                onClick={addSymbol}
+                disabled={running || validatingSymbol}
+                style={{
+                  padding: '10px 16px',
+                  backgroundColor: validatingSymbol ? '#8b949e' : '#238636',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#fff',
+                  fontSize: '14px',
+                  cursor: running || validatingSymbol ? 'not-allowed' : 'pointer',
+                  opacity: running || validatingSymbol ? 0.5 : 1
+                }}
+              >
+                {validatingSymbol ? 'Checking...' : 'Add'}
+              </button>
+            </div>
+            {symbolError && (
+              <p style={{ fontSize: '12px', color: '#f85149', margin: '4px 0 8px 0' }}>
+                {symbolError}
+              </p>
+            )}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {config.symbols.map(symbol => (
+                <div
+                  key={symbol}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '6px 12px',
+                    backgroundColor: '#0d1117',
+                    border: '1px solid #30363d',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    color: '#c9d1d9'
+                  }}
+                >
+                  {symbol}
+                  {!running && (
+                    <button
+                      onClick={() => removeSymbol(symbol)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#8b949e',
+                        cursor: 'pointer',
+                        padding: 0,
+                        fontSize: '16px'
+                      }}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Date Range */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontSize: '13px', color: '#8b949e', marginBottom: '8px' }}>
+              Start Date
+            </label>
+            <input
+              type="date"
+              value={config.startDate}
+              onChange={(e) => setConfig({ ...config, startDate: e.target.value })}
+              disabled={running}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                backgroundColor: '#0d1117',
+                border: '1px solid #30363d',
+                borderRadius: '6px',
+                color: '#c9d1d9',
+                fontSize: '14px'
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontSize: '13px', color: '#8b949e', marginBottom: '8px' }}>
+              End Date
+            </label>
+            <input
+              type="date"
+              value={config.endDate}
+              onChange={(e) => setConfig({ ...config, endDate: e.target.value })}
+              disabled={running}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                backgroundColor: '#0d1117',
+                border: '1px solid #30363d',
+                borderRadius: '6px',
+                color: '#c9d1d9',
+                fontSize: '14px'
+              }}
+            />
+          </div>
+
+          {/* Initial Capital */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontSize: '13px', color: '#8b949e', marginBottom: '8px' }}>
+              Initial Capital
+            </label>
+            <input
+              type="number"
+              value={config.initialCapital}
+              onChange={(e) => setConfig({ ...config, initialCapital: Number(e.target.value) })}
+              disabled={running}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                backgroundColor: '#0d1117',
+                border: '1px solid #30363d',
+                borderRadius: '6px',
+                color: '#c9d1d9',
+                fontSize: '14px'
+              }}
+            />
+          </div>
+
+          {/* Commission */}
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', fontSize: '13px', color: '#8b949e', marginBottom: '8px' }}>
+              Commission (%)
+            </label>
+            <input
+              type="number"
+              step="0.001"
+              value={config.commission * 100}
+              onChange={(e) => setConfig({ ...config, commission: Number(e.target.value) / 100 })}
+              disabled={running}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                backgroundColor: '#0d1117',
+                border: '1px solid #30363d',
+                borderRadius: '6px',
+                color: '#c9d1d9',
+                fontSize: '14px'
+              }}
+            />
+          </div>
+
+          {/* Run Button */}
+          {!running ? (
+            <button
+              onClick={runBacktest}
+              style={{
+                width: '100%',
+                padding: '12px',
+                backgroundColor: '#238636',
+                border: 'none',
+                borderRadius: '6px',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <Play size={16} />
+              Run Backtest
+            </button>
+          ) : (
+            <button
+              onClick={stopBacktest}
+              style={{
+                width: '100%',
+                padding: '12px',
+                backgroundColor: '#da3633',
+                border: 'none',
+                borderRadius: '6px',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <StopCircle size={16} />
+              Stop Backtest
+            </button>
+          )}
         </div>
 
         {/* Results Panel */}
-        <div className="lg:col-span-2 space-y-6">
-          {!isComplete ? (
-            <div className="bg-primary-surface rounded-lg border border-primary-border p-12 flex flex-col items-center justify-center text-center">
-              <Activity className="w-16 h-16 text-text-tertiary mb-4" />
-              <h3 className="text-xl font-semibold text-text-primary mb-2">
-                {isRunning ? 'Backtest Running...' : 'No Results Yet'}
-              </h3>
-              <p className="text-text-secondary">
-                {isRunning
-                  ? 'Testing your strategy on historical data'
-                  : 'Configure your backtest and click Run to see results'}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Status */}
+          {status && (
+            <div style={{
+              backgroundColor: '#161b22',
+              border: `1px solid ${status.status === 'failed' ? '#f85149' : '#30363d'}`,
+              borderRadius: '8px',
+              padding: '24px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <h2 style={{
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  color: status.status === 'failed' ? '#f85149' : '#c9d1d9',
+                  margin: 0
+                }}>
+                  {status.status === 'completed' ? 'Backtest Completed' :
+                   status.status === 'failed' ? 'Backtest Failed' :
+                   'Running Backtest...'}
+                </h2>
+                {status.status !== 'failed' && (
+                  <span style={{ fontSize: '14px', color: '#8b949e' }}>{status.progress}%</span>
+                )}
+              </div>
+              {status.status !== 'failed' && (
+                <div style={{
+                  width: '100%',
+                  height: '8px',
+                  backgroundColor: '#0d1117',
+                  borderRadius: '4px',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    width: `${status.progress}%`,
+                    height: '100%',
+                    backgroundColor: '#238636',
+                    transition: 'width 0.3s ease'
+                  }} />
+                </div>
+              )}
+              <p style={{
+                fontSize: '13px',
+                color: status.status === 'failed' ? '#f85149' : '#8b949e',
+                margin: '12px 0 0 0'
+              }}>
+                {status.message}
               </p>
             </div>
-          ) : results && (
+          )}
+
+          {/* Results */}
+          {result && (
             <>
-              {/* Performance Metrics */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-primary-surface rounded-lg border border-primary-border p-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <TrendingUp className="w-4 h-4 text-text-secondary" />
-                    <span className="text-xs uppercase tracking-wider text-text-secondary font-semibold">
+              {/* Metrics Grid */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px'
+              }}>
+                {/* Total Return */}
+                <div style={{
+                  backgroundColor: '#161b22',
+                  border: '1px solid #30363d',
+                  borderRadius: '8px',
+                  padding: '20px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '13px', color: '#8b949e', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Total Return
                     </span>
+                    {result.total_return >= 0 ? (
+                      <TrendingUp size={20} style={{ color: '#3fb950' }} />
+                    ) : (
+                      <TrendingDown size={20} style={{ color: '#f85149' }} />
+                    )}
                   </div>
-                  <div className={`text-2xl font-bold tabular-nums ${
-                    results.total_return >= 0 ? 'text-semantic-positive' : 'text-semantic-negative'
-                  }`}>
-                    {results.total_return >= 0 ? '+' : ''}{results.total_return.toFixed(2)}%
+                  <div style={{ fontSize: '28px', fontWeight: 700, color: result.total_return >= 0 ? '#3fb950' : '#f85149' }}>
+                    {result.total_return >= 0 ? '+' : ''}{formatPercent(result.total_return)}
                   </div>
                 </div>
 
-                <div className="bg-primary-surface rounded-lg border border-primary-border p-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Activity className="w-4 h-4 text-text-secondary" />
-                    <span className="text-xs uppercase tracking-wider text-text-secondary font-semibold">
+                {/* Sharpe Ratio */}
+                <div style={{
+                  backgroundColor: '#161b22',
+                  border: '1px solid #30363d',
+                  borderRadius: '8px',
+                  padding: '20px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '13px', color: '#8b949e', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Sharpe Ratio
                     </span>
+                    <Activity size={20} style={{ color: '#58a6ff' }} />
                   </div>
-                  <div className="text-2xl font-bold text-text-primary tabular-nums">
-                    {results.sharpe_ratio.toFixed(2)}
+                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#c9d1d9' }}>
+                    {result.sharpe_ratio.toFixed(2)}
                   </div>
                 </div>
 
-                <div className="bg-primary-surface rounded-lg border border-primary-border p-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Target className="w-4 h-4 text-text-secondary" />
-                    <span className="text-xs uppercase tracking-wider text-text-secondary font-semibold">
+                {/* Max Drawdown */}
+                <div style={{
+                  backgroundColor: '#161b22',
+                  border: '1px solid #30363d',
+                  borderRadius: '8px',
+                  padding: '20px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '13px', color: '#8b949e', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Max Drawdown
                     </span>
+                    <TrendingDown size={20} style={{ color: '#f85149' }} />
                   </div>
-                  <div className="text-2xl font-bold text-semantic-negative tabular-nums">
-                    {results.max_drawdown.toFixed(2)}%
+                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#f85149' }}>
+                    {formatPercent(result.max_drawdown)}
                   </div>
                 </div>
 
-                <div className="bg-primary-surface rounded-lg border border-primary-border p-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Award className="w-4 h-4 text-text-secondary" />
-                    <span className="text-xs uppercase tracking-wider text-text-secondary font-semibold">
+                {/* Win Rate */}
+                <div style={{
+                  backgroundColor: '#161b22',
+                  border: '1px solid #30363d',
+                  borderRadius: '8px',
+                  padding: '20px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '13px', color: '#8b949e', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Win Rate
                     </span>
+                    <Target size={20} style={{ color: '#3fb950' }} />
                   </div>
-                  <div className="text-2xl font-bold text-text-primary tabular-nums">
-                    {results.win_rate.toFixed(1)}%
+                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#c9d1d9' }}>
+                    {formatPercent(result.win_rate)}
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#8b949e', marginTop: '8px' }}>
+                    {result.total_trades} trades
                   </div>
                 </div>
-              </div>
 
-              {/* Equity Curve */}
-              <div className="bg-primary-surface rounded-lg border border-primary-border p-6">
-                <h3 className="text-lg font-semibold text-text-primary mb-4">Equity Curve</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={equityCurveData}>
-                    <defs>
-                      <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#2962FF" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#2962FF" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2A2E39" />
-                    <XAxis
-                      dataKey="day"
-                      stroke="#848E9C"
-                      style={{ fontSize: '12px' }}
-                      label={{ value: 'Days', position: 'insideBottom', offset: -5 }}
-                    />
-                    <YAxis
-                      stroke="#848E9C"
-                      style={{ fontSize: '12px' }}
-                      tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#131722',
-                        border: '1px solid #2A2E39',
-                        borderRadius: '8px',
-                      }}
-                      labelStyle={{ color: '#E0E3EB' }}
-                      formatter={(value: number) => [`$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, 'Equity']}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="equity"
-                      stroke="#2962FF"
-                      strokeWidth={2}
-                      fill="url(#equityGradient)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+                {/* Final Equity */}
+                <div style={{
+                  backgroundColor: '#161b22',
+                  border: '1px solid #30363d',
+                  borderRadius: '8px',
+                  padding: '20px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '13px', color: '#8b949e', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Final Equity
+                    </span>
+                    <DollarSign size={20} style={{ color: '#58a6ff' }} />
+                  </div>
+                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#c9d1d9' }}>
+                    {formatCurrency(result.final_equity)}
+                  </div>
+                </div>
 
-              {/* Additional Stats */}
-              <div className="bg-primary-surface rounded-lg border border-primary-border p-6">
-                <h3 className="text-lg font-semibold text-text-primary mb-4">Statistics</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-text-secondary">Total Trades</span>
-                    <span className="text-text-primary font-semibold tabular-nums">{results.total_trades}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-text-secondary">Final Equity</span>
-                    <span className="text-text-primary font-semibold tabular-nums">
-                      ${results.final_equity.toLocaleString()}
+                {/* Execution Time */}
+                <div style={{
+                  backgroundColor: '#161b22',
+                  border: '1px solid #30363d',
+                  borderRadius: '8px',
+                  padding: '20px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '13px', color: '#8b949e', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Execution Time
                     </span>
+                    <Clock size={20} style={{ color: '#8b949e' }} />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-text-secondary">Execution Time</span>
-                    <span className="text-text-primary font-semibold tabular-nums">
-                      {results.execution_time.toFixed(2)}s
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-text-secondary">Initial Capital</span>
-                    <span className="text-text-primary font-semibold tabular-nums">
-                      ${parseFloat(initialCapital).toLocaleString()}
-                    </span>
+                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#c9d1d9' }}>
+                    {result.execution_time.toFixed(2)}s
                   </div>
                 </div>
               </div>
             </>
+          )}
+
+          {/* Empty State */}
+          {!status && !result && (
+            <div style={{
+              backgroundColor: '#161b22',
+              border: '1px solid #30363d',
+              borderRadius: '8px',
+              padding: '80px 24px',
+              textAlign: 'center'
+            }}>
+              <Activity size={48} style={{ color: '#8b949e', margin: '0 auto 16px' }} />
+              <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#c9d1d9', margin: '0 0 8px 0' }}>
+                Ready to Backtest
+              </h3>
+              <p style={{ fontSize: '14px', color: '#8b949e', margin: 0 }}>
+                Configure your backtest parameters and click "Run Backtest" to begin
+              </p>
+            </div>
           )}
         </div>
       </div>
