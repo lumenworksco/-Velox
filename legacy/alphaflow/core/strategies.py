@@ -8,16 +8,14 @@ from typing import List, Optional
 
 from .config import TradingConfig, SENTIMENT_AVAILABLE
 from .data_structures import TradeSignal, SignalAction
-from .ml_predictor import MLPredictor
 from .indicators import AdvancedIndicators
 
 
 class TradingStrategies:
     """Collection of trading strategies."""
     
-    def __init__(self, ml_predictor: Optional[MLPredictor] = None):
+    def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.ml_predictor = ml_predictor or MLPredictor()
     
     def generate_all_signals(self, df: pd.DataFrame, symbol: str) -> List[TradeSignal]:
         """Generate signals from all strategies."""
@@ -33,12 +31,6 @@ class TradingStrategies:
         mr_signal = self.mean_reversion_strategy(df, symbol)
         if mr_signal:
             signals.append(mr_signal)
-        
-        # ML-based signals
-        if self.ml_predictor and self.ml_predictor.is_trained:
-            ml_signal = self.ml_strategy(df, symbol)
-            if ml_signal:
-                signals.append(ml_signal)
         
         # Trend following signals
         trend_signal = self.trend_following_strategy(df, symbol)
@@ -193,55 +185,6 @@ class TradingStrategies:
             
         except Exception as e:
             self.logger.error(f"Error in mean reversion strategy: {e}")
-            return None
-    
-    def ml_strategy(self, df: pd.DataFrame, symbol: str) -> Optional[TradeSignal]:
-        """ML-based trading strategy."""
-        
-        if not self.ml_predictor or not self.ml_predictor.is_trained:
-            return None
-        
-        try:
-            prediction = self.ml_predictor.predict(df)
-            
-            if prediction['confidence'] < TradingConfig.ML_CONFIDENCE_THRESHOLD:
-                return None
-            
-            current_price = df['close'].iloc[-1]
-            
-            if prediction['signal'] == 'BUY':
-                action = SignalAction.BUY
-            elif prediction['signal'] == 'SELL':
-                action = SignalAction.SELL
-            else:
-                return None
-            
-            # Calculate stop loss and take profit
-            atr = df['atr'].iloc[-1] if 'atr' in df.columns else current_price * 0.02
-            if pd.isna(atr):
-                atr = current_price * 0.02
-            
-            if action == SignalAction.BUY:
-                stop_loss = current_price - (2 * atr)
-                take_profit = current_price + (3 * atr)
-            else:
-                stop_loss = current_price + (2 * atr)
-                take_profit = current_price - (3 * atr)
-            
-            return TradeSignal(
-                symbol=symbol,
-                action=action,
-                confidence=prediction['confidence'],
-                strategy="ML Prediction",
-                price=current_price,
-                stop_loss=stop_loss,
-                take_profit=take_profit,
-                ml_prediction=prediction['direction'],
-                reasoning=f"ML: {prediction['direction']:.1%} up prob, {prediction['expected_return']:.2f}% expected"
-            )
-            
-        except Exception as e:
-            self.logger.error(f"Error in ML strategy: {e}")
             return None
     
     def trend_following_strategy(self, df: pd.DataFrame, symbol: str) -> Optional[TradeSignal]:

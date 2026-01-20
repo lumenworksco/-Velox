@@ -9,7 +9,6 @@ from typing import Dict, List, Tuple, Optional
 from .config import TradingConfig
 from .data_fetcher import SimplifiedDataFetcher
 from .indicators import AdvancedIndicators
-from .ml_predictor import MLPredictor
 from .strategies import TradingStrategies
 from .data_structures import SignalAction
 
@@ -24,8 +23,7 @@ class BacktestEngine:
 
         # Initialize components
         self.data_fetcher = SimplifiedDataFetcher()
-        self.ml_predictor = MLPredictor()
-        self.strategies = TradingStrategies(self.ml_predictor)
+        self.strategies = TradingStrategies()
     
     def run_backtest(
         self,

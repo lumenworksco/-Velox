@@ -12,10 +12,8 @@ from .config import (
 )
 from .data_fetcher import SimplifiedDataFetcher, AlpacaDataFetcher
 from .indicators import AdvancedIndicators
-from .ml_predictor import MLPredictor
 from .strategies import TradingStrategies
 from .risk_manager import RiskManager
-from .portfolio_manager import PortfolioManager
 from .data_structures import TradeSignal, SignalAction
 
 if ALPACA_AVAILABLE:
@@ -63,16 +61,13 @@ class TradingEngine:
         else:
             self.data_fetcher = SimplifiedDataFetcher()
 
-        self.ml_predictor = MLPredictor()
-        self.strategies = TradingStrategies(self.ml_predictor)
+        self.strategies = TradingStrategies()
         self.risk_manager = RiskManager(initial_capital)
-        self.portfolio_manager = PortfolioManager(initial_capital)
 
         # Sync with Alpaca account if connected
         if self.api:
             try:
                 account = self.api.get_account()
-                self.portfolio_manager.sync_with_alpaca_account(float(account.cash))
             except Exception as e:
                 self.logger.warning(f"Could not sync with Alpaca account: {e}")
 

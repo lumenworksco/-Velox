@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import logging
 from typing import Literal, Optional, Dict, Any
-from core.indicators import TechnicalIndicators
+from core.indicators import AdvancedIndicators
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ class StrategyLogic:
     """Generate trading signals for all strategies"""
 
     def __init__(self):
-        self.indicators = TechnicalIndicators()
+        self.indicators = AdvancedIndicators()
 
     def generate_signal(
         self,
