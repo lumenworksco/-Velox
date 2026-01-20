@@ -7,7 +7,7 @@ interface Strategy {
   description: string
   status: string
   symbols: string[]
-  parameters: Record<string, number>
+  parameters: Record<string, any>
 }
 
 interface StrategyPerformance {
@@ -24,7 +24,7 @@ export default function Strategies() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [editingStrategy, setEditingStrategy] = useState<Strategy | null>(null)
-  const [editedParams, setEditedParams] = useState<Record<string, number>>({})
+  const [editedParams, setEditedParams] = useState<Record<string, any>>({})
   const [editedSymbols, setEditedSymbols] = useState<string[]>([])
   const [newSymbol, setNewSymbol] = useState('')
   const [symbolError, setSymbolError] = useState('')
@@ -341,7 +341,9 @@ export default function Strategies() {
                         <span style={{ color: '#8b949e' }}>
                           {key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}:
                         </span>
-                        <span style={{ color: '#c9d1d9', fontWeight: 600 }}>{value}</span>
+                        <span style={{ color: '#c9d1d9', fontWeight: 600 }}>
+                          {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)}
+                        </span>
                       </div>
                     ))}
                   </div>
