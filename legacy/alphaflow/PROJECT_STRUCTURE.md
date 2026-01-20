@@ -10,14 +10,16 @@
 
 ```
 AlphaFlow/
-├── backend/                 # FastAPI backend server
-├── frontend/                # React + TypeScript frontend
-├── core/                    # Core trading engine
-├── logs/                    # Application logs (gitignored)
+├── backend/                 # FastAPI backend server (8 core modules + 9 API endpoints)
+├── frontend/                # React + TypeScript UI (6 pages, 4 components)
+├── core/                    # Core trading engine (9 essential modules ONLY)
+├── logs/                    # Application logs (gitignored, only .gitkeep tracked)
 ├── .env.example             # Environment variables template
 ├── .gitignore               # Git ignore rules
-├── requirements.txt         # Python dependencies
-└── [Documentation Files]    # README, guides, checklists
+├── requirements.txt         # Python dependencies (29 packages)
+└── [Documentation Files]    # 11 essential markdown files
+
+Total: 18 directories, 49 files (CLEANED - removed 20+ unused files)
 ```
 
 ---
@@ -109,14 +111,21 @@ AlphaFlow/
 
 **Purpose**: Core algorithmic trading logic (data fetching, indicators, strategies, backtesting).
 
-| File | Purpose |
-|------|---------|
-| `trading_engine.py` | Main trading engine (order execution, Alpaca integration) |
-| `data_fetcher.py` | Market data fetching (Alpaca + yfinance) |
-| `indicators.py` | 20+ technical indicators (SMA, EMA, RSI, MACD, Bollinger, ATR, etc.) |
-| `strategies.py` | Strategy base classes and implementations |
-| `backtester.py` | Historical strategy validation |
-| `risk_manager.py` | Risk management calculations |
+**CLEANED**: Removed 10 unused modules (deep_learning, ml_predictor, multi_timeframe, options_trading, order_manager, portfolio_manager, sentiment_analysis, alert_system, advanced_strategies, position_sizing)
+
+### Essential Core Modules (9 files ONLY)
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `trading_engine.py` | Main trading engine (order execution, Alpaca integration) | ✅ Used |
+| `data_fetcher.py` | Market data fetching (Alpaca + yfinance) | ✅ Used |
+| `indicators.py` | 20+ technical indicators (SMA, EMA, RSI, MACD, Bollinger, ATR) | ✅ Used |
+| `strategies.py` | Strategy base classes and implementations | ✅ Used |
+| `backtester.py` | Historical strategy validation | ✅ Used |
+| `risk_manager.py` | Risk management calculations | ✅ Used |
+| `config.py` | Configuration and settings | ✅ Used |
+| `data_structures.py` | Data models and structures | ✅ Used |
+| `__init__.py` | Package initialization | ✅ Used |
 
 **Key Features**:
 - Real-time and historical market data
@@ -124,6 +133,8 @@ AlphaFlow/
 - Backtesting engine with performance metrics
 - Paper trading support
 - Live trading integration
+
+**Note**: All unused/experimental modules removed for production clarity.
 
 ---
 
