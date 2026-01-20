@@ -38,14 +38,14 @@ export default function Strategies() {
 
   const fetchStrategies = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/strategies/list')
+      const res = await fetch('/api/strategies/list')
       const data = await res.json()
       setStrategies(data)
 
       // Fetch performance for each strategy
       const perfPromises = data.map(async (strategy: Strategy) => {
         try {
-          const perfRes = await fetch(`http://localhost:8000/api/strategies/${strategy.id}/performance`)
+          const perfRes = await fetch(`/api/strategies/${strategy.id}/performance`)
           const perfData = await perfRes.json()
           return { id: strategy.id, data: perfData }
         } catch {
@@ -71,7 +71,7 @@ export default function Strategies() {
   const startStrategy = async (strategyId: string) => {
     setActionLoading(strategyId)
     try {
-      await fetch(`http://localhost:8000/api/strategies/${strategyId}/start`, {
+      await fetch(`/api/strategies/${strategyId}/start`, {
         method: 'POST'
       })
       await fetchStrategies()
@@ -85,7 +85,7 @@ export default function Strategies() {
   const stopStrategy = async (strategyId: string) => {
     setActionLoading(strategyId)
     try {
-      await fetch(`http://localhost:8000/api/strategies/${strategyId}/stop`, {
+      await fetch(`/api/strategies/${strategyId}/stop`, {
         method: 'POST'
       })
       await fetchStrategies()
@@ -177,7 +177,7 @@ export default function Strategies() {
     try {
       // Save parameters to backend
       const paramsResponse = await fetch(
-        `http://localhost:8000/api/strategies/${editingStrategy.id}/parameters`,
+        `/api/strategies/${editingStrategy.id}/parameters`,
         {
           method: 'PUT',
           headers: {
@@ -195,7 +195,7 @@ export default function Strategies() {
 
       // Save symbols to backend
       const symbolsResponse = await fetch(
-        `http://localhost:8000/api/strategies/${editingStrategy.id}/symbols`,
+        `/api/strategies/${editingStrategy.id}/symbols`,
         {
           method: 'PUT',
           headers: {
