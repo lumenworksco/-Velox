@@ -104,7 +104,7 @@ engine/                      # Trading engine
 
 oms/                         # Order management: 7-state orders, idempotency, kill switch
 strategies/                  # StatMR, VWAP, KalmanPairs, ORB, MicroMomentum, PEAD, regime, universe
-risk/                        # Circuit breaker, VaR, correlation limiter, vol targeting, Kelly,
+risk/                        # Circuit breaker, VaR, correlation limiter, vol targeting,
                              #   P&L lock, beta neutraliser, PDT, portfolio heat, corporate actions
 execution/                   # Order routing, TWAP, bracket orders, chase logic, fill analytics
 broker/                      # Broker abstraction and paper broker
@@ -117,7 +117,7 @@ compliance/, ops/            # Audit trail, best execution, PDT; disaster recove
 monitoring/                  # Latency tracker, metrics pipeline, watchdog, reconciliation
 scripts/                     # Training, tear sheet, demo dashboard, setup, backup/restore
 legacy/                      # Imported AlphaFlow and Trading Algorithms (history preserved)
-tests/                       # 1,800+ tests
+tests/                       # 1,600+ tests
 ```
 
 ---
@@ -131,7 +131,7 @@ Every signal passes through a full qualification pipeline including data quality
 A single exit system with 10 priority levels replaces three competing exit subsystems from prior versions. Priority cascade ensures the highest-urgency exit reason always wins (e.g., kill switch overrides trailing stop).
 
 ### ML Confidence Gating
-4-model averaging ensemble trained with Optuna hyperparameter optimization. 50 core features (reduced from 200+) with 0.947 AUC. FinBERT sentiment runs locally with no paid API dependency. Bayesian Kelly criterion for position sizing.
+4-model averaging ensemble trained with Optuna hyperparameter optimization. 50 core features (reduced from 200+) with 0.947 AUC. FinBERT sentiment runs locally with no paid API dependency.
 
 ### Order Management System (OMS)
 Full order lifecycle tracking with 7-state machine (PENDING -> SUBMITTED -> PARTIALLY_FILLED -> FILLED / CANCELLED / REJECTED / EXPIRED). Thread-safe registry with idempotency keys prevents duplicate orders. API failure circuit breaker triggers kill switch after 5 failures in 5 minutes. Order rejection classification and chase logic for limit orders.
@@ -269,7 +269,7 @@ pytest tests/test_v10_events.py -v
 pytest tests/test_v10_phase4.py -v
 ```
 
-1,870+ tests across 88 test files covering all strategies, risk modules, OMS, exit orchestrator, event bus, circuit breaker, ML pipeline, and analytics.
+1,630+ tests across 70 test files covering all strategies, risk modules, OMS, exit orchestrator, event bus, circuit breaker, ML pipeline, and analytics.
 
 ---
 
@@ -287,7 +287,7 @@ pytest tests/test_v10_phase4.py -v
 | V8 | 2026-03 | Bug fixes, thread safety, dead code removal |
 | V9 | 2026-03 | Engine decomposition, OMS skeleton |
 | V10 | 2026-03 | Production-grade: tiered circuit breaker, VaR monitor, correlation limiter, event bus, structured logging, Prometheus metrics, Docker stack, Apple-style dashboard |
-| V11 | 2026-03 | ML ensemble (50 features, 0.947 AUC), FinBERT sentiment, Bayesian Kelly sizing |
+| V11 | 2026-03 | ML ensemble (50 features, 0.947 AUC), FinBERT sentiment |
 | V12 | 2026-04 | **Unified ExitOrchestrator, 18-stage signal pipeline, position recovery, corporate actions monitoring, tax-loss harvesting, intraday correlation refresh, profit maximizer, data feed monitoring, health alerts, 6-service Docker stack** |
 
 | **V13** | **2026-10** | **Terminal-only: web dashboard, Prometheus/Grafana and JWT auth removed; `velox` CLI with a terminal kill switch; classic baselines ported from the Rust project; AlphaFlow and Trading Algorithms merged in (history preserved); relicensed MIT** |
