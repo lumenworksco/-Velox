@@ -3,6 +3,8 @@
 ![CI](https://github.com/lumenworksco/Velox/actions/workflows/ci.yml/badge.svg)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)
 ![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)
+![Docker](https://img.shields.io/badge/docker-compose-2496ED.svg)
+![Broker: Alpaca](https://img.shields.io/badge/broker-Alpaca-yellow.svg)
 
 A production-grade autonomous equity trading system built on the Alpaca API. Features 6 diversified strategies, a unified ExitOrchestrator with 10-priority-level exit cascade, an 18-stage signal pipeline with ML confidence gating, real-time VaR monitoring, FinBERT sentiment analysis, structured logging, and a Docker production stack with PostgreSQL, Prometheus, Grafana, Alertmanager, and automated backups.
 
@@ -352,7 +354,7 @@ pytest tests/test_v10_events.py -v
 pytest tests/test_v10_phase4.py -v
 ```
 
-900+ tests across 63 test files covering all strategies, risk modules, OMS, exit orchestrator, event bus, circuit breaker, ML pipeline, and analytics.
+1,900+ tests across 85 test files covering all strategies, risk modules, OMS, exit orchestrator, event bus, circuit breaker, ML pipeline, and analytics.
 
 ---
 
@@ -403,4 +405,6 @@ pytest tests/test_v10_phase4.py -v
 
 ## License
 
-[MIT](LICENSE)
+Velox is proprietary software. See [LICENSE](LICENSE) and [docs/LICENSE_COMMERCIAL.md](docs/LICENSE_COMMERCIAL.md) for terms. Contact Lumen Studio for commercial licensing.
+
+See also: [CONTRIBUTING](CONTRIBUTING.md) · [SECURITY](SECURITY.md) · [CHANGELOG](CHANGELOG.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
