@@ -16,9 +16,38 @@ logger = logging.getLogger(__name__)
 # V12 11.1: Persistent queue file for crash recovery during batch close
 _QUEUE_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "models", "kill_switch_queue.json")
 
+# Terminal control: `velox kill` drops this file, the main loop consumes it
+_REQUEST_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "models", "kill_request.json")
+
 # MED-031: Batch size and delay for position closes to avoid API rate limits
 KILL_SWITCH_BATCH_SIZE = getattr(config, "KILL_SWITCH_BATCH_SIZE", 5)
 KILL_SWITCH_BATCH_DELAY_SEC = getattr(config, "KILL_SWITCH_BATCH_DELAY_SEC", 0.5)
+
+
+def request_kill(reason: str = "manual (velox kill)") -> str:
+    """Ask a running bot to activate its kill switch. Returns the request file path."""
+    Path(_REQUEST_FILE).parent.mkdir(parents=True, exist_ok=True)
+    tmp = _REQUEST_FILE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump({"reason": reason, "timestamp": _time.time()}, f)
+    os.replace(tmp, _REQUEST_FILE)  # atomic: the loop never sees a partial file
+    return _REQUEST_FILE
+
+
+def consume_kill_request() -> str | None:
+    """Return the reason of a pending kill request and delete it, or None."""
+    try:
+        with open(_REQUEST_FILE) as f:
+            reason = json.load(f).get("reason", "manual (velox kill)")
+    except FileNotFoundError:
+        return None
+    except (OSError, ValueError):
+        reason = "manual (velox kill)"  # unreadable request still means "kill"
+    try:
+        os.unlink(_REQUEST_FILE)
+    except OSError:
+        pass
+    return reason
 
 
 class KillSwitch:

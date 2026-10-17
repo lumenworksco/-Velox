@@ -42,6 +42,7 @@ from data import (
     get_feed_monitor,
 )
 # V10: Decomposed engine modules
+from oms.kill_switch import consume_kill_request
 from engine.broker_sync import sync_positions_with_broker, check_shadow_exits
 from engine.signal_processor import process_signals
 from engine.exit_processor import (
@@ -818,7 +819,7 @@ def main():
     from engine.startup import (
         initialize_strategies, initialize_risk_engines,
         initialize_optional_modules, initialize_v10_components,
-        initialize_risk_manager, initialize_websocket, initialize_dashboard,
+        initialize_risk_manager, initialize_websocket,
     )
 
     strats = initialize_strategies()
@@ -949,7 +950,6 @@ def main():
     VIX_SPIKE_THRESHOLD_PCT = getattr(config, 'VIX_SPIKE_THRESHOLD_PCT', 0.20)
 
     ws_monitor = initialize_websocket(risk)
-    initialize_dashboard(order_manager, kill_switch, tiered_cb)
 
     # V12 BONUS: Initialize profit maximization components
     _intraday_vol_regime = IntradayVolRegime() if IntradayVolRegime else None
@@ -1022,8 +1022,6 @@ def main():
         features.append("Short")
     if config.TELEGRAM_ENABLED:
         features.append("Notify")
-    if config.WEB_DASHBOARD_ENABLED:
-        features.append("Web")
     if config.WEBSOCKET_MONITORING:
         features.append("WS")
 
@@ -1212,9 +1210,22 @@ def main():
             refresh_per_second=0.2,
             transient=False,
         ) as live:
+            _last_heartbeat = 0.0
             while True:
                 current = now_et()
                 current_time = current.time()
+
+                # -------------------------------------------------------
+                # Terminal control: heartbeat file (health checks) and
+                # `velox kill` requests
+                # -------------------------------------------------------
+                if _dr_instance is not None and time_mod.monotonic() - _last_heartbeat >= 30:
+                    _dr_instance.update_heartbeat({"open_positions": len(risk.open_trades)})
+                    _last_heartbeat = time_mod.monotonic()
+                _kill_reason = consume_kill_request()
+                if _kill_reason and kill_switch:
+                    logger.critical("Kill requested from terminal: %s", _kill_reason)
+                    kill_switch.activate(_kill_reason, risk_manager=risk, order_manager=order_manager)
 
                 # -------------------------------------------------------
                 # Daily reset
@@ -2016,28 +2027,6 @@ def main():
                 # -------------------------------------------------------
                 # Update dashboard
                 # -------------------------------------------------------
-                # V9: Update web dashboard shared state
-                if config.WEB_DASHBOARD_ENABLED:
-                    try:
-                        from web_dashboard import update_v9_state
-                        v9_update = {}
-                        if regime_detector and hasattr(regime_detector, 'hmm_regime'):
-                            v9_update['hmm_regime'] = str(regime_detector.hmm_regime or "UNKNOWN")
-                            v9_update['hmm_probabilities'] = getattr(regime_detector, 'hmm_probabilities', {})
-                        if cross_asset_monitor:
-                            v9_update['cross_asset_bias'] = cross_asset_monitor.get_equity_bias()
-                            try:
-                                v9_update['cross_asset_signals'] = cross_asset_monitor.compute_signals()
-                            except Exception as e:
-                                logger.debug("Cross-asset signals update failed: %s", e)
-                        if overnight_manager:
-                            v9_update['overnight_count'] = len(overnight_manager.get_overnight_positions())
-                        if adaptive_allocator and hasattr(vol_engine, '_adaptive_weights'):
-                            v9_update['adaptive_weights'] = getattr(vol_engine, '_adaptive_weights', {})
-                        update_v9_state(**v9_update)
-                    except Exception as e:
-                        logger.debug("Web dashboard state update failed: %s", e)
-
                 # Build V9 dashboard kwargs
                 _v9_dash = {}
                 try:

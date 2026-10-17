@@ -223,8 +223,6 @@ def build_dashboard(
         feat_parts.append("Short")
     if config.TELEGRAM_ENABLED:
         feat_parts.append("TG")
-    if config.WEB_DASHBOARD_ENABLED:
-        feat_parts.append("Web")
     if config.WEBSOCKET_MONITORING:
         feat_parts.append("WS")
     feat_str = f" | {'+'.join(feat_parts)}"

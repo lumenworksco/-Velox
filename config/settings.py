@@ -640,12 +640,6 @@ TELEGRAM_ENABLED = os.getenv("TELEGRAM_ENABLED", "false") == "true"
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 
-# --- Web Dashboard ---
-WEB_DASHBOARD_ENABLED = os.getenv("WEB_DASHBOARD_ENABLED", "true") == "true"
-WEB_DASHBOARD_PORT = int(os.getenv("WEB_DASHBOARD_PORT", "8080"))
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
-TRUSTED_PROXY_IPS: list[str] = []  # MED-034: IPs allowed to set X-Forwarded-For
-
 # --- WebSocket Position Monitoring ---
 WEBSOCKET_MONITORING = True
 WEBSOCKET_RECONNECT_SEC = 5
@@ -1140,7 +1134,6 @@ class OperationalSettings:
     """Grouped operational / monitoring parameters."""
     paper_mode: bool = True
     telegram_enabled: bool = False
-    web_dashboard_enabled: bool = False
     websocket_monitoring: bool = False
     watchdog_enabled: bool = False
     reconciliation_enabled: bool = False
@@ -1226,7 +1219,6 @@ def _build_settings() -> Settings:
         ops=OperationalSettings(
             paper_mode=_g("PAPER_MODE", True),
             telegram_enabled=_g("TELEGRAM_ENABLED", False),
-            web_dashboard_enabled=_g("WEB_DASHBOARD_ENABLED", True),
             websocket_monitoring=_g("WEBSOCKET_MONITORING", True),
             watchdog_enabled=_g("WATCHDOG_ENABLED", True),
             reconciliation_enabled=_g("RECONCILIATION_ENABLED", True),
