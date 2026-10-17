@@ -1,43 +1,54 @@
-# Velox V12 — Autonomous Algorithmic Trading System
+# Velox (formerly AlphaFlow)
 
 ![CI](https://github.com/lumenworksco/Velox/actions/workflows/ci.yml/badge.svg)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
-![Docker](https://img.shields.io/badge/docker-compose-2496ED.svg)
+![Interface: terminal](https://img.shields.io/badge/interface-terminal-black.svg)
 ![Broker: Alpaca](https://img.shields.io/badge/broker-Alpaca-yellow.svg)
 
-A production-grade autonomous equity trading system built on the Alpaca API. Features 6 diversified strategies (5 currently allocated), a unified ExitOrchestrator with 10-priority-level exit cascade, an 18-stage signal pipeline with ML confidence gating, real-time VaR monitoring, FinBERT sentiment analysis, structured logging, and a Docker production stack with PostgreSQL, Prometheus, Grafana, Alertmanager, and automated backups.
+**A terminal-native autonomous equity trading system built on the Alpaca API.** Six strategies, an 18-stage signal pipeline with ML confidence gating, a unified exit orchestrator, real-time VaR and a tiered circuit breaker, all driven from one command, `velox`. No browser, no web server: a live Rich dashboard, a status view, a kill switch and a backtester, all in your terminal.
 
-**Philosophy:** Consistent returns over big wins. Target 0.3-0.8% per trade, 65-75% win rate, 15-25 trades/day across the active strategies.
+**Philosophy:** Consistent returns over big wins. Target 0.3-0.8% per trade, 65-75% win rate, 15-25 trades/day.
+
+> Velox is the successor to **AlphaFlow**, a Python/FastAPI trading platform, and absorbs ideas from **Trading Algorithms**, a Rust backtesting and paper-trading workspace. See [Lineage](#lineage).
 
 ---
 
 ## Quick Start
 
-### Option 1: Docker (Recommended)
-
 ```bash
 git clone https://github.com/lumenworksco/Velox.git
 cd Velox
-cp .env.example .env
-# Edit .env with your Alpaca API keys
-docker compose up -d
+pip install -r requirements.txt
+cp .env.example .env        # add your Alpaca paper keys
+python velox.py run         # live terminal dashboard
 ```
 
-Services:
-- **Velox Dashboard**: http://localhost:8080
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3000 (admin/admin)
-- **Alertmanager**: http://localhost:9093
+Or with Docker (`docker compose up -d`, then `docker attach velox-v12` for the dashboard).
 
-### Option 2: Local
+### The `velox` command
+
+| Command | What it does |
+|---|---|
+| `velox run [--live] [--diagnose]` | Run the bot in this terminal with the live dashboard |
+| `velox start` / `velox stop` | Run in the background / stop gracefully |
+| `velox status [--watch]` | Heartbeat, open positions and recent trades (`--watch` is full-screen) |
+| `velox kill` | Emergency kill switch: cancel all orders, close all positions |
+| `velox health` | Exit 0 if the heartbeat is fresh (Docker/systemd health check) |
+| `velox backtest` | Backtest classic baselines on bundled data, yfinance, or `--strategy velox` for the production engine |
+| `velox tearsheet [--days N]` | Performance report from the trade database |
+| `velox demo` | Render the dashboard with synthetic data |
+| `velox strategies` | Strategies, allocations and baselines |
+
+(`python velox.py ...`, or symlink it onto your `PATH` as `velox`.)
+
+### The terminal dashboard
 
 ```bash
-pip install -r requirements.txt
-export ALPACA_API_KEY="your-api-key"
-export ALPACA_API_SECRET="your-secret-key"
-python main.py
+python velox.py demo     # preview with synthetic data, no broker needed
 ```
+
+It shows regime, portfolio and P&L, risk state (vol scalar, beta, P&L lock, consistency), weekly metrics, strategy allocation, open positions, per-strategy breakdown and recent trades.
 
 ---
 
@@ -72,98 +83,41 @@ python main.py
 
 ## Architecture
 
-~95,700 lines of code across 175 Python files, with 63 test files.
-
 ```
-trading_bot/
-  main.py                    # Thin orchestrator with position recovery on restart
-  config/
-    settings.py              # Canonical configuration (all strategy and risk parameters)
-  data.py                    # Alpaca market data (REST + WebSocket)
-  execution.py               # Order routing, TWAP splitting, bracket orders, chase logic
-  database.py                # SQLite/PostgreSQL persistence layer
+velox.py                     # The CLI: run / status / kill / backtest / tearsheet ...
+main.py                      # Orchestrator: startup, position recovery, main trading loop
+dashboard.py                 # Rich live terminal dashboard
+config/settings.py           # All strategy and risk parameters
+database.py                  # SQLite persistence (trades, positions, snapshots, signal log)
+backtester.py                # Production-strategy backtest simulations
 
-  engine/                    # V12 engine package
-    startup.py               # Module initialization and startup checks
-    signal_processor.py      # 18-stage signal pipeline with ML gating + sector enforcement
-    scanner.py               # Strategy scan orchestration with adaptive intervals
-    daily_tasks.py           # Daily reset, weekly tasks, EOD close, tax harvesting
-    broker_sync.py           # Position reconciliation with broker (open/close/30min)
-    exit_orchestrator.py     # Unified exit system: 10-priority-level exit cascade
-    profit_maximizer.py      # Adaptive scan, signal stacking, momentum persistence, dynamic stops
-    events.py                # Pub/sub event bus
-    metrics.py               # Prometheus counters/gauges/histograms
-    logging_config.py        # structlog dev/prod configuration
+engine/                      # Trading engine
+  startup.py                 #   module initialisation and startup checks
+  scanner.py                 #   strategy scan orchestration with adaptive intervals
+  signal_processor.py        #   18-stage signal pipeline with ML gating
+  exit_orchestrator.py       #   unified 10-priority exit cascade
+  exit_processor.py          #   strategy exits, WebSocket closes
+  broker_sync.py             #   position reconciliation with the broker
+  daily_tasks.py             #   daily reset, weekly tasks, EOD close, tax harvesting
+  profit_maximizer.py        #   adaptive scans, signal stacking, dynamic stops
+  events.py, event_log.py    #   pub/sub bus and audit event log
 
-  oms/                       # Order Management System
-    order.py                 # Order dataclass with 7-state machine
-    order_manager.py         # Thread-safe registry with idempotency keys
-    kill_switch.py           # Emergency halt: cancel all + close all
-    transaction_cost.py      # Pre-trade cost estimation (spread + slippage)
-
-  strategies/
-    base.py                  # Signal dataclass, shared types
-    regime.py                # SPY HMM market regime detection
-    stat_mean_reversion.py   # OU z-score mean reversion (25%)
-    vwap.py                  # VWAP + OU hybrid entries (13%)
-    kalman_pairs.py          # Kalman filter pairs trading (27%)
-    orb_v2.py                # Opening range breakout v2 (12%)
-    micro_momentum.py        # SPY vol spike micro momentum (5%)
-    pead.py                  # Post-earnings announcement drift (18%)
-    dynamic_universe.py      # Regime-adaptive universe selection
-
-  risk/
-    risk_manager.py          # Trade tracking, position limits, time-of-day and Friday multipliers
-    circuit_breaker.py       # V12 tiered circuit breaker (4 tiers + VIX spike trigger)
-    var_monitor.py           # Parametric + Historical + Monte Carlo VaR
-    correlation_limiter.py   # Eigenvalue-based effective bets + sector limits + intraday refresh
-    vol_targeting.py         # Volatility-targeted position sizing
-    daily_pnl_lock.py        # P&L lock states (NORMAL/GAIN_LOCK/LOSS_HALT)
-    beta_neutralizer.py      # Portfolio beta monitoring + SPY hedging
-
-  ml/                        # Machine Learning
-    finbert_sentiment.py     # FinBERT local sentiment scoring (no paid API)
-    model_monitor.py         # ML prediction accuracy tracking and drift detection
-
-  data/                      # Data quality and analysis
-    feed_monitor.py          # Alpaca outage detection + backup stops
-    gap_analysis.py          # Pre-open gap analysis for MR/breakout calibration
-
-  db/                        # SQLAlchemy database abstraction
-    __init__.py              # Dual-backend engine (SQLite/PostgreSQL)
-    models.py                # Database table definitions
-    migrations/              # Alembic migration scripts (includes commission column)
-
-  auth/                      # Dashboard authentication
-    jwt_auth.py              # JWT token create/verify
-
-  analytics/                 # Performance metrics and statistical tools
-    performance.py           # Sharpe, Sortino, drawdown, attribution
-    ou_tools.py              # Ornstein-Uhlenbeck parameter fitting
-    hurst.py                 # Hurst exponent (R/S analysis)
-    consistency_score.py     # Consistency score (0-100)
-
-  monitoring/
-    prometheus.yml           # Prometheus scrape configuration
-    health_alerts.py         # System health alerts (8 alert types)
-    daily_report.py          # Daily P&L Telegram report
-
-  models/                    # Trained ML models
-    model_*.pkl              # 4-model averaging ensemble (50 core features, 0.947 AUC)
-
-  scripts/
-    train_ml_model.py        # ML training: Alpaca data, feature selection, Optuna HPO
-    generate_tearsheet.py    # Performance tear sheet (terminal + HTML report)
-
-  reports/                     # Generated performance reports (tearsheet_YYYYMMDD.html)
-
-  web_dashboard.py           # FastAPI dashboard with Apple-style UI
-
-  tests/                     # 63 test files, 900+ tests
-  Dockerfile
-  docker-compose.yml         # Production stack: 6 services
-  requirements.txt
-  requirements-dev.txt       # Development dependencies
+oms/                         # Order management: 7-state orders, idempotency, kill switch
+strategies/                  # StatMR, VWAP, KalmanPairs, ORB, MicroMomentum, PEAD, regime, universe
+risk/                        # Circuit breaker, VaR, correlation limiter, vol targeting, Kelly,
+                             #   P&L lock, beta neutraliser, PDT, portfolio heat, corporate actions
+execution/                   # Order routing, TWAP, bracket orders, chase logic, fill analytics
+broker/                      # Broker abstraction and paper broker
+data/                        # Market data fetching, feed monitor, gap analysis, universe, samples/
+ml/                          # Feature pipeline, ensemble inference, training, FinBERT sentiment
+analytics/                   # Performance metrics, OU fitting, Hurst, HMM regime, signal ranking
+backtesting/                 # Event-driven backtester, attribution, and classic baselines
+microstructure/              # VPIN, spread, dark pool, trade classification
+compliance/, ops/            # Audit trail, best execution, PDT; disaster recovery, tax harvesting
+monitoring/                  # Latency tracker, metrics pipeline, watchdog, reconciliation
+scripts/                     # Training, tear sheet, demo dashboard, setup, backup/restore
+legacy/                      # Imported AlphaFlow and Trading Algorithms (history preserved)
+tests/                       # 1,800+ tests
 ```
 
 ---
@@ -217,31 +171,11 @@ Adaptive scan intervals based on market activity, signal stacking for high-convi
 ### Data Feed Monitoring
 Alpaca outage detection with automatic fallback to backup protective stops when live data feed goes stale.
 
-### Health Alerts
-8 alert types covering system health: data feed staleness, reconciliation mismatches, high rejection rates, circuit breaker activation, kill switch events, memory/CPU thresholds, and more.
-
 ### Transaction Cost Filter
 Pre-trade expected value check: rejects signals where estimated costs (spread + slippage + commission) exceed expected profit.
 
 ### Structured Logging
-JSON-formatted logs in production (structlog), human-readable in development. All events include correlation IDs for tracing.
-
-### Prometheus Metrics
-Exposed at `/metrics` on port 8080:
-- `velox_open_positions` -- Current position count
-- `velox_daily_pnl` -- Running daily P&L
-- `velox_order_latency` -- Order submission to fill latency
-- `velox_signal_count` -- Signals generated per strategy
-- `velox_circuit_breaker_state` -- Current circuit breaker tier
-
-### Web Dashboard
-Apple-style frosted glass UI at http://localhost:8080 with:
-- Live equity and P&L from Alpaca account
-- Open positions with real-time unrealized P&L
-- Trade log filterable by strategy
-- Signal filter analysis and exit reason breakdown
-- OMS status, circuit breaker state, kill switch controls
-- Auto-refresh every 30 seconds
+JSON-formatted logs in production (structlog), human-readable in development.
 
 ### Dynamic Universe
 Daily symbol selection at 9 AM based on volume, market cap, and current market regime. Adapts universe size and composition to volatility conditions.
@@ -267,24 +201,17 @@ Daily symbol selection at 9 AM based on volume, market cap, and current market r
 
 ---
 
-## Docker Production Stack
+## Docker
 
 ```bash
-docker compose up -d              # Start all 6 services
-docker compose logs -f velox      # Follow trading bot logs
-docker compose exec velox python main.py --diagnose  # Run diagnostic
+docker compose up -d                              # velox + daily backup
+docker attach velox-v12                           # live terminal dashboard (detach: Ctrl-P Ctrl-Q)
+docker compose logs -f velox                      # follow logs
+docker compose exec velox python velox.py status  # positions and trades
+docker compose exec velox python velox.py kill    # emergency stop
 ```
 
-| Service | Port | Description |
-|---|---|---|
-| **velox** | 8080 | Trading bot + web dashboard |
-| **postgres** | 5432 | PostgreSQL 16 database |
-| **prometheus** | 9090 | Metrics collection |
-| **grafana** | 3000 | Monitoring dashboards (admin/admin) |
-| **alertmanager** | 9093 | Alert routing and notification |
-| **backup** | -- | Automated database backups |
-
-Environment variables are configured in `.env` (see `.env.example`).
+The container health check runs `velox health`, which checks that the main loop's heartbeat is fresh. Configure everything in `.env` (see `.env.example`).
 
 ---
 
@@ -298,9 +225,7 @@ Environment variables are configured in `.env` (see `.env.example`).
 | `SCAN_INTERVAL_SEC` | `120` | Seconds between strategy scans (adaptive) |
 | `RISK_PER_TRADE_PCT` | `0.8%` | Max risk per trade |
 | `VOL_TARGET_DAILY` | `1.0%` | Daily portfolio volatility target |
-| `DATABASE_URL` | `sqlite:///bot.db` | Database connection (PostgreSQL supported) |
 | `STRUCTURED_LOGGING` | `false` | Enable JSON structured logging |
-| `WEB_DASHBOARD_ENABLED` | `true` | Enable web dashboard on port 8080 |
 | `WATCHDOG_ENABLED` | `false` | Enable position watchdog |
 | `NEWS_SENTIMENT_ENABLED` | `true` | Enable Alpaca news sentiment filter |
 | `FINBERT_ENABLED` | `true` | Enable local FinBERT sentiment scoring |
@@ -314,35 +239,26 @@ Environment variables are configured in `.env` (see `.env.example`).
 
 ---
 
-## Performance Reports
-
-Generate a comprehensive tear sheet with summary statistics, monthly returns, per-strategy breakdown, equity curve with SPY benchmark, and risk metrics.
+## Backtesting and Reports
 
 ```bash
-# Generate tear sheet (full history)
-python3 scripts/generate_tearsheet.py
+velox backtest                                  # all baselines on bundled sample data (data/samples)
+velox backtest --strategy rsi --symbols AAPL,SPY
+velox backtest --start 2023-01-01 --symbols NVDA   # fetch daily bars from yfinance
+velox backtest --strategy velox                 # the production strategies' simulations
 
-# Last 90 days only
-python3 scripts/generate_tearsheet.py --days 90
-
-# Custom output path
-python3 scripts/generate_tearsheet.py --output my_report.html
-
-# Skip SPY benchmark fetch (offline)
-python3 scripts/generate_tearsheet.py --no-spy
+velox tearsheet --days 90                       # performance report from bot.db
 ```
 
-Output:
-- **Terminal**: Rich-formatted tables with color-coded P&L
-- **HTML**: Self-contained dark-theme report saved to `reports/tearsheet_YYYYMMDD.html` (inline CSS + SVG charts, suitable for sharing)
+The baselines (EMA crossover, RSI reversal, momentum, Bollinger mean reversion) trade daily bars long-only with next-open fills and exist as yardsticks: a Velox strategy that cannot beat them is not earning its allocation.
 
 ---
 
 ## Testing
 
 ```bash
-# Run all tests
-pytest tests/ -v
+# Run all tests (TESTING=1 skips the Alpaca-credential check)
+TESTING=1 pytest tests/ -v
 
 # With coverage
 pytest tests/ -v --cov=. --cov-report=html
@@ -354,27 +270,7 @@ pytest tests/test_v10_events.py -v
 pytest tests/test_v10_phase4.py -v
 ```
 
-1,900+ tests across 85 test files covering all strategies, risk modules, OMS, exit orchestrator, event bus, circuit breaker, ML pipeline, and analytics.
-
----
-
-## API Endpoints
-
-| Endpoint | Description |
-|---|---|
-| `GET /health` | Health check (Docker/monitoring) |
-| `GET /api/stats` | Live performance stats from Alpaca + analytics |
-| `GET /api/positions` | Current open positions (live broker data) |
-| `GET /api/trades` | Trade history (filterable by strategy) |
-| `GET /api/portfolio_history` | Daily portfolio snapshots |
-| `GET /api/signals` | Signal log by date |
-| `GET /api/signal_stats` | Signal skip reason breakdown |
-| `GET /api/trade_analysis` | Exit reason analysis |
-| `GET /api/risk-state` | Risk engine state (vol scalar, beta, P&L lock) |
-| `GET /api/strategy_health` | Per-strategy health metrics |
-| `GET /api/v10/oms` | OMS order status and history |
-| `GET /api/v10/circuit_breaker` | Circuit breaker state and history |
-| `POST /api/v10/kill_switch/activate` | Activate emergency kill switch |
+1,870+ tests across 88 test files covering all strategies, risk modules, OMS, exit orchestrator, event bus, circuit breaker, ML pipeline, and analytics.
 
 ---
 
@@ -390,10 +286,23 @@ pytest tests/test_v10_phase4.py -v
 | V6 | 2026-03 | Complete rebuild: statistical mean reversion, vol targeting |
 | V7 | 2026-03 | 5-strategy diversification, news sentiment, LLM scoring, adaptive exits |
 | V8 | 2026-03 | Bug fixes, thread safety, dead code removal |
-| V9 | 2026-03 | Engine decomposition, PostgreSQL, OMS skeleton |
+| V9 | 2026-03 | Engine decomposition, OMS skeleton |
 | V10 | 2026-03 | Production-grade: tiered circuit breaker, VaR monitor, correlation limiter, event bus, structured logging, Prometheus metrics, Docker stack, Apple-style dashboard |
 | V11 | 2026-03 | ML ensemble (50 features, 0.947 AUC), FinBERT sentiment, Bayesian Kelly sizing |
-| **V12** | **2026-04** | **Unified ExitOrchestrator, 18-stage signal pipeline, position recovery, corporate actions monitoring, tax-loss harvesting, intraday correlation refresh, profit maximizer, data feed monitoring, health alerts, 6-service Docker stack** |
+| V12 | 2026-04 | **Unified ExitOrchestrator, 18-stage signal pipeline, position recovery, corporate actions monitoring, tax-loss harvesting, intraday correlation refresh, profit maximizer, data feed monitoring, health alerts, 6-service Docker stack** |
+
+| **V13** | **2026-10** | **Terminal-only: web dashboard, Prometheus/Grafana and JWT auth removed; `velox` CLI with a terminal kill switch; classic baselines ported from the Rust project; AlphaFlow and Trading Algorithms merged in (history preserved); relicensed MIT** |
+
+---
+
+## Lineage
+
+Velox grew out of two earlier projects, both merged into this repository with their git history intact under [`legacy/`](legacy/):
+
+- **AlphaFlow** (`legacy/alphaflow`): the original Python/FastAPI trading platform for Alpaca (strategy engine, backtester, risk manager, React UI). Velox is its direct successor, so the project is "Velox, formerly AlphaFlow".
+- **Trading Algorithms** (`legacy/trading-algorithms`): a Rust workspace with SIMD indicators, a backtester and paper trading. Its classic strategies (MA crossover, RSI, momentum, Bollinger mean reversion) now live on as the `velox backtest` baselines in `backtesting/baselines.py`, and its sample market data ships in `data/samples/`.
+
+Secrets, `node_modules` and logs were stripped from both histories before the import.
 
 ---
 

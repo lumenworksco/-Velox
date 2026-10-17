@@ -2,19 +2,19 @@
 FROM python:3.13-slim AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc libpq-dev && \
+    gcc && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
 COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt psycopg2-binary
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # Stage 2: Runtime (no gcc, smaller image)
 FROM python:3.13-slim
 
-# Runtime libs: libpq for psycopg2, libgomp1 for LightGBM OpenMP
+# Runtime libs: libgomp1 for LightGBM OpenMP
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 libgomp1 && \
+    libgomp1 && \
     rm -rf /var/lib/apt/lists/*
 
 # Create non-root user

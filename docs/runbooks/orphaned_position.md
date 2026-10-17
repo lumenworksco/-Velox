@@ -4,7 +4,7 @@
 - Position exists at broker (Alpaca) but not in bot's database
 - Position exists in database but not at broker
 - Reconciliation log: `Position mismatch detected`
-- Dashboard shows position count different from broker count
+- Open positions in `python velox.py status` differ from the broker's count
 - Unexpected P&L discrepancies
 
 ## Diagnosis Steps
@@ -16,7 +16,7 @@
 
 2. **Check broker positions (via API):**
    ```bash
-   curl http://localhost:8080/api/positions | python3 -m json.tool
+   python velox.py status
    ```
 
 3. **Compare the two lists manually for mismatches.**

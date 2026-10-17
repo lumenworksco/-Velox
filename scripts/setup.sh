@@ -224,17 +224,6 @@ else
         info "FRED API key skipped (macro signals will use fallback data)"
     fi
 
-    # ---- Database password ----------------------------------------
-    echo ""
-    info "Generating secure passwords for PostgreSQL..."
-    PG_PASSWORD=$(python3 -c "import secrets; print(secrets.token_urlsafe(24))")
-
-    sed -i.bak "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$PG_PASSWORD|" .env
-    # Update the DATABASE_URL to match the new password
-    sed -i.bak "s|^DATABASE_URL=.*|DATABASE_URL=postgresql://velox:${PG_PASSWORD}@postgres:5432/velox|" .env
-
-    ok "Secure passwords generated and written to .env"
-
     # Clean up sed backup files
     rm -f .env.bak
 
@@ -251,7 +240,7 @@ info "Running database init and migrations..."
 if python3 -c "import database; database.init_db(); database.run_migrations()" 2>&1; then
     ok "Database initialized and migrations applied"
 else
-    warn "Database initialization had issues (this is OK if using Docker PostgreSQL exclusively)"
+    warn "Database initialization had issues (check the output above)"
 fi
 
 # =============================================================================

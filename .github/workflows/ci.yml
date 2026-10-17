@@ -83,7 +83,6 @@ jobs:
 
           # ML
           from ml.inference import BatchInferenceEngine
-          from ml.model_monitor import get_model_monitor
 
           # Analytics
           from analytics import compute_analytics, sharpe_ratio, profit_factor
