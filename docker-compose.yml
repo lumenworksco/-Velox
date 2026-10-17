@@ -1,16 +1,14 @@
-# V12 Production Stack: Velox + PostgreSQL + Prometheus + Grafana + Alertmanager + Backup
+# V12 Production Stack: Velox + PostgreSQL + Backup
 #
 # Usage:
 #   docker compose up -d              # Start all services
 #   docker compose logs -f velox      # Follow trading bot logs
 #   docker compose exec velox python main.py --diagnose  # Run diagnostic
 #
-# Endpoints:
-#   http://localhost:8080       — Velox dashboard
-#   http://localhost:8080/metrics — Prometheus metrics
-#   http://localhost:9090       — Prometheus UI
-#   http://localhost:3000       — Grafana (credentials in .env)
-#   http://localhost:9093       — Alertmanager UI
+# The terminal dashboard is the interface:
+#   docker attach velox-v12            # live dashboard (detach: Ctrl-P Ctrl-Q)
+#   docker compose exec velox python velox.py status
+#   docker compose exec velox python velox.py kill
 
 services:
   velox:
@@ -22,9 +20,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-velox}:${POSTGRES_PASSWORD:-velox}@postgres:5432/${POSTGRES_DB:-velox}
       - STRUCTURED_LOGGING=true
-      - WEB_DASHBOARD_PORT=8080
-    ports:
-      - "8080:8080"
+    tty: true          # Rich live dashboard needs a terminal
+    stdin_open: true
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
@@ -33,7 +30,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "python", "velox.py", "health"]
       interval: 30s
       timeout: 5s
       start_period: 15s
@@ -66,68 +63,6 @@ services:
         limits:
           cpus: "1.0"
           memory: 512M
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: velox-prometheus
-    restart: unless-stopped
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.retention.time=90d"
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
-      - promdata:/prometheus
-    depends_on:
-      - velox
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 512M
-
-  # T6-002: Alertmanager — routes Prometheus alerts to Telegram/email
-  alertmanager:
-    image: prom/alertmanager:latest
-    container_name: velox-alertmanager
-    restart: unless-stopped
-    command:
-      - "--config.file=/etc/alertmanager/alertmanager.yml"
-      - "--storage.path=/alertmanager"
-    ports:
-      - "9093:9093"
-    volumes:
-      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - alertdata:/alertmanager
-    env_file: .env
-    depends_on:
-      - prometheus
-    deploy:
-      resources:
-        limits:
-          cpus: "0.25"
-          memory: 128M
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: velox-grafana
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}
-      - GF_USERS_ALLOW_SIGN_UP=false
-    volumes:
-      - grafdata:/var/lib/grafana
-    depends_on:
-      - prometheus
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 256M
 
   # V12 15.3: Automated daily backups — PostgreSQL pg_dump + SQLite bot.db copy
   backup:
@@ -186,6 +121,3 @@ services:
 
 volumes:
   pgdata:
-  promdata:
-  grafdata:
-  alertdata:

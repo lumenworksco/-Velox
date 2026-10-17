@@ -19,12 +19,7 @@ hmmlearn==0.3.3
 pykalman==0.11.2
 optuna==4.7.0
 
-# Auth
-bcrypt==5.0.0
-
-# Web & API
-fastapi==0.135.3
-uvicorn==0.44.0
+# HTTP & streaming
 httpx==0.28.1
 websockets==16.0
 
@@ -34,7 +29,6 @@ alembic==1.18.4
 
 # Observability
 structlog==25.5.0
-prometheus-client==0.24.1
 
 # LLM (optional)
 anthropic==0.94.1

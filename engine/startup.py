@@ -231,20 +231,3 @@ def initialize_websocket(risk, ws_monitor_cls=None):
     ws_monitor.start()
     logger.info("WebSocket position monitor started")
     return ws_monitor
-
-
-def initialize_dashboard(order_manager=None, kill_switch=None, tiered_cb=None):
-    """Start the web dashboard and register components."""
-    if not config.WEB_DASHBOARD_ENABLED:
-        return False
-
-    try:
-        from web_dashboard import start_web_dashboard, set_v10_components
-        start_web_dashboard()
-        if order_manager or kill_switch or tiered_cb:
-            set_v10_components(order_manager, kill_switch, tiered_cb)
-        logger.info(f"Web dashboard started at http://localhost:{config.WEB_DASHBOARD_PORT}")
-        return True
-    except Exception as e:
-        logger.warning(f"Web dashboard failed to start: {e}")
-        return False

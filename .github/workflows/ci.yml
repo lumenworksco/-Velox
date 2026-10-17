@@ -122,12 +122,4 @@ jobs:
         run: docker build -t velox-v12 .
 
       - name: Smoke test
-        run: |
-          docker run -d --name velox-test -p 8080:8080 \
-            -e ALPACA_API_KEY=test -e ALPACA_API_SECRET=test \
-            -e TESTING=1 \
-            velox-v12 || true
-          sleep 10
-          docker logs velox-test 2>&1 | tail -20 || true
-          docker stop velox-test || true
-          docker rm velox-test || true
+        run: docker run --rm -e TESTING=1 velox-v12 python velox.py strategies
