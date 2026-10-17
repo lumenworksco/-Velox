@@ -214,7 +214,11 @@ def build_dashboard(
         recent_lines = ["  (no trades yet)"]
 
     # Feature flags
-    feat_parts = ["MR40%", "VWAP20%", "PAIRS20%", "PEAD10%", "ORB5%", "MICRO5%"]
+    feat_parts = [
+        f"{short}{alloc_map.get(key, 0):.0%}"
+        for key, short in [("STAT_MR", "MR"), ("VWAP", "VWAP"), ("KALMAN_PAIRS", "PAIRS"),
+                           ("PEAD", "PEAD"), ("ORB", "ORB"), ("MICRO_MOM", "MICRO")]
+    ]
     if config.ALLOW_SHORT:
         feat_parts.append("Short")
     if config.TELEGRAM_ENABLED:
