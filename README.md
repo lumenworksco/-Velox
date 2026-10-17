@@ -36,7 +36,7 @@ Or with Docker (`docker compose up -d`, then `docker attach velox-v12` for the d
 | `velox kill` | Emergency kill switch: cancel all orders, close all positions |
 | `velox health` | Exit 0 if the heartbeat is fresh (Docker/systemd health check) |
 | `velox backtest` | Backtest classic baselines on bundled data, yfinance, or `--strategy velox` for the production engine |
-| `velox tearsheet [--days N]` | Performance report from the trade database |
+| `velox tearsheet [--days N]` | Terminal performance report from the trade database |
 | `velox demo` | Render the dashboard with synthetic data |
 | `velox strategies` | Strategies, allocations and baselines |
 

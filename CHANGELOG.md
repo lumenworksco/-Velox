@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Dashboard footer derives strategy allocations from config
 
 ### Removed
+- HTML tear sheet export and SPY-benchmark fetch (`velox tearsheet` is terminal only); committed `reports/tearsheet_*.html`
 - FastAPI web dashboard, JWT auth, Prometheus metrics, Grafana, Alertmanager
 - PostgreSQL service and backups (the bot only ever used SQLite)
 - Duplicate `start.sh`, `stop.sh`, `status.sh` scripts (now `velox start|stop|status`)

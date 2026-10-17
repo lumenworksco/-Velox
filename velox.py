@@ -331,7 +331,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args, unknown = parser.parse_known_args(argv)
+    if unknown:
+        if not hasattr(args, "extra"):
+            parser.error(f"unrecognized arguments: {' '.join(unknown)}")
+        args.extra = [*unknown, *args.extra]  # pass-through commands forward leading options
     return args.func(args) or 0
 
 
