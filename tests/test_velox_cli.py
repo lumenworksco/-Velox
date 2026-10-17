@@ -76,3 +76,15 @@ def test_ago_formatting():
     assert velox._ago(600) == "10m ago"
     assert velox._ago(7200 * 2) == "4h ago"
     assert velox._ago(86400 * 5) == "5d ago"
+
+
+def test_passthrough_commands_forward_leading_options(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(velox, "cmd_run", lambda a: seen.setdefault("extra", a.extra) and 0)
+    assert velox.main(["run", "--live", "--diagnose"]) == 0
+    assert seen["extra"] == ["--live", "--diagnose"]
+
+
+def test_non_passthrough_commands_reject_unknown_options(capsys):
+    with pytest.raises(SystemExit):
+        velox.main(["status", "--bogus"])
