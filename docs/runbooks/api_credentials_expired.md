@@ -3,7 +3,7 @@
 ## Symptoms
 - Log message: `FATAL: Cannot connect to Alpaca API`
 - Log message: `Failed to fetch bars for {symbol}: 403 Forbidden`
-- Prometheus alert: `APIFailureRate` or `APIFailureRateCritical`
+- Log lines about repeated Alpaca API failures (or the API failure breaker tripping the kill switch)
 - Bot exits on startup with credential error
 - Readiness probe returns 503 with broker check failing
 
@@ -58,11 +58,11 @@
 
 4. **Verify connectivity:**
    ```bash
-   curl http://localhost:8080/ready | python3 -m json.tool
+   python velox.py status
    ```
 
 ## Prevention
 - Set up key rotation reminders (Alpaca keys do not expire but can be revoked)
 - Use a secrets manager (e.g., AWS Secrets Manager, HashiCorp Vault) instead of env vars
-- Monitor the `APIFailureRate` Prometheus alert to catch issues early
+- Watch `bot.log` for API failures to catch expiry early
 - Keep backup API keys in a secure location

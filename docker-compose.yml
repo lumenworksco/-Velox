@@ -1,4 +1,4 @@
-# V12 Production Stack: Velox + PostgreSQL + Backup
+# Production Stack: Velox + Backup
 #
 # Usage:
 #   docker compose up -d              # Start all services
@@ -18,7 +18,6 @@ services:
     stop_grace_period: 45s
     env_file: .env
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-velox}:${POSTGRES_PASSWORD:-velox}@postgres:5432/${POSTGRES_DB:-velox}
       - STRUCTURED_LOGGING=true
     tty: true          # Rich live dashboard needs a terminal
     stdin_open: true
@@ -26,9 +25,6 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
       - ./bot.db:/app/bot.db
-    depends_on:
-      postgres:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "velox.py", "health"]
       interval: 30s
@@ -41,45 +37,14 @@ services:
           cpus: "2.0"
           memory: 2G
 
-  postgres:
-    image: postgres:16-alpine
-    container_name: velox-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-velox}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      POSTGRES_DB: ${POSTGRES_DB:-velox}
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U velox"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: 512M
-
-  # V12 15.3: Automated daily backups — PostgreSQL pg_dump + SQLite bot.db copy
+  # Automated daily SQLite backups (bot.db copy, 30-day retention)
   backup:
-    image: postgres:16-alpine
+    image: alpine:3
     container_name: velox-backup
     restart: unless-stopped
-    environment:
-      PGHOST: postgres
-      PGUSER: ${POSTGRES_USER:-velox}
-      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      PGDATABASE: ${POSTGRES_DB:-velox}
     volumes:
       - ./backups:/backups
       - ./bot.db:/app/bot.db:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
     entrypoint: /bin/sh
     command:
       - -c
@@ -96,11 +61,6 @@ services:
           ts=$$(date +%Y%m%d_%H%M%S)
           echo "[$$ts] Starting backups..."
 
-          # PostgreSQL backup
-          pg_dump -Fc -f "/backups/velox_pg_$$ts.dump" && \
-            echo "[$$ts] PostgreSQL backup OK" || \
-            echo "[$$ts] PostgreSQL backup FAILED"
-
           # SQLite backup (simple copy, safe for read-only mount)
           if [ -f /app/bot.db ]; then
             cp /app/bot.db "/backups/bot_$$ts.db" && \
@@ -109,7 +69,6 @@ services:
           fi
 
           # Prune backups older than 30 days
-          find /backups -name "velox_pg_*.dump" -mtime +30 -delete 2>/dev/null
           find /backups -name "bot_*.db" -mtime +30 -delete 2>/dev/null
           echo "[$$ts] Backup cycle complete"
         done
@@ -118,6 +77,3 @@ services:
         limits:
           cpus: "0.25"
           memory: 256M
-
-volumes:
-  pgdata:

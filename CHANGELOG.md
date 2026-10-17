@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [13.0.0] - 2026-10-17
+
+### Added
+- **`velox` CLI** -- `run`, `start`, `stop`, `status [--watch]`, `health`, `kill`, `backtest`, `tearsheet`, `demo`, `strategies`
+- **Terminal kill switch** -- `velox kill` drops a request file that the main loop consumes (replaces the web endpoint)
+- **Heartbeat every 30s** from the main loop; Docker and CI health checks use `velox health`
+- **Baseline strategies** ported from the Rust *Trading Algorithms* project (EMA crossover, RSI, momentum, Bollinger mean reversion) in `backtesting/baselines.py`, with sample market data in `data/samples/`
+- **Predecessor projects merged** with history preserved under `legacy/`: AlphaFlow (Velox's predecessor) and Trading Algorithms (Rust). Secrets, `node_modules` and logs were stripped first
+- Issue/PR templates and a code of conduct
+
+### Changed
+- **Terminal only**: README, docs, runbooks, Docker and CI describe a terminal workflow
+- **License is now MIT** (was proprietary); the commercial license template is removed
+- CI runs pytest directly with coverage (it previously piped through `head` and stopped at the first failure, hiding 30 failing tests); gitleaks gets `GITHUB_TOKEN`
+- Docker stack reduced to `velox` + `backup`; health check is the heartbeat file
+- Dashboard footer derives strategy allocations from config
+
+### Removed
+- FastAPI web dashboard, JWT auth, Prometheus metrics, Grafana, Alertmanager
+- PostgreSQL service and backups (the bot only ever used SQLite)
+- Duplicate `start.sh`, `stop.sh`, `status.sh` scripts (now `velox start|stop|status`)
+
+### Fixed
+- 30 stale or order-dependent tests (ORB demoted to 0% allocation, new micro-momentum and stat-MR logic, shared-module mutation, import-order-dependent broker patching)
+- `OrderBookFeatureExtractor.get_features(symbol)` returned global history after a per-symbol reset
+- Dashboard API no longer returned raw exception text (CodeQL `py/stack-trace-exposure`)
+
 ## [12.0.0] - 2026-04-05
 
 ### Added
