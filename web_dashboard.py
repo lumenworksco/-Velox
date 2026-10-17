@@ -198,7 +198,8 @@ async def readiness_check():
         checks["database"]["latency_ms"] = round(latency, 1)
         checks["database"]["detail"] = f"{len(positions)} open positions"
     except Exception as e:
-        checks["database"]["detail"] = str(e)
+        logger.warning("readiness: database check failed: %s", e)
+        checks["database"]["detail"] = "database check failed"
         overall_ok = False
 
     # Check 2: Broker API connectivity
@@ -212,7 +213,8 @@ async def readiness_check():
         equity = float(account.equity) if hasattr(account, "equity") else 0
         checks["broker"]["detail"] = f"equity=${equity:,.0f}"
     except Exception as e:
-        checks["broker"]["detail"] = str(e)
+        logger.warning("readiness: broker check failed: %s", e)
+        checks["broker"]["detail"] = "broker check failed"
         overall_ok = False
 
     # Check 3: Data feed status
@@ -227,7 +229,8 @@ async def readiness_check():
         if not feed_ok:
             overall_ok = False
     except Exception as e:
-        checks["data_feed"]["detail"] = str(e)
+        logger.warning("readiness: data feed check failed: %s", e)
+        checks["data_feed"]["detail"] = "data feed check failed"
         overall_ok = False
 
     status_code = 200 if overall_ok else 503
@@ -972,7 +975,7 @@ async def v2_strategy(name: str):
         result["recent_trades"] = []
         result["win_rate_7d"] = 0.0
         result["trade_count_7d"] = 0
-        result["trades_error"] = str(e)
+        result["trades_error"] = "Internal server error"
 
     # Current allocation weight
     try:
@@ -1287,7 +1290,7 @@ async def fill_quality(user=Depends(_require_auth)):
         return {"status": "ok", "data": report.__dict__ if hasattr(report, '__dict__') else report}
     except Exception as e:
         logger.debug("WIRE-009: Fill analytics error (fail-open): %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # WIRE-011: Attribution endpoint (fail-open)
@@ -1310,7 +1313,7 @@ async def attribution(days: int = Query(default=30, ge=1, le=365), user=Depends(
         return {"status": "ok", "data": report.__dict__ if hasattr(report, '__dict__') else report}
     except Exception as e:
         logger.debug("WIRE-011: Attribution error (fail-open): %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # V10: Register Prometheus metrics endpoint

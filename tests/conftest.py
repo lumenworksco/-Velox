@@ -62,6 +62,7 @@ class MockAsset:
         self.tradable = tradable
         self.shortable = shortable
         self.easy_to_borrow = easy_to_borrow
+        self.status = "active"
 
 
 class MockTradingClient:
@@ -336,7 +337,21 @@ def losing_trade():
 @pytest.fixture(autouse=True)
 def patch_trading_client(mock_trading_client):
     """Auto-patch data.get_trading_client to return the mock client."""
-    with patch("data.get_trading_client", return_value=mock_trading_client):
+    import contextlib
+    import sys
+
+    import data as _data
+
+    original = _data.get_trading_client
+    with contextlib.ExitStack() as stack:
+        stack.enter_context(patch("data.get_trading_client", return_value=mock_trading_client))
+        # Modules that did `from data import get_trading_client` hold their own
+        # reference, so patch those too (depends on import order otherwise).
+        for name, mod in list(sys.modules.items()):
+            if name != "data" and getattr(mod, "get_trading_client", None) is original:
+                stack.enter_context(
+                    patch.object(mod, "get_trading_client", return_value=mock_trading_client)
+                )
         yield mock_trading_client
 
 
@@ -358,3 +373,21 @@ def isolate_oms_state(tmp_path):
         except Exception:
             pass
         yield
+
+
+@pytest.fixture(autouse=True)
+def reset_signal_processor_state():
+    """Clear module-level signal-processor blocklists/cooldowns between tests."""
+    import sys
+    mod = sys.modules.get("engine.signal_processor")
+    state = getattr(mod, "_state", None)
+    if isinstance(getattr(state, "halted_symbols", None), dict):
+        with state.lock:
+            state.halted_symbols.clear()
+            state.asset_status_blocklist.clear()
+            state.stopout_cooldowns.clear()
+            if isinstance(getattr(state, "recent_trades", None), dict):
+                state.recent_trades.clear()
+            state.last_asset_status_refresh = 0.0
+            state.last_successful_asset_refresh = 0.0
+    yield

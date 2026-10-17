@@ -56,6 +56,22 @@ def _make_intraday_bars(n: int = 30, base_price: float = 100.0,
     }, index=pd.DatetimeIndex(dates))
 
 
+def _make_bars_ending_at(last_price: float, base_price: float = 100.0,
+                         n: int = 30) -> pd.DataFrame:
+    """Intraday bars oscillating around base_price, with a chosen final close.
+
+    check_exits() derives its own z-score from the bars, so tests steer the
+    z-score by controlling the last close (sigma is floored by the OU sigma).
+    """
+    bars = _make_intraday_bars(n, base_price=base_price)
+    close = np.where(np.arange(n) % 2 == 0, base_price + 0.5, base_price - 0.5).astype(float)
+    close[-1] = last_price
+    bars["close"] = close
+    bars["high"] = close + 0.1
+    bars["low"] = close - 0.1
+    return bars
+
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -243,10 +259,8 @@ class TestCheckExits:
             "AAPL": {'kappa': 0.15, 'mu': 100.0, 'sigma': 1.5, 'half_life': 0.5}
         }
 
-        bars = _make_intraday_bars(5, base_price=100.0)
-        mock_bars.return_value = bars
-        # V11.4: Use z=-0.1 (negative side of mean for long) to trigger partial exit
-        mock_zscore.return_value = -0.1
+        # z = (99.85 - 100) / 1.5 = -0.1 (negative side of mean for long)
+        mock_bars.return_value = _make_bars_ending_at(99.85, base_price=100.0)
 
         trade = SimpleNamespace(
             strategy="STAT_MR", side="buy",
@@ -272,11 +286,9 @@ class TestCheckExits:
             "AAPL": {'kappa': 0.15, 'mu': 100.0, 'sigma': 1.5, 'half_life': 0.5}
         }
 
-        bars = _make_intraday_bars(5, base_price=100.0)
-        mock_bars.return_value = bars
         # V10: For a long trade, partial exit triggers when z crosses ABOVE
-        # +MR_ZSCORE_EXIT_PARTIAL (0.5), meaning price overshot above the mean.
-        mock_zscore.return_value = 0.6
+        # +MR_ZSCORE_EXIT_PARTIAL (0.5): z = (100.9 - 100) / 1.5 = 0.6
+        mock_bars.return_value = _make_bars_ending_at(100.9, base_price=100.0)
 
         trade = SimpleNamespace(
             strategy="STAT_MR", side="buy",
@@ -309,7 +321,7 @@ class TestCheckExits:
         # Price std ~1.0, so z-score = (price - mu) / price_sigma
         # For z < -2.5 (stop threshold): need price < 100 - 2.5 * price_sigma
         # With bars around 95.0 and std ~1.0: z = (95 - 100) / 1.0 = -5.0
-        bars = _make_intraday_bars(5, base_price=95.0)
+        bars = _make_intraday_bars(30, base_price=95.0)
         mock_bars.return_value = bars
 
         trade = SimpleNamespace(
@@ -335,9 +347,8 @@ class TestCheckExits:
             "MSFT": {'kappa': 0.15, 'mu': 400.0, 'sigma': 3.0, 'half_life': 0.5}
         }
 
-        bars = _make_intraday_bars(5, base_price=400.0)
-        mock_bars.return_value = bars
-        mock_zscore.return_value = 3.0  # Far above mean -> stop for short
+        # z = (409 - 400) / 3.0 = 3.0 -> far above mean, stop for short
+        mock_bars.return_value = _make_bars_ending_at(409.0, base_price=400.0)
 
         trade = SimpleNamespace(
             strategy="STAT_MR", side="sell",
@@ -364,7 +375,7 @@ class TestCheckExits:
             "AAPL": {'kappa': 0.15, 'mu': 100.0, 'sigma': 1.5, 'half_life': 0.1}
         }
 
-        bars = _make_intraday_bars(5, base_price=100.0)
+        bars = _make_intraday_bars(30, base_price=100.0)
         mock_bars.return_value = bars
         mock_zscore.return_value = -1.0  # Still displaced but not at stop
 
