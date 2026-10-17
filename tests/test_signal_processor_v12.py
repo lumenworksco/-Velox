@@ -136,9 +136,21 @@ def _mock_deps():
 def sp(_mock_deps):
     """Import and return a fresh signal_processor module."""
     import importlib
+    import engine
+    # Import a private copy so the real module (shared with other test files)
+    # is never mutated with the mocked dependencies.
+    saved = sys.modules.pop("engine.signal_processor", None)
+    saved_attr = getattr(engine, "signal_processor", None)
     mod = importlib.import_module("engine.signal_processor")
-    importlib.reload(mod)
-    return mod
+    yield mod
+    if saved is not None:
+        sys.modules["engine.signal_processor"] = saved
+    else:
+        sys.modules.pop("engine.signal_processor", None)
+    if saved_attr is not None:
+        engine.signal_processor = saved_attr
+    elif hasattr(engine, "signal_processor"):
+        del engine.signal_processor
 
 
 # ===================================================================
@@ -521,7 +533,7 @@ class TestStopoutCooldown:
         cfg.REENTRY_COOLDOWN_MIN = 15
 
         sp.register_stopout("AAPL")
-        now = datetime.now()
+        now = datetime.now(sp.config.ET)
         assert sp._is_in_cooldown("AAPL", now) is True
 
     def test_cooldown_expires(self, sp, _mock_deps):
@@ -529,7 +541,7 @@ class TestStopoutCooldown:
         cfg.REENTRY_COOLDOWN_MIN = 15
 
         sp.register_stopout("AAPL")
-        future = datetime.now() + timedelta(minutes=20)
+        future = datetime.now(sp.config.ET) + timedelta(minutes=20)
         assert sp._is_in_cooldown("AAPL", future) is False
 
     def test_no_cooldown_for_unregistered(self, sp):

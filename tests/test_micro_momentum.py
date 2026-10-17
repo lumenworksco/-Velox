@@ -53,10 +53,10 @@ class TestDetectEvent:
         from strategies.micro_momentum import IntradayMicroMomentum
 
         # Volume spike: 5M vs 1M avg = 5x (> 3.0 threshold)
-        # Price move: (450 - 449) / 449 = 0.22% (> 0.15%)
+        # Price move: (452 - 449) / 449 = 0.67% (> scaled min move 0.25%)
         mock_bars.return_value = _make_spy_bars(
             last_volume=5_000_000, avg_volume=1_000_000,
-            last_close=450.0, prev_close=449.0,
+            last_close=452.0, prev_close=449.0,
         )
 
         strat = IntradayMicroMomentum()
@@ -93,7 +93,7 @@ class TestDetectEvent:
 
         mock_bars.return_value = _make_spy_bars(
             last_volume=5_000_000, avg_volume=1_000_000,
-            last_close=448.0, prev_close=449.0,
+            last_close=446.0, prev_close=449.0,
         )
 
         strat = IntradayMicroMomentum()
@@ -121,7 +121,7 @@ class TestDetectEvent:
 
         mock_bars.return_value = _make_spy_bars(
             last_volume=5_000_000, avg_volume=1_000_000,
-            last_close=450.0, prev_close=449.0,
+            last_close=452.0, prev_close=449.0,
         )
 
         strat = IntradayMicroMomentum()

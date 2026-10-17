@@ -126,7 +126,7 @@ class TestCalculatePositionSize:
         with override_config(ADAPTIVE_ALLOCATION_ENABLED=False):
             qty = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=98.0,
-                vol_scalar=1.0, strategy="ORB", side="buy",
+                vol_scalar=1.0, strategy="STAT_MR", side="buy",
             )
         assert qty > 0
 
@@ -154,11 +154,11 @@ class TestCalculatePositionSize:
         with override_config(ADAPTIVE_ALLOCATION_ENABLED=False):
             qty_normal = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.0, strategy="ORB",
+                vol_scalar=1.0, strategy="STAT_MR",
             )
             qty_high = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.5, strategy="ORB",
+                vol_scalar=1.5, strategy="STAT_MR",
             )
         assert qty_high >= qty_normal
 
@@ -167,11 +167,11 @@ class TestCalculatePositionSize:
         with override_config(ADAPTIVE_ALLOCATION_ENABLED=False):
             qty_normal = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.0, strategy="ORB",
+                vol_scalar=1.0, strategy="STAT_MR",
             )
             qty_low = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=0.3, strategy="ORB",
+                vol_scalar=0.3, strategy="STAT_MR",
             )
         assert qty_low <= qty_normal
 
@@ -180,11 +180,11 @@ class TestCalculatePositionSize:
         with override_config(ADAPTIVE_ALLOCATION_ENABLED=False):
             qty_long = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.0, strategy="ORB", side="buy",
+                vol_scalar=1.0, strategy="STAT_MR", side="buy",
             )
             qty_short = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=105.0,
-                vol_scalar=1.0, strategy="ORB", side="sell",
+                vol_scalar=1.0, strategy="STAT_MR", side="sell",
             )
         assert qty_short <= qty_long
 
@@ -193,11 +193,11 @@ class TestCalculatePositionSize:
         with override_config(ADAPTIVE_ALLOCATION_ENABLED=False):
             qty_full = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.0, strategy="ORB", pnl_lock_mult=1.0,
+                vol_scalar=1.0, strategy="STAT_MR", pnl_lock_mult=1.0,
             )
             qty_locked = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.0, strategy="ORB", pnl_lock_mult=0.5,
+                vol_scalar=1.0, strategy="STAT_MR", pnl_lock_mult=0.5,
             )
         assert qty_locked <= qty_full
 
@@ -206,7 +206,7 @@ class TestCalculatePositionSize:
         with override_config(ADAPTIVE_ALLOCATION_ENABLED=False, MAX_POSITION_PCT=0.08):
             qty = engine.calculate_position_size(
                 equity=100_000, entry_price=10.0, stop_price=9.99,
-                vol_scalar=1.5, strategy="ORB",
+                vol_scalar=1.5, strategy="STAT_MR",
             )
         max_value = 100_000 * 0.08
         position_value = qty * 10.0
@@ -229,13 +229,13 @@ class TestCalculatePositionSize:
             now_prime = datetime(2026, 4, 1, 10, 30, tzinfo=ET)
             qty_prime = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.0, strategy="ORB", now=now_prime,
+                vol_scalar=1.0, strategy="STAT_MR", now=now_prime,
             )
             # Lunch session (12:00) => multiplier 0.60
             now_lunch = datetime(2026, 4, 1, 12, 0, tzinfo=ET)
             qty_lunch = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.0, strategy="ORB", now=now_lunch,
+                vol_scalar=1.0, strategy="STAT_MR", now=now_lunch,
             )
         assert qty_lunch <= qty_prime
 
@@ -246,13 +246,13 @@ class TestCalculatePositionSize:
             now_wed = datetime(2026, 4, 1, 14, 30, tzinfo=ET)
             qty_wed = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.0, strategy="ORB", now=now_wed,
+                vol_scalar=1.0, strategy="STAT_MR", now=now_wed,
             )
             # Friday afternoon
             now_fri = datetime(2026, 4, 3, 14, 30, tzinfo=ET)
             qty_fri = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.0, strategy="ORB", now=now_fri,
+                vol_scalar=1.0, strategy="STAT_MR", now=now_fri,
             )
         assert qty_fri <= qty_wed
 
@@ -261,7 +261,7 @@ class TestCalculatePositionSize:
         with override_config(ADAPTIVE_ALLOCATION_ENABLED=False):
             qty = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.0, strategy="ORB", now=None,
+                vol_scalar=1.0, strategy="STAT_MR", now=None,
             )
         assert qty > 0
 
@@ -281,9 +281,9 @@ class TestKellyIntegration:
         with override_config(ADAPTIVE_ALLOCATION_ENABLED=False):
             qty = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.0, strategy="ORB",
+                vol_scalar=1.0, strategy="STAT_MR",
             )
-        mock_kelly.get_fraction.assert_called_once_with("ORB")
+        mock_kelly.get_fraction.assert_called_once_with("STAT_MR")
         assert qty > 0
 
     def test_flat_risk_when_no_kelly(self, engine, override_config):
@@ -291,7 +291,7 @@ class TestKellyIntegration:
         with override_config(ADAPTIVE_ALLOCATION_ENABLED=False, RISK_PER_TRADE_PCT=0.01):
             qty = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.0, strategy="ORB",
+                vol_scalar=1.0, strategy="STAT_MR",
             )
         assert qty > 0
 
@@ -304,12 +304,12 @@ class TestAdaptiveWeights:
 
     def test_adaptive_weights_used_when_enabled(self, engine, override_config):
         """Adaptive allocation weights should scale position size."""
-        weights = {"ORB": 0.50, "VWAP": 0.50}
+        weights = {"STAT_MR": 0.50, "VWAP": 0.50}
         engine.set_adaptive_weights(weights)
         with override_config(ADAPTIVE_ALLOCATION_ENABLED=True):
             qty = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.0, strategy="ORB",
+                vol_scalar=1.0, strategy="STAT_MR",
             )
         assert qty > 0
 
@@ -318,7 +318,7 @@ class TestAdaptiveWeights:
         with override_config(ADAPTIVE_ALLOCATION_ENABLED=False):
             qty = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.0, strategy="ORB",
+                vol_scalar=1.0, strategy="STAT_MR",
             )
         assert qty > 0
 
@@ -360,7 +360,7 @@ class TestEdgeCases:
         with override_config(ADAPTIVE_ALLOCATION_ENABLED=False):
             qty = engine.calculate_position_size(
                 equity=100_000, entry_price=5000.0, stop_price=4900.0,
-                vol_scalar=1.0, strategy="ORB",
+                vol_scalar=1.0, strategy="STAT_MR",
             )
         assert qty >= 0
 
