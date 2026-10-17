@@ -143,14 +143,6 @@ class PositionMonitor:
                         f"WebSocket failed {consecutive_failures} consecutive times — "
                         "real-time monitoring disabled! SL/TP checks rely on polling."
                     )
-                    try:
-                        from notifications import send_telegram
-                        send_telegram(
-                            f"⚠️ VELOX ALERT: WebSocket disconnected {consecutive_failures}x. "
-                            "Real-time SL/TP monitoring disabled."
-                        )
-                    except Exception:
-                        pass
 
             if self._running:
                 # V12 HOTFIX: Rate-limit reconnect log — this fires every 5s

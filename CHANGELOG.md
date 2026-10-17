@@ -20,6 +20,8 @@ All notable changes to this project will be documented in this file.
 - Dashboard footer derives strategy allocations from config
 
 ### Removed
+- Telegram notifications and every trace of them: `notifications.py`, the `TELEGRAM_*` settings, setup prompts and docs. Alerts now go to the log only
+- Unreachable code (~60 modules): the `ml/models` research models, `strategies/options`, `sector_momentum`, the unused SQLAlchemy/Alembic `db/` package, `exit_manager.py`, `replay.py`, Kelly sizing, shadowed root `data.py`/`execution.py`/`config.py`, and their tests
 - HTML tear sheet export and SPY-benchmark fetch (`velox tearsheet` is terminal only); committed `reports/tearsheet_*.html`
 - FastAPI web dashboard, JWT auth, Prometheus metrics, Grafana, Alertmanager
 - PostgreSQL service and backups (the bot only ever used SQLite)
@@ -41,7 +43,6 @@ All notable changes to this project will be documented in this file.
 - **Data Feed Monitor** -- Alpaca outage detection with backup stop enforcement
 - **Gap Analysis** -- Pre-open gap detection for MR/breakout signal boosting
 - **Health Alerts** -- 8 system health alert types (DB failure, API rate limit, feed stale, etc.)
-- **Daily P&L Reports** -- Automated EOD Telegram summary with per-strategy breakdown
 - **Tax-Loss Harvesting** -- Friday EOD scan for tax-loss opportunities with wash sale enforcement
 - **Disaster Recovery** -- State recovery on startup, heartbeat monitoring, position reconciliation
 - **Position Recovery** -- Broker position adoption on mid-day restart
@@ -160,7 +161,6 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Strategy allocations: StatMR 50%, VWAP 20%, Pairs 20%, ORB 5%, MicroMom 5%
-- Notifications switched from WhatsApp to Telegram Bot API
 - Dropped Python 3.11 support; minimum is now 3.12
 - Dockerfile updated to Python 3.13
 - Dashboard and web UI updated to V7 branding with new strategy filters
@@ -201,7 +201,6 @@ All notable changes to this project will be documented in this file.
 - Short selling support
 - Gap & Go strategy (pre-market gap continuation)
 - Relative strength scanning
-- Telegram alerts for fills, errors, and daily P&L summaries
 - Web dashboard with live positions and equity curve
 - Auto-optimization of strategy parameters via walk-forward analysis
 

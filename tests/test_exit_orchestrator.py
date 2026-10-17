@@ -83,7 +83,6 @@ def _mock_config():
     cfg.ADAPTIVE_EXITS_ENABLED = False
     cfg.RSI_EXIT_THRESHOLD = 70
     cfg.ATR_EXPANSION_MULT = 2.5
-    cfg.TELEGRAM_ENABLED = False
     cfg.MAX_NEW_ENTRIES_PER_SCAN = 5
     cfg.MICRO_BETA_TABLE = {}
     cfg.UNIVERSE = []

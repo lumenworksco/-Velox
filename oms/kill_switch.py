@@ -225,17 +225,6 @@ class KillSwitch:
                     f"{failed_closes}. MANUAL INTERVENTION REQUIRED."
                 )
 
-        # 3. Send notification
-        try:
-            import notifications
-            if config.TELEGRAM_ENABLED:
-                notifications.send_alert(
-                    f"KILL SWITCH ACTIVATED: {reason}\n"
-                    f"All positions closed, all orders cancelled."
-                )
-        except Exception:
-            pass
-
     def deactivate(self):
         """Deactivate kill switch, allowing trading to resume."""
         if not self.active:

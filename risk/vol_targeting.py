@@ -30,13 +30,8 @@ class VolatilityTargetingRiskEngine:
         self.target_vol = config.VOL_TARGET_DAILY
         self.max_vol = config.VOL_TARGET_MAX
         self._last_scalar = 1.0
-        self._kelly_engine = None
         self._adaptive_weights: dict[str, float] | None = None
         self._weights_lock = threading.Lock()  # MED-005: protect _adaptive_weights
-
-    def set_kelly_engine(self, kelly_engine):
-        """Set the Kelly engine for dynamic risk sizing."""
-        self._kelly_engine = kelly_engine
 
     def set_adaptive_weights(self, weights: dict[str, float]):
         """Store current adaptive allocation weights for position sizing (thread-safe)."""
@@ -115,13 +110,8 @@ class VolatilityTargetingRiskEngine:
         if equity <= 0 or entry_price <= 0:
             return 0
 
-        # 1. Base risk per trade (Kelly or flat)
-        if self._kelly_engine is not None:
-            risk_pct = self._kelly_engine.get_fraction(strategy)
-            sizing_path = "kelly"
-        else:
-            risk_pct = config.RISK_PER_TRADE_PCT
-            sizing_path = "flat"
+        # 1. Base risk per trade
+        risk_pct = config.RISK_PER_TRADE_PCT
         risk_dollars = equity * risk_pct
 
         # 2. Risk per share (distance to stop)
@@ -241,7 +231,7 @@ class VolatilityTargetingRiskEngine:
 
         # V11.3 T13: Log sizing path for diagnostics
         logger.debug(
-            f"VolTarget sizing: {strategy} → {sizing_path} risk_pct={risk_pct:.4f} "
+            f"VolTarget sizing: {strategy} → risk_pct={risk_pct:.4f} "
             f"vol_scalar={vol_scalar:.2f} pnl_lock={pnl_lock_mult:.2f} "
             f"alloc={allocation:.3f} tod={tod_mult:.2f} fri={friday_mult:.2f} "
             f"→ qty={qty} (${qty * entry_price:.0f})"

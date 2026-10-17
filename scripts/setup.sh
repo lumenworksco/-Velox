@@ -185,27 +185,6 @@ else
         ok "Paper trading mode selected"
     fi
 
-    # ---- Telegram notifications ----------------------------------------------
-    echo ""
-    ask "Enable Telegram notifications? (y/N):"
-    read -r USE_TELEGRAM
-    if [[ "$USE_TELEGRAM" =~ ^[Yy] ]]; then
-        ask "Telegram Bot Token:"
-        read -r TG_TOKEN
-        ask "Telegram Chat ID:"
-        read -r TG_CHAT_ID
-        if [ -n "$TG_TOKEN" ] && [ -n "$TG_CHAT_ID" ]; then
-            sed -i.bak "s|^TELEGRAM_ENABLED=.*|TELEGRAM_ENABLED=true|" .env
-            sed -i.bak "s|^TELEGRAM_BOT_TOKEN=.*|TELEGRAM_BOT_TOKEN=$TG_TOKEN|" .env
-            sed -i.bak "s|^TELEGRAM_CHAT_ID=.*|TELEGRAM_CHAT_ID=$TG_CHAT_ID|" .env
-            ok "Telegram notifications enabled"
-        else
-            warn "Missing token or chat ID -- Telegram left disabled"
-        fi
-    else
-        info "Telegram notifications skipped"
-    fi
-
     # ---- FRED API key --------------------------------------------------------
     echo ""
     ask "Do you have a FRED API key? (free at https://fred.stlouisfed.org/docs/api/api_key.html) (y/N):"
