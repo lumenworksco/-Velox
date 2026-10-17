@@ -78,7 +78,6 @@ jobs:
           from risk.circuit_breaker import TieredCircuitBreaker
           from risk.var_monitor import VaRMonitor
           from risk.correlation_limiter import CorrelationLimiter
-          from risk.kelly import KellyEngine
           from risk.vol_targeting import VolatilityTargetingRiskEngine
 
           # ML
