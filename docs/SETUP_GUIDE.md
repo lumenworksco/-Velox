@@ -450,16 +450,6 @@ The following table lists all key parameters with their defaults and safe ranges
 | Vol scalar ceiling | `vol_scalar_max` | 1.5 | 1.0 -- 2.0 |
 | Bearish size cut | `bearish_size_cut` | 40% | 20% -- 60% |
 
-**Kelly Criterion:**
-
-| Parameter | Config Key | Default | Safe Range |
-|---|---|---|---|
-| Kelly enabled | `kelly.enabled` | true | true/false |
-| Min trades for Kelly | `kelly.min_trades` | 30 | 20 -- 50 |
-| Kelly fraction | `kelly.fraction_mult` | 0.5 (half-Kelly) | 0.25 -- 0.75 |
-| Kelly min risk | `kelly.min_risk` | 0.3% | 0.1% -- 0.5% |
-| Kelly max risk | `kelly.max_risk` | 2.0% | 1.0% -- 3.0% |
-
 **Daily P&L Controls:**
 
 | Parameter | Config Key | Default | Safe Range |
@@ -530,12 +520,10 @@ The following parameters are carefully tuned and should not be modified without 
     | StatMR       |  | risk_manager.py   (sizing)      |  | data.py (Alpaca) |
     | VWAP         |  | vol_targeting.py  (vol target)  |  | yfinance (VIX)   |
     | KalmanPairs  |  | circuit_breaker.py (4-tier CB)  |  | FinBERT (NLP)    |
-    | ORB          |  | kelly.py          (Kelly crit)  |  | FRED (macro)     |
-    | MicroMom     |  | daily_pnl_lock.py (P&L locks)   |  | EDGAR (filings)  |
-    | PEAD         |  | beta_neutralizer.py (hedging)   |  |                  |
-    +--------------+  | portfolio_heat.py  (correlation) |  +------------------+
-                      | pdt_tracker.py    (PDT rule)    |
-                      +---------------------------------+
+    | ORB          |  | daily_pnl_lock.py (P&L locks)   |  | FRED (macro)     |
+    | MicroMom     |  | beta_neutralizer.py (hedging)   |  | EDGAR (filings)  |
+    | PEAD         |  | pdt_tracker.py    (PDT rule)    |  |                  |
+    +--------------+  +---------------------------------+  +------------------+
                                      |
                           +----------v-----------+
                           |      Persistence     |
@@ -561,10 +549,8 @@ The following parameters are carefully tuned and should not be modified without 
 4. **Position Sizing** -- Surviving signals are sized using:
    - Risk-per-trade percentage (0.8% default)
    - Volatility targeting (scale to 1% daily vol)
-   - Kelly criterion (half-Kelly based on rolling win rate)
    - VIX risk scalar (reduce in high-volatility regimes)
    - Regime adjustment (40% size cut in bearish regimes)
-   - Portfolio heat check (block if total heat exceeds limit)
 
 5. **Order Submission** -- Sized orders are submitted to Alpaca as bracket orders (entry + take-profit + stop-loss) via the execution module with smart routing and adaptive TWAP.
 

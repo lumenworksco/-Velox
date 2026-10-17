@@ -49,7 +49,7 @@ Thanks for your interest in contributing to Velox V12.
 
 - **`engine/`** -- Core trading engine (startup, scanning, signal processing, exit orchestrator, events)
 - **`oms/`** -- Order Management System (order lifecycle, kill switch, cost model)
-- **`risk/`** -- 28 risk modules (circuit breaker, VaR, correlation, vol targeting, Kelly, drawdown, etc.)
+- **`risk/`** -- risk modules (circuit breaker, VaR, correlation, vol targeting, drawdown, etc.)
 - **`strategies/`** -- 6 trading strategies (StatMR, VWAP, KalmanPairs, ORB, MicroMom, PEAD)
 - **`execution/`** -- Order routing, smart router, chase logic, slippage model
 - **`ml/`** -- ML pipeline (inference, features, FinBERT sentiment, model monitoring)
@@ -59,7 +59,7 @@ Thanks for your interest in contributing to Velox V12.
 - **`compliance/`** -- PDT protection, audit trail, best execution, surveillance
 - **`monitoring/`** -- Latency/metrics pipeline, watchdog, reconciliation
 - **`ops/`** -- Disaster recovery, drawdown risk, tax-loss harvesting
-- **`tests/`** -- 1,900+ unit tests across 85 test files
+- **`tests/`** -- 1,600+ unit tests across 70 test files
 
 ## Pull Request Requirements
 
