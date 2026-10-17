@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/lumenworksco/Velox/actions/workflows/ci.yml/badge.svg)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)
-![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 ![Docker](https://img.shields.io/badge/docker-compose-2496ED.svg)
 ![Broker: Alpaca](https://img.shields.io/badge/broker-Alpaca-yellow.svg)
 
@@ -405,6 +405,6 @@ pytest tests/test_v10_phase4.py -v
 
 ## License
 
-Velox is proprietary software. See [LICENSE](LICENSE) and [docs/LICENSE_COMMERCIAL.md](docs/LICENSE_COMMERCIAL.md) for terms. Contact Lumen Studio for commercial licensing.
+Released under the [MIT License](LICENSE).
 
 See also: [CONTRIBUTING](CONTRIBUTING.md) · [SECURITY](SECURITY.md) · [CHANGELOG](CHANGELOG.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
