@@ -4,7 +4,6 @@ Covers:
 - Position sizing with vol target
 - compute_vol_scalar() computation
 - Min/max bounds on scalar and position size
-- Kelly integration
 - Intraday and Friday multipliers
 - Strategy allocation weighting
 - PnL lock multiplier
@@ -262,36 +261,6 @@ class TestCalculatePositionSize:
             qty = engine.calculate_position_size(
                 equity=100_000, entry_price=100.0, stop_price=95.0,
                 vol_scalar=1.0, strategy="STAT_MR", now=None,
-            )
-        assert qty > 0
-
-
-# ===================================================================
-# Kelly integration
-# ===================================================================
-
-class TestKellyIntegration:
-
-    def test_kelly_engine_used_when_set(self, engine, override_config):
-        """If Kelly engine is set, it should determine risk_pct."""
-        mock_kelly = MagicMock()
-        mock_kelly.get_fraction.return_value = 0.02  # 2% Kelly fraction
-        engine.set_kelly_engine(mock_kelly)
-
-        with override_config(ADAPTIVE_ALLOCATION_ENABLED=False):
-            qty = engine.calculate_position_size(
-                equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.0, strategy="STAT_MR",
-            )
-        mock_kelly.get_fraction.assert_called_once_with("STAT_MR")
-        assert qty > 0
-
-    def test_flat_risk_when_no_kelly(self, engine, override_config):
-        """Without Kelly engine, RISK_PER_TRADE_PCT should be used."""
-        with override_config(ADAPTIVE_ALLOCATION_ENABLED=False, RISK_PER_TRADE_PCT=0.01):
-            qty = engine.calculate_position_size(
-                equity=100_000, entry_price=100.0, stop_price=95.0,
-                vol_scalar=1.0, strategy="STAT_MR",
             )
         assert qty > 0
 

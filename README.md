@@ -234,7 +234,6 @@ The container health check runs `velox health`, which checks that the main loop'
 | `ADAPTIVE_EXITS_ENABLED` | `true` | Enable VIX-aware adaptive exits |
 | `WALK_FORWARD_ENABLED` | `true` | Enable weekly walk-forward validation |
 | `TAX_HARVESTING_ENABLED` | `true` | Enable Friday EOD tax-loss harvesting |
-| `TELEGRAM_ENABLED` | `false` | Enable Telegram trade alerts |
 | `ALLOW_SHORT` | `false` | Enable short selling |
 
 ---

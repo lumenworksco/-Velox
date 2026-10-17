@@ -33,7 +33,7 @@ class HeartbeatWatchdog:
 
     If no heartbeat is received within `timeout_sec`, logs CRITICAL and
     invokes the optional `alert_callback` for external notification
-    (e.g., Telegram, PagerDuty, email).
+    (e.g., PagerDuty, email).
     """
 
     def __init__(

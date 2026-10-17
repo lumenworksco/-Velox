@@ -3,7 +3,7 @@
 DataFeedMonitor tracks per-cycle data fetch success/failure rates to detect
 Alpaca API outages during market hours. When >50% of the symbol universe fails
 in the same cycle, the monitor declares "feed_down" and:
-  1. Sends a CRITICAL Telegram alert via the notifications module.
+  1. Logs a CRITICAL alert.
   2. Provides a local price cache so exit checks can still enforce stops
      using the last known prices.
   3. Marks OU parameters as "stale" so that signal confidence is reduced
@@ -29,21 +29,6 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
-
-# Lazy-load notifications to avoid circular imports
-_notifications = None
-
-
-def _get_notifications():
-    global _notifications
-    if _notifications is None:
-        try:
-            import notifications as _n
-            _notifications = _n
-        except ImportError:
-            _notifications = False
-    return _notifications if _notifications else None
-
 
 class DataFeedMonitor:
     """Monitors Alpaca data feed health and provides backup price cache.
@@ -278,65 +263,37 @@ class DataFeedMonitor:
     # ------------------------------------------------------------------
 
     def _send_alert(self, total: int, failed: int) -> None:
-        """Send CRITICAL Telegram alert for feed outage."""
+        """Log a CRITICAL alert for a feed outage."""
         self._last_alert_time = _time.monotonic()
-        import config
-        notif = _get_notifications()
-        if notif and config.TELEGRAM_ENABLED:
-            try:
-                notif._send_telegram(
-                    "\U0001f6a8 *CRITICAL: DATA FEED DOWN*\n"
-                    f"Failed: {failed}/{total} symbols ({failed/total*100:.0f}%)\n"
-                    f"Backup stops: ACTIVE (using cached prices)\n"
-                    f"New signals: BLOCKED until recovery\n"
-                    f"Time: {datetime.now(config.ET).strftime('%H:%M:%S ET')}"
-                )
-            except Exception as e:
-                logger.warning("V12-2.3: Failed to send feed-down alert: %s", e)
+        logger.critical(
+            "V12-2.3: DATA FEED DOWN: %d/%d symbols failing (%.0f%%). "
+            "Backup stops ACTIVE (cached prices), new signals BLOCKED until recovery.",
+            failed, total, failed / total * 100 if total else 100.0,
+        )
 
     def _maybe_repeat_alert(self, total: int, failed: int) -> None:
-        """Repeat alert every ALERT_COOLDOWN_SECONDS while feed is down."""
+        """Repeat the alert every ALERT_COOLDOWN_SECONDS while the feed is down."""
         now_mono = _time.monotonic()
         if (now_mono - self._last_alert_time) >= self.ALERT_COOLDOWN_SECONDS:
             self._last_alert_time = now_mono
-            import config
-            notif = _get_notifications()
-            if notif and config.TELEGRAM_ENABLED:
-                try:
-                    down_duration = ""
-                    if self._feed_down_since:
-                        elapsed = datetime.now(config.ET) - self._feed_down_since
-                        minutes = int(elapsed.total_seconds() / 60)
-                        down_duration = f"\nDuration: {minutes} min"
-                    notif._send_telegram(
-                        "\U0001f6a8 *DATA FEED STILL DOWN*\n"
-                        f"Cycle {self.consecutive_down_cycles}: "
-                        f"{failed}/{total} symbols failing"
-                        f"{down_duration}\n"
-                        f"Backup stops remain active."
-                    )
-                except Exception as e:
-                    logger.warning("V12-2.3: Failed to send repeat alert: %s", e)
+            minutes = 0
+            if self._feed_down_since:
+                import config
+                minutes = int((datetime.now(config.ET) - self._feed_down_since).total_seconds() / 60)
+            logger.critical(
+                "V12-2.3: DATA FEED STILL DOWN: cycle %d, %d/%d symbols failing, down %d min. "
+                "Backup stops remain active.",
+                self.consecutive_down_cycles, failed, total, minutes,
+            )
 
     def _send_recovery_alert(self) -> None:
-        """Send recovery notification."""
-        import config
-        notif = _get_notifications()
-        if notif and config.TELEGRAM_ENABLED:
-            try:
-                down_cycles = self.consecutive_down_cycles
-                stale_until = (
-                    self.recovery_until.strftime('%H:%M:%S ET')
-                    if self.recovery_until else "N/A"
-                )
-                notif._send_telegram(
-                    "\u2705 *DATA FEED RECOVERED*\n"
-                    f"Down for {down_cycles} scan cycles.\n"
-                    f"OU params stale until: {stale_until}\n"
-                    f"Signal confidence reduced to 60% during stale window."
-                )
-            except Exception as e:
-                logger.warning("V12-2.3: Failed to send recovery alert: %s", e)
+        """Log feed recovery."""
+        stale_until = self.recovery_until.strftime('%H:%M:%S ET') if self.recovery_until else "N/A"
+        logger.warning(
+            "V12-2.3: DATA FEED RECOVERED after %d scan cycles. OU params stale until %s; "
+            "signal confidence reduced to 60%% during the stale window.",
+            self.consecutive_down_cycles, stale_until,
+        )
 
     # ------------------------------------------------------------------
     # Stats / status

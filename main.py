@@ -60,17 +60,16 @@ try:
 except ImportError:
     _exit_orchestrator = None
 from engine.scanner import scan_all_strategies, check_all_exits, run_beta_neutralization
-from engine.daily_tasks import daily_reset, weekly_tasks, eod_close, backup_database
+from engine.daily_tasks import daily_reset, weekly_tasks, eod_close
 # V12 BONUS: Profit maximization engine
 try:
     from engine.profit_maximizer import (
         IntradayVolRegime, WinStreakTracker,
-        compute_dynamic_stop, get_adaptive_scan_interval,
+        get_adaptive_scan_interval,
     )
 except ImportError:
     IntradayVolRegime = None
     WinStreakTracker = None
-    compute_dynamic_stop = None
     get_adaptive_scan_interval = None
 from strategies.base import Signal
 from strategies.regime import MarketRegime
@@ -112,11 +111,6 @@ try:
     from position_monitor import PositionMonitor
 except ImportError:
     PositionMonitor = None
-
-try:
-    import notifications
-except ImportError:
-    notifications = None
 
 try:
     from news_sentiment import AlpacaNewsSentiment
@@ -227,11 +221,6 @@ except ImportError:
     DynamicCorrelation = None
 
 try:
-    from execution.smart_router import SmartOrderRouter as V11SmartRouter
-except ImportError:
-    V11SmartRouter = None
-
-try:
     from execution.optimal_execution import AlmgrenChriss
 except ImportError:
     AlmgrenChriss = None
@@ -301,10 +290,6 @@ try:
 except ImportError:
     MetricsPipeline = None
 
-try:
-    from compliance.audit_trail import AuditTrail as V11AuditTrail
-except ImportError:
-    V11AuditTrail = None
 
 try:
     from compliance.pdt import PDTCompliance
@@ -923,14 +908,6 @@ def main():
                 "V12 6.5: Position recovery complete — %d adopted, %d orphaned",
                 _adopted, _orphaned,
             )
-            if notifications and config.TELEGRAM_ENABLED:
-                try:
-                    notifications.send_alert(
-                        f"Position Recovery: {_adopted} adopted, {_orphaned} orphaned",
-                        severity="WARNING",
-                    )
-                except Exception as e:
-                    logger.debug("V12 6.5: Position recovery notification failed: %s", e)
         else:
             logger.info("V12 6.5: Position recovery — all positions in sync")
     except Exception as _e:
@@ -1017,11 +994,9 @@ def main():
             logger.warning(f"V12 2.5: CorporateActionDetector init failed (fail-open): {e}")
 
     # Feature flags
-    features = ["MR40%", "VWAP20%", "PAIRS20%", "PEAD10%", "ORB5%", "MICRO5%"]
+    features = [f"{k}{v:.0%}" for k, v in config.STRATEGY_ALLOCATIONS.items() if v]
     if config.ALLOW_SHORT:
         features.append("Short")
-    if config.TELEGRAM_ENABLED:
-        features.append("Notify")
     if config.WEBSOCKET_MONITORING:
         features.append("WS")
 
@@ -1525,11 +1500,6 @@ def main():
                         if skip_scan:
                             # V12 FINAL: Define tier_name before any conditional block
                             tier_name = tiered_cb.current_tier.name if tiered_cb else "ACTIVE"
-                            if notifications and config.TELEGRAM_ENABLED:
-                                try:
-                                    notifications.notify_circuit_breaker(risk.day_pnl)
-                                except Exception as e:
-                                    logger.warning(f"Circuit breaker notification failed: {e}")
                             logger.warning(f"Circuit breaker {tier_name} — skipping scan cycle (day P&L: {risk.day_pnl:.2f})")
                             last_scan = current
                             continue
@@ -1836,12 +1806,6 @@ def main():
                     print_day_summary(summary, consistency_score=latest_consistency_score)
                     logger.info(f"Day summary: {summary}")
 
-                    if notifications and config.TELEGRAM_ENABLED:
-                        try:
-                            notifications.notify_daily_summary(summary, risk.current_equity)
-                        except Exception as e:
-                            logger.warning(f"Daily summary notification failed: {e}")
-
                     # Save daily snapshot
                     try:
                         wr = summary.get("win_rate", 0) if summary.get("trades", 0) > 0 else 0
@@ -1971,13 +1935,10 @@ def main():
                 if (current - last_analytics_update).total_seconds() >= 300:
                     try:
                         current_analytics = analytics_mod.compute_analytics()
-                        if current_analytics and notifications and config.TELEGRAM_ENABLED:
+                        if current_analytics:
                             dd = current_analytics.get("max_drawdown", 0)
                             if dd > 0.05:
-                                try:
-                                    notifications.notify_drawdown_warning(dd)
-                                except Exception as e:
-                                    logger.debug("Drawdown notification failed: %s", e)
+                                logger.warning("Max drawdown %.1f%% exceeds 5%%", dd * 100)
                     except Exception as e:
                         logger.error(f"Failed to compute analytics: {e}")
 

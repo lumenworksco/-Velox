@@ -18,7 +18,7 @@ from data import get_intraday_bars, get_daily_bars
 from strategies.base import Signal
 from database import (
     save_kalman_pair, get_active_kalman_pairs,
-    deactivate_kalman_pair, deactivate_all_kalman_pairs,
+    deactivate_all_kalman_pairs,
     record_kalman_p_reset, get_recent_kalman_p_reset_counts,
 )
 

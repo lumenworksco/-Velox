@@ -6,8 +6,6 @@ from risk.daily_pnl_lock import DailyPnLLock, LockState
 from risk.beta_neutralizer import BetaNeutralizer
 
 # V8 risk modules
-from risk.kelly import KellyEngine
-from risk.portfolio_heat import PortfolioHeatTracker
 
 # V10 advanced risk modules
 from risk.factor_model import FactorRiskModel
@@ -39,8 +37,6 @@ __all__ = [
     "LockState",
     "BetaNeutralizer",
     # V8
-    "KellyEngine",
-    "PortfolioHeatTracker",
     # V10 advanced risk
     "FactorRiskModel",
     "HierarchicalRiskParity",

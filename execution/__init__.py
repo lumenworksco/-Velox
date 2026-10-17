@@ -50,18 +50,6 @@ from execution.fill_analytics import (
     ExecutionReport,
 )
 
-# T7-001: RL Execution Agent (fail-open)
-try:
-    from execution.rl_executor import (
-        RLExecutionAgent,
-        ExecutionState,
-        ExecutionAction,
-    )
-except ImportError:
-    RLExecutionAgent = None  # type: ignore
-    ExecutionState = None    # type: ignore
-    ExecutionAction = None   # type: ignore
-
 __all__ = [
     # Original execution functions
     "ValidationResult",
@@ -96,8 +84,4 @@ __all__ = [
     "FillAnalytics",
     "FillRecord",
     "ExecutionReport",
-    # T7-001: RL Execution Agent
-    "RLExecutionAgent",
-    "ExecutionState",
-    "ExecutionAction",
 ]

@@ -2,7 +2,7 @@
 
 Complements test_database.py which already covers trades, open_positions,
 daily_snapshots, and signals.  This file covers the newer tables:
-kelly_params, monte_carlo_results, and execution_analytics, and also
+monte_carlo_results, and execution_analytics, and also
 provides explicit round-trip tests for signals and snapshots aligned with
 the test_database_tables spec.
 """
@@ -44,7 +44,6 @@ class TestInitDb:
             "ou_parameters",
             "kalman_pairs",
             "consistency_log",
-            "kelly_params",
             "monte_carlo_results",
             "execution_analytics",
         }
@@ -52,7 +51,7 @@ class TestInitDb:
         assert not missing, f"Missing tables: {missing}"
 
     def test_v8_tables_exist(self):
-        """V8 tables (kelly, monte_carlo, execution_analytics) must exist."""
+        """V8 tables (monte_carlo, execution_analytics) must exist."""
         conn = database._get_conn()
         tables = {
             row["name"]
@@ -60,7 +59,7 @@ class TestInitDb:
                 "SELECT name FROM sqlite_master WHERE type='table'"
             ).fetchall()
         }
-        for t in ("kelly_params", "monte_carlo_results", "execution_analytics"):
+        for t in ("monte_carlo_results", "execution_analytics"):
             assert t in tables, f"V8 table '{t}' not found"
 
 
@@ -282,70 +281,6 @@ class TestDailySnapshotRoundTrip:
         rows = database.get_daily_snapshots(days=7)
         assert rows[0]["date"] == "2026-03-15"
         assert rows[-1]["date"] == "2026-03-13"
-
-
-# ---------------------------------------------------------------------------
-# Kelly params
-# ---------------------------------------------------------------------------
-
-class TestSaveKellyParams:
-    """save_kelly_params inserts a record into kelly_params."""
-
-    def test_save_kelly_params_basic(self, in_memory_db):
-        """Saved Kelly params are queryable from the DB."""
-        database.save_kelly_params(
-            strategy="STAT_MR",
-            win_rate=0.58,
-            avg_win_loss=1.8,
-            kelly_f=0.36,
-            half_kelly_f=0.18,
-            sample_size=80,
-        )
-
-        rows = in_memory_db.execute(
-            "SELECT * FROM kelly_params WHERE strategy = 'STAT_MR'"
-        ).fetchall()
-        assert len(rows) == 1
-        r = rows[0]
-        assert r["win_rate"] == pytest.approx(0.58)
-        assert r["avg_win_loss"] == pytest.approx(1.8)
-        assert r["kelly_f"] == pytest.approx(0.36)
-        assert r["half_kelly_f"] == pytest.approx(0.18)
-        assert r["sample_size"] == 80
-
-    def test_save_kelly_params_multiple_strategies(self, in_memory_db):
-        """Multiple strategies can each have their own Kelly params."""
-        for strategy in ("STAT_MR", "ORB", "VWAP"):
-            database.save_kelly_params(
-                strategy=strategy,
-                win_rate=0.5,
-                avg_win_loss=1.5,
-                kelly_f=0.17,
-                half_kelly_f=0.085,
-                sample_size=50,
-            )
-
-        rows = in_memory_db.execute("SELECT * FROM kelly_params").fetchall()
-        assert len(rows) == 3
-        strategies = {r["strategy"] for r in rows}
-        assert strategies == {"STAT_MR", "ORB", "VWAP"}
-
-    def test_save_kelly_params_computed_at_set(self, in_memory_db):
-        """computed_at timestamp is populated automatically."""
-        database.save_kelly_params(
-            strategy="ORB",
-            win_rate=0.55,
-            avg_win_loss=2.0,
-            kelly_f=0.275,
-            half_kelly_f=0.138,
-            sample_size=40,
-        )
-        row = in_memory_db.execute(
-            "SELECT computed_at FROM kelly_params WHERE strategy = 'ORB'"
-        ).fetchone()
-        assert row is not None
-        assert row["computed_at"] is not None
-        assert len(row["computed_at"]) > 0
 
 
 # ---------------------------------------------------------------------------

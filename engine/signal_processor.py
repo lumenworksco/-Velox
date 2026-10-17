@@ -452,7 +452,6 @@ try:
 except ImportError:
     _EVENTS_AVAILABLE = False
 
-_notifications = None
 _order_manager = None
 
 # BUG-024 + RISK-005: Halted/delisted symbol blocklist with Alpaca asset status
@@ -611,17 +610,6 @@ def _is_symbol_halted(symbol: str, now: datetime) -> bool:
         logger.debug(f"Halt detection check failed for {symbol}: {e}")
 
     return False
-
-
-def _get_notifications():
-    global _notifications
-    if _notifications is None:
-        try:
-            import notifications as _n
-            _notifications = _n
-        except ImportError:
-            _notifications = False
-    return _notifications if _notifications else None
 
 
 def set_order_manager(mgr):
@@ -1638,13 +1626,6 @@ def _process_single_signal(
 
     if ws_monitor:
         ws_monitor.subscribe(signal.symbol)
-
-    notif = _get_notifications()
-    if notif and config.TELEGRAM_ENABLED:
-        try:
-            notif.notify_trade_opened(trade)
-        except Exception as e:
-            logger.warning(f"Notification failed: {e}")
 
     database.log_signal(now, signal.symbol, signal.strategy, signal.side, True, "")
 

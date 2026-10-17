@@ -13,7 +13,6 @@ from microstructure.vpin import VPIN
 from microstructure.order_book import OrderBookAnalyzer
 from microstructure.trade_classifier import TradeClassifier, TradeType
 from microstructure.spread_analysis import SpreadAnalyzer
-from microstructure.dark_pool import DarkPoolDetector
 
 __all__ = [
     "VPIN",
@@ -21,5 +20,4 @@ __all__ = [
     "TradeClassifier",
     "TradeType",
     "SpreadAnalyzer",
-    "DarkPoolDetector",
 ]

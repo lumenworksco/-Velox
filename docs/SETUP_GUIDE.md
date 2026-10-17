@@ -248,39 +248,7 @@ pead:
   enabled: false    # Disable Post-Earnings Drift
 ```
 
-### 3.5 Configuring Telegram Alerts
-
-Velox can send real-time trade alerts, daily summaries, and risk warnings to Telegram.
-
-1. Open Telegram and message **@BotFather**
-2. Send `/newbot` and follow the prompts to create a bot
-3. Copy the **bot token** (looks like `123456789:ABCdefGhIJKlmNoPQRsTUVwxYZ`)
-4. Send any message to your new bot, then visit:
-   ```
-   https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates
-   ```
-5. Find your `chat_id` in the JSON response (a numeric ID)
-6. Update your `.env` file:
-
-```bash
-TELEGRAM_ENABLED=true
-TELEGRAM_BOT_TOKEN=123456789:ABCdefGhIJKlmNoPQRsTUVwxYZ
-TELEGRAM_CHAT_ID=987654321
-```
-
-7. Restart the bot:
-
-```bash
-docker compose restart velox
-```
-
-You will receive notifications for:
-- Trade opened (symbol, strategy, entry price, size, TP/SL levels)
-- Trade closed (symbol, P&L, exit reason, hold time)
-- Daily performance summary
-- Risk warnings (circuit breaker activations, VIX halts)
-
-### 3.6 Configuring the FRED API Key
+### 3.5 Configuring the FRED API Key
 
 The FRED API key enables macroeconomic data integration (yield curve, unemployment, GDP surprise signals).
 
@@ -369,7 +337,7 @@ The bot automatically generates a daily end-of-day summary at 4:15 PM ET, which 
 - Sharpe ratio (rolling)
 - Strategy-level breakdown
 
-If Telegram is configured, this summary is sent as a notification. The data is also persisted to the `daily_snapshots` table for historical analysis.
+The data is also persisted to the `daily_snapshots` table for historical analysis.
 
 ### 4.6 What to Do if the Bot Crashes
 
@@ -783,7 +751,6 @@ If your account is below $25,000, the bot will still work but will be limited to
 Use the same Docker setup instructions. For production VPS deployments, also consider:
 - Setting up automatic OS updates
 - Configuring a firewall (allow only ports you need)
-- Setting up Telegram alerts so you are notified of issues remotely
 
 ### How much does it cost to run?
 
