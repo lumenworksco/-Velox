@@ -59,7 +59,7 @@ Thanks for your interest in contributing to Velox V12.
 - **`compliance/`** -- PDT protection, audit trail, best execution, surveillance
 - **`monitoring/`** -- Latency/metrics pipeline, watchdog, reconciliation
 - **`ops/`** -- Disaster recovery, drawdown risk, tax-loss harvesting
-- **`tests/`** -- 1,560+ unit tests across 70 test files
+- **`tests/`** -- 1,540+ unit tests across 70 test files
 
 ## Pull Request Requirements
 

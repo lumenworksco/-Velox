@@ -571,19 +571,6 @@ class OnlineBOCPD(BOCPD):
 
         return float(0.6 * time_factor + 0.4 * prob_factor)
 
-    def get_recent_cp_rate(self) -> float:
-        """Fraction of recent observations that exceeded default threshold.
-
-        Returns
-        -------
-        float
-            Rate in [0, 1].
-        """
-        if self._buffer_count == 0:
-            return 0.0
-        filled = self._cp_buffer[:self._buffer_count]
-        return float((filled > self._online_threshold).mean())
-
 
 # Alias for spec compatibility
 BayesianChangePointDetector = BOCPD

@@ -698,17 +698,6 @@ class RiskManager:
 
 
     @staticmethod
-    def _compute_strategy_daily_returns(trades: list[dict]) -> list[float]:
-        """Compute daily return series from a list of trade dicts."""
-        from collections import defaultdict
-        daily = defaultdict(float)
-        for t in trades:
-            exit_date = t.get("exit_time", "")[:10]
-            if exit_date:
-                daily[exit_date] += t.get("pnl_pct", 0.0)
-        return list(daily.values()) if daily else []
-
-    @staticmethod
     def _compute_sharpe(daily_returns: list[float], rf_annual: float = 0.045) -> float:
         """Annualized Sharpe ratio. Delegates to analytics.metrics.compute_sharpe."""
         return _compute_sharpe_fn(daily_returns, risk_free_rate=rf_annual)

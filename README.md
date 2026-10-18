@@ -270,7 +270,7 @@ pytest tests/test_v10_events.py -v
 pytest tests/test_v10_phase4.py -v
 ```
 
-1,560+ tests across 70 test files covering all strategies, risk modules, OMS, exit orchestrator, event bus, circuit breaker, ML pipeline, and analytics.
+1,540+ tests across 70 test files covering all strategies, risk modules, OMS, exit orchestrator, event bus, circuit breaker, ML pipeline, and analytics.
 
 ---
 

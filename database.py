@@ -996,15 +996,6 @@ def get_recent_trades_by_strategy(strategy: str, days: int = 20) -> list[dict]:
 
 # --- Allocation History ---
 
-def log_allocation_weights(weights: dict):
-    """Log capital allocation weight change."""
-    conn = _get_conn()
-    conn.execute(
-        "INSERT INTO allocation_history (timestamp, weights) VALUES (?, ?)",
-        (datetime.now(config.ET).isoformat(), json.dumps(weights)),
-    )
-    conn.commit()
-
 
 # --- Signal Statistics (extended for web dashboard) ---
 

@@ -168,16 +168,6 @@ class FinGPT:
     # Primary analysis methods
     # ------------------------------------------------------------------
 
-    def analyze_earnings_call(self, transcript: str) -> float:
-        """Analyse an earnings-call transcript and return a sentiment score.
-
-        Returns a float in [-1, 1] where -1 is very bearish and 1 is very
-        bullish.  Long transcripts are chunked and averaged.
-        """
-        chunks = self._chunk_text(transcript, max_chars=2000)
-        scores = [self._score_single(c) for c in chunks]
-        return float(np.mean(scores)) if scores else 0.0
-
 
     def batch_analyze(self, texts: List[str]) -> List[float]:
         """Score a list of texts, returning sentiment in [-1, 1] for each."""
@@ -308,20 +298,6 @@ class FinGPT:
     # Text utilities
     # ------------------------------------------------------------------
 
-    @staticmethod
-    def _chunk_text(text: str, max_chars: int = 2000) -> List[str]:
-        """Split text into chunks respecting sentence boundaries."""
-        sentences = re.split(r"(?<=[.!?])\s+", text)
-        chunks: List[str] = []
-        current = ""
-        for sent in sentences:
-            if len(current) + len(sent) > max_chars and current:
-                chunks.append(current.strip())
-                current = ""
-            current += " " + sent
-        if current.strip():
-            chunks.append(current.strip())
-        return chunks or [text[:max_chars]]
 
     def score_headlines(self, headlines: List[str]) -> List[Dict[str, float]]:
         """T5-004: Score headlines returning positive/negative/neutral probabilities.
@@ -354,25 +330,6 @@ class FinGPT:
                 "score": round(score, 4),
             })
         return results
-
-    @staticmethod
-    def _split_filing_sections(text: str) -> Dict[str, str]:
-        """Attempt to split an SEC filing into named sections."""
-        pattern = re.compile(
-            r"(?:^|\n)((?:ITEM|Item|Part)\s+\d+[A-Z]?\.?\s*[-:]?\s*.+?)(?=\n)",
-        )
-        matches = list(pattern.finditer(text))
-        if not matches:
-            return {}
-        sections: Dict[str, str] = {}
-        for i, m in enumerate(matches):
-            name = m.group(1).strip()[:80]
-            start = m.end()
-            end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-            body = text[start:end].strip()
-            if len(body) > 50:
-                sections[name] = body
-        return sections
 
 
 # ---------------------------------------------------------------------------

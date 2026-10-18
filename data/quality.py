@@ -494,24 +494,6 @@ class DataQualityFramework:
         return score
 
 
-    def check_multiple(self, bars_dict: Dict[str, pd.DataFrame],
-                       now: Optional[datetime] = None
-                       ) -> Dict[str, DataQualityScore]:
-        """Run quality checks on multiple symbols.
-
-        Args:
-            bars_dict: Mapping of symbol -> OHLCV DataFrame.
-            now: Current time for staleness checks.
-
-        Returns:
-            Mapping of symbol -> DataQualityScore.
-        """
-        results = {}
-        for symbol, bars in bars_dict.items():
-            results[symbol] = self.check(bars, symbol, now=now)
-        return results
-
-
     def stats(self) -> dict:
         """Return framework statistics."""
         return {
