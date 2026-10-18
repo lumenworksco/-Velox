@@ -10,6 +10,8 @@
 
 **Philosophy:** Consistent returns over big wins. Target 0.3-0.8% per trade, 65-75% win rate, 15-25 trades/day.
 
+> **Website:** https://lumenworksco.github.io/Velox/ (a walkthrough of how it works and how to run it).
+>
 > Velox is the successor to **AlphaFlow**, a Python/FastAPI trading platform, and absorbs ideas from **Trading Algorithms**, a Rust backtesting and paper-trading workspace. See [Lineage](#lineage).
 
 ---
