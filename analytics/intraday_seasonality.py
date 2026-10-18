@@ -106,21 +106,3 @@ class IntradaySeasonality:
         score = strategy_scores.get(window, 1.0)
         return max(self.SCORE_MIN, min(self.SCORE_MAX, score))
 
-    def update_from_data(self, trade_history) -> None:
-        """Adaptively learn seasonality from actual trading data.
-
-        This is a placeholder for future implementation.  When
-        ``config.SEASONALITY_ADAPTIVE_LEARNING`` is ``True`` and sufficient
-        trade history is available, this method will compute per-strategy,
-        per-window win-rate and average P&L adjustments.
-
-        Parameters
-        ----------
-        trade_history : pandas.DataFrame
-            Must contain columns: strategy, entry_time, pnl.
-        """
-        if not getattr(config, "SEASONALITY_ADAPTIVE_LEARNING", False):
-            return
-        # Future: compute window-level performance from trade_history
-        # and populate self._adaptive_scores
-        pass

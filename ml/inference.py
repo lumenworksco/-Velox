@@ -100,21 +100,6 @@ class BatchInferenceEngine:
             logger.error("PROD-002: %s", self._load_error)
             return False
 
-    def reload_model(self, path: Optional[str] = None) -> bool:
-        """Reload the model (e.g., after retraining).
-
-        Args:
-            path: Optional new model path. Uses original path if not provided.
-
-        Returns:
-            True if model loaded successfully.
-        """
-        target = path or self._model_path
-        if not target:
-            logger.warning("PROD-002: No model path specified for reload")
-            return False
-        self._model_path = target
-        return self._load_model(target)
 
     def predict_batch(
         self,

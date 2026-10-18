@@ -206,14 +206,6 @@ class AlertManager:
             self._maintenance_windows.append(window)
         logger.info(f"Maintenance window added: {start} to {end} — {reason}")
 
-    def remove_expired_windows(self):
-        """Remove maintenance windows that have ended."""
-        now = datetime.now(config.ET)
-        with self._lock:
-            self._maintenance_windows = [
-                w for w in self._maintenance_windows if w.end > now
-            ]
-
 
     def get_stats(self) -> dict:
         """Return summary statistics about alerts."""

@@ -374,18 +374,6 @@ class TestAdversarialScenarios:
         names = [s.name for s in scenarios]
         assert not any("Correlated" in n for n in names)
 
-    def test_run_adversarial_stress_tests(self):
-        """End-to-end: generate + run adversarial scenarios."""
-        positions = _make_positions(
-            AAPL=(500, 150.0, "buy"),
-            MSFT=(200, 300.0, "buy"),
-        )
-        fw = StressTestFramework()
-        results = fw.run_adversarial_stress_tests(positions, portfolio_equity=100_000)
-        assert isinstance(results, list)
-        # After running, predefined scenarios should be restored
-        assert fw._scenarios == PREDEFINED_SCENARIOS or len(fw._scenarios) == len(PREDEFINED_SCENARIOS)
-
 
 # ===================================================================
 # Edge cases

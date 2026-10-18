@@ -207,17 +207,6 @@ class AsyncEventBus:
         logger.debug("AsyncEventBus: %s subscribed to %s (pri=%d, async=%s)",
                       name, event_type.__name__, priority, is_async)
 
-    def subscribe_all(
-        self,
-        handler: Callable[[BaseEvent], Any],
-        priority: int = Priority.LOW,
-    ) -> None:
-        """Register *handler* to receive ALL event types (wildcard)."""
-        is_async = asyncio.iscoroutinefunction(handler)
-        entry = _PrioritizedHandler(priority, handler, is_async)
-        with self._lock:
-            self._wildcard_handlers.append(entry)
-            self._wildcard_handlers.sort()
 
     def unsubscribe(
         self,

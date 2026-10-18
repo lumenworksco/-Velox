@@ -328,42 +328,6 @@ class BOCPD:
         self._t = 0
         self._change_point_prob_history.clear()
 
-    def process_batch(
-        self,
-        observations: np.ndarray,
-        threshold: float = 0.5,
-    ) -> Tuple[List[float], List[int]]:
-        """Process a batch of observations and return change-point probabilities.
-
-        Parameters
-        ----------
-        observations : array-like
-            1-D array of observations.
-        threshold : float
-            Detection threshold.
-
-        Returns
-        -------
-        cp_probs : list of float
-            Change-point probability at each step.
-        change_points : list of int
-            Indices where cp_prob > threshold.
-        """
-        obs = np.asarray(observations, dtype=np.float64).ravel()
-        cp_probs: List[float] = []
-        change_points: List[int] = []
-
-        for i, val in enumerate(obs):
-            prob = self.update(val)
-            cp_probs.append(prob)
-            if prob > threshold:
-                change_points.append(i)
-
-        logger.info(
-            "BOCPD batch: %d observations, %d change points (threshold=%.2f)",
-            len(obs), len(change_points), threshold,
-        )
-        return cp_probs, change_points
 
     @property
     def n_observations(self) -> int:
@@ -619,22 +583,6 @@ class OnlineBOCPD(BOCPD):
             return 0.0
         filled = self._cp_buffer[:self._buffer_count]
         return float((filled > self._online_threshold).mean())
-
-    def set_threshold(self, threshold: float) -> None:
-        """Update the default online detection threshold."""
-        self._online_threshold = max(0.0, min(1.0, threshold))
-
-
-    def reset_online(self) -> None:
-        """Reset both the base BOCPD and the online state."""
-        self.reset()
-        self._ema_cp_prob = 0.0
-        self._cp_buffer[:] = 0.0
-        self._buffer_idx = 0
-        self._buffer_count = 0
-        self._steps_since_cp = 0
-        self._last_cp_step = -1
-        self._total_steps = 0
 
 
 # Alias for spec compatibility

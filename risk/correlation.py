@@ -289,21 +289,6 @@ class DynamicCorrelation:
         )
         return True
 
-    def needs_refresh(self, now: Optional[datetime] = None) -> bool:
-        """Check whether a refresh is due without actually refreshing.
-
-        Args:
-            now: Current time override.
-
-        Returns:
-            True if refresh_interval has elapsed since last refresh.
-        """
-        if now is None:
-            now = datetime.now()
-        with self._lock:
-            if self._last_refresh is None:
-                return True
-            return (now - self._last_refresh) >= self._refresh_interval
 
     # ------------------------------------------------------------------
     # Status

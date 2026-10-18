@@ -243,31 +243,6 @@ class EnhancedSeasonality:
 
         return effects
 
-    def record_observation(
-        self, timestamp: datetime, return_pct: float
-    ):
-        """Record an observed return for adaptive learning.
-
-        Over time, this adjusts intraday scores based on actual observed
-        returns in each 15-minute bucket.
-
-        Args:
-            timestamp: When the return was observed.
-            return_pct: The observed return (e.g., 0.002 for 0.2%).
-        """
-        if not self._learning_enabled:
-            return
-
-        bucket = self._get_bucket(timestamp)
-        # MED-004: protect _learned_scores mutations
-        with self._lock:
-            if bucket not in self._learned_scores:
-                self._learned_scores[bucket] = []
-            self._learned_scores[bucket].append(return_pct)
-
-            # Cap history at 500 observations per bucket
-            if len(self._learned_scores[bucket]) > 500:
-                self._learned_scores[bucket] = self._learned_scores[bucket][-500:]
 
     def _get_intraday_score(self, timestamp: datetime) -> float:
         """Get the intraday seasonality score for the current 15-min bucket."""

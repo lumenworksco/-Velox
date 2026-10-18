@@ -193,9 +193,3 @@ class TestScoreClamping:
 # update_from_data placeholder
 # ===================================================================
 
-class TestUpdateFromData:
-    def test_noop_when_disabled(self, seasonality, override_config):
-        """update_from_data should be a no-op when adaptive learning is off."""
-        with override_config(SEASONALITY_ADAPTIVE_LEARNING=False):
-            seasonality.update_from_data(None)
-            assert seasonality._adaptive_scores is None

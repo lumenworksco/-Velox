@@ -78,9 +78,6 @@ class StrategyRegistry:
             "scan_kwargs_fn": scan_kwargs_fn,
         }
 
-    def unregister(self, name: str) -> None:
-        """Remove a strategy from the registry."""
-        self._strategies.pop(name, None)
 
     @property
     def names(self) -> List[str]:

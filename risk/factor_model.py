@@ -141,36 +141,6 @@ class FactorRiskModel:
             self._exposure_cache[symbol] = betas
         return betas
 
-    def portfolio_factor_risk(
-        self,
-        positions: dict[str, float],
-        returns_data: dict[str, pd.Series],
-    ) -> dict:
-        """Compute portfolio-level factor exposures and flag concentrations.
-
-        V11.2: Sum of (weight x exposure) per factor with 0.40 concentration flag.
-
-        Args:
-            positions: symbol -> dollar exposure.
-            returns_data: symbol -> daily return series.
-
-        Returns:
-            Dict with keys: exposures (dict), violations (list), concentrated (bool).
-        """
-        exposures = self.compute_factor_exposures(positions, returns_data)
-        violations = []
-        for factor, exp in exposures.items():
-            if factor.startswith("sector_"):
-                continue
-            if abs(exp) > 0.40:
-                violations.append(
-                    f"{factor} concentration={exp:+.3f} exceeds 0.40 limit"
-                )
-        return {
-            "exposures": exposures,
-            "violations": violations,
-            "concentrated": len(violations) > 0,
-        }
 
     def compute_factor_exposures(
         self,

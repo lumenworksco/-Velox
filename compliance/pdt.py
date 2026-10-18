@@ -190,12 +190,6 @@ class PDTCompliance:
                 if window_start <= t.trade_date <= window_end
             ]
 
-    def reset_restriction(self):
-        """Manually clear a PDT restriction (e.g. after 90-day cool-off)."""
-        with self._lock:
-            self._pdt_restricted = False
-            self._restriction_start = None
-            logger.info("PDT: Restriction manually cleared")
 
     # ------------------------------------------------------------------
     # Internal — core logic

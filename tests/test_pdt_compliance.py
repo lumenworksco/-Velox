@@ -167,20 +167,6 @@ class TestPDTRestriction:
         assert allowed is False
         assert "restriction" in reason.lower()
 
-    def test_reset_restriction_clears_block(self, pdt_instance):
-        today = datetime.now(ET).date()
-        for i in range(4):
-            pdt_instance.record_day_trade(f"SYM{i}", trade_date=today)
-        assert pdt_instance._pdt_restricted is True
-
-        pdt_instance.reset_restriction()
-        assert pdt_instance._pdt_restricted is False
-
-        # Now only 3 trades count in window, but the 4th made it restricted
-        # After reset, should be blocked by trade count but not by restriction flag
-        allowed, remaining, reason = pdt_instance.can_day_trade(equity=20_000.0)
-        # 4 trades in window -> 0 remaining, still blocked by count
-        assert allowed is False
 
     def test_restriction_does_not_affect_high_equity(self, pdt_instance):
         today = datetime.now(ET).date()

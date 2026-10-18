@@ -173,67 +173,6 @@ class OvernightManager:
 
         return decisions
 
-    def morning_gap_check(
-        self,
-        overnight_positions: dict,
-        current_prices: dict,
-    ) -> list[dict]:
-        """Run at 9:31 AM ET.  Check gap direction for overnight positions.
-
-        Returns list of exit action dicts for positions that gapped against us:
-        - If gap against > OVERNIGHT_GAP_STOP_PCT, return full exit
-        - Otherwise, update trailing stop
-        """
-        actions: list[dict] = []
-
-        for symbol, info in overnight_positions.items():
-            if symbol not in current_prices:
-                continue
-
-            current_price = current_prices[symbol]
-            entry_price = info["entry_price"]
-            side = info["side"]
-
-            # Calculate gap percentage
-            gap_pct = (current_price - entry_price) / entry_price if entry_price > 0 else 0.0
-
-            # Determine if gap is adverse
-            if side == "buy":
-                adverse = gap_pct < 0
-                adverse_magnitude = abs(gap_pct)
-            else:  # sell / short
-                adverse = gap_pct > 0
-                adverse_magnitude = abs(gap_pct)
-
-            if adverse and adverse_magnitude > config.OVERNIGHT_GAP_STOP_PCT:
-                actions.append({
-                    "symbol": symbol,
-                    "action": "exit",
-                    "reason": "overnight_gap_stop",
-                    "gap_pct": gap_pct,
-                })
-                logger.warning(
-                    "Gap stop triggered for %s: gap=%.2f%%, threshold=%.2f%%",
-                    symbol,
-                    gap_pct * 100,
-                    config.OVERNIGHT_GAP_STOP_PCT * 100,
-                )
-            else:
-                # Update trailing stop based on current price
-                if side == "buy":
-                    new_stop = current_price * (1 - config.OVERNIGHT_GAP_STOP_PCT)
-                else:
-                    new_stop = current_price * (1 + config.OVERNIGHT_GAP_STOP_PCT)
-
-                actions.append({
-                    "symbol": symbol,
-                    "action": "update_stop",
-                    "reason": "overnight_gap_ok",
-                    "new_stop": new_stop,
-                    "gap_pct": gap_pct,
-                })
-
-        return actions
 
     def get_overnight_positions(self) -> dict:
         """Return current overnight hold info."""

@@ -289,26 +289,6 @@ class FeatureStore:
             )
             self._registry[name] = meta
 
-    def register_feature(self, name: str, compute_fn: Callable,
-                         version: int = 1, description: str = "",
-                         staleness_threshold_sec: float = 300.0):
-        """Register a custom feature with its computation function.
-
-        Args:
-            name: Unique feature name.
-            compute_fn: Callable(bars: pd.DataFrame) -> float.
-            version: Feature version (bump on breaking changes).
-            description: Human-readable description.
-            staleness_threshold_sec: Max age before recompute.
-        """
-        meta = FeatureMeta(
-            name=name, version=version, description=description,
-            staleness_threshold_sec=staleness_threshold_sec,
-            compute_fn=compute_fn,
-        )
-        with self._lock:
-            self._registry[name] = meta
-        logger.debug("Registered custom feature: %s (v%d)", name, version)
 
     @property
     def feature_names(self) -> List[str]:
@@ -440,45 +420,6 @@ class FeatureStore:
     # Offline persistence
     # ------------------------------------------------------------------
 
-    def save_snapshot(self, timestamp: Optional[str] = None):
-        """Persist current online store to offline storage (parquet file).
-
-        Args:
-            timestamp: ISO timestamp label. Defaults to current time.
-        """
-        if not self._offline_path:
-            logger.debug("FeatureStore: no offline_path configured, skipping snapshot")
-            return
-
-        with self._lock:
-            if not self._online:
-                return
-            data = self._online.copy()
-
-        try:
-            import os
-            os.makedirs(os.path.dirname(self._offline_path) or ".", exist_ok=True)
-
-            df = pd.DataFrame.from_dict(data, orient="index")
-            if timestamp:
-                df["_snapshot_ts"] = timestamp
-            else:
-                from datetime import datetime, timezone
-                df["_snapshot_ts"] = datetime.now(timezone.utc).isoformat()
-            df.index.name = "symbol"
-
-            # Append to existing file or create new
-            if os.path.exists(self._offline_path):
-                existing = pd.read_parquet(self._offline_path)
-                df = pd.concat([existing, df.reset_index()], ignore_index=True)
-                df.to_parquet(self._offline_path, index=False)
-            else:
-                df.reset_index().to_parquet(self._offline_path, index=False)
-
-            logger.info("FeatureStore: saved snapshot (%d symbols) to %s",
-                        len(data), self._offline_path)
-        except Exception as e:
-            logger.error("FeatureStore: failed to save snapshot: %s", e)
 
     def load_snapshot(self, timestamp: str) -> Dict[str, Dict[str, float]]:
         """Load a historical feature snapshot from offline storage.

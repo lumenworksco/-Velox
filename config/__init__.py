@@ -174,11 +174,6 @@ class ConfigManager:
             logger.warning("ConfigManager: cannot cast %s.%s=%r to %s", section, key, raw, type_)
             return default  # type: ignore[return-value]
 
-    def strategy_section(self, section: str) -> dict:
-        """Return an entire strategy section as a dict (shallow copy)."""
-        with self._lock:
-            data = self._strategies.get(section, {})
-            return dict(data) if isinstance(data, dict) else {}
 
     # ------------------------------------------------------------------
     # Typed access — risk
@@ -203,11 +198,6 @@ class ConfigManager:
             logger.warning("ConfigManager: cannot cast %s.%s=%r to %s", section, key, raw, type_)
             return default  # type: ignore[return-value]
 
-    def risk_section(self, section: str) -> dict:
-        """Return an entire risk section as a dict (shallow copy)."""
-        with self._lock:
-            data = self._risk.get(section, {})
-            return dict(data) if isinstance(data, dict) else {}
 
     # ------------------------------------------------------------------
     # Allocations convenience
@@ -262,12 +252,6 @@ class ConfigManager:
     # Hot-reload watchers
     # ------------------------------------------------------------------
 
-    def on_reload(self, callback) -> None:
-        """Register a callback to be invoked after a successful reload.
-
-        Callback signature: ``callback(config_manager: ConfigManager) -> None``
-        """
-        self._watchers.append(callback)
 
     def _notify_watchers(self) -> None:
         for cb in self._watchers:
