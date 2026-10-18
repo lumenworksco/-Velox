@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Velox (formerly AlphaFlow): a terminal-native autonomous equity trading system on Alpaca.">
+<title>Velox Trading System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout concept: a trading desk printout. Wide mono "tape" panels carry real data,
+   prose sits in a narrow column, one amber signal colour marks anything live. */
+:root{
+  --bg:#eceef1; --surface:#f8f9fa; --ink:#12161d; --ink-2:#4a5260; --ink-3:#7b8494;
+  --rule:#d3d8df; --accent:#a85f00; --accent-ink:#ffffff; --accent-soft:#f3e3cc;
+  --up:#13804a; --down:#c33a32; --tape-bg:#10141b; --tape-ink:#d9dee7; --tape-dim:#7d8799; --tape-amber:#ffb42a; --tape-up:#4cd08a; --tape-down:#ff7a70;
+  --f-display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
+  --f-body:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c0f14; --surface:#141922; --ink:#e8ebf0; --ink-2:#a3abb8; --ink-3:#6f7888;
+  --rule:#252c38; --accent:#ffb42a; --accent-ink:#1a1100; --accent-soft:#2b2210;
+  --up:#4cd08a; --down:#ff7a70; --tape-bg:#07090d; --tape-ink:#d9dee7; --tape-dim:#6f7888;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c0f14; --surface:#141922; --ink:#e8ebf0; --ink-2:#a3abb8; --ink-3:#6f7888;
+  --rule:#252c38; --accent:#ffb42a; --accent-ink:#1a1100; --accent-soft:#2b2210;
+  --up:#4cd08a; --down:#ff7a70; --tape-bg:#07090d; --tape-ink:#d9dee7; --tape-dim:#6f7888;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:4.5rem}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 var(--f-body);-webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+a{color:inherit}
+code,kbd,pre{font-family:var(--f-mono)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}
+.wrap{max-width:1120px;margin-inline:auto;padding-inline:20px}
+h1,h2,h3{font-family:var(--f-display);line-height:1.08;margin:0;text-wrap:balance;letter-spacing:-.02em}
+h2{font-size:clamp(1.9rem,4.2vw,2.8rem);font-weight:800}
+h3{font-size:1.25rem;font-weight:700;letter-spacing:-.01em}
+p{margin:0 0 1em}
+.lede{font-size:1.15rem;color:var(--ink-2);max-width:62ch}
+.eyebrow{font:500 .75rem/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;display:block}
+section{padding-block:84px;border-top:1px solid var(--rule)}
+.sec-head{display:grid;gap:14px;margin-bottom:40px;max-width:760px}
+.prose{max-width:66ch}
+.prose p{color:var(--ink-2)}
+.mono{font-family:var(--f-mono)}
+.btn{display:inline-flex;align-items:center;gap:8px;font:600 .95rem/1 var(--f-body);padding:13px 18px;border-radius:8px;text-decoration:none;border:1px solid var(--rule);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn:hover{filter:brightness(1.06)}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--rule)}
+.nav .wrap{display:flex;align-items:center;gap:20px;min-height:56px}
+.brand{font:800 1.2rem var(--f-display);text-decoration:none;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.brand i{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block}
+.nav-links{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+.nav-links a{font-size:.88rem;padding:8px 10px;border-radius:6px;text-decoration:none;color:var(--ink-2);white-space:nowrap}
+.nav-links a:hover{color:var(--ink);background:var(--surface)}
+.icon-btn{border:1px solid var(--rule);background:var(--surface);color:var(--ink);border-radius:8px;width:36px;height:36px;cursor:pointer;font-size:1rem;flex:none}
+
+/* hero */
+.hero{padding-block:64px 72px;border-top:0}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:44px;align-items:center}
+.hero h1{font-size:clamp(3.2rem,9vw,6.4rem);font-weight:800;letter-spacing:-.045em}
+.hero h1 small{display:block;font:500 clamp(.95rem,2vw,1.15rem)/1.3 var(--f-mono);letter-spacing:0;color:var(--ink-3);margin-top:14px}
+.hero .lede{margin-block:22px 26px}
+.cta-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}
+.installer{display:flex;align-items:center;gap:10px;background:var(--tape-bg);color:var(--tape-ink);border-radius:8px;padding:12px 14px;font:500 .9rem var(--f-mono);max-width:100%;min-width:0}
+.installer span{overflow-x:auto;white-space:nowrap;min-width:0;flex:1;scrollbar-width:none}
+.installer b{color:var(--tape-amber);font-weight:500}
+.copy{font:500 .75rem var(--f-mono);color:var(--tape-dim);background:transparent;border:1px solid #2b3342;border-radius:5px;padding:4px 8px;cursor:pointer;flex:none}
+.copy:hover{color:var(--tape-ink)}
+.badges{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:22px;font:.78rem var(--f-mono);color:var(--ink-3)}
+.badges span::before{content:"";display:inline-block;width:6px;height:6px;background:var(--accent);border-radius:50%;margin-right:7px;vertical-align:1px}
+
+/* terminal tape */
+.tape{background:var(--tape-bg);color:var(--tape-ink);border-radius:12px;border:1px solid #1f2633;overflow:hidden;box-shadow:0 18px 44px -24px rgba(0,0,0,.55)}
+.tape-bar{display:flex;align-items:center;gap:7px;padding:10px 14px;border-bottom:1px solid #1d2430;font:.72rem var(--f-mono);color:var(--tape-dim)}
+.tape-bar i{width:9px;height:9px;border-radius:50%;background:#2a3342}
+.tape-bar em{margin-left:auto;font-style:normal;color:var(--tape-amber)}
+.tape pre{margin:0;padding:14px 16px 18px;font-size:.74rem;line-height:1.5;overflow-x:auto;color:var(--tape-ink)}
+.tape .a{color:var(--tape-amber)} .tape .u{color:var(--tape-up)} .tape .d{color:var(--tape-down)} .tape .m{color:var(--tape-dim)}
+
+/* day timeline */
+.day{display:grid;gap:0;max-width:820px}
+.day-row{display:grid;grid-template-columns:96px minmax(0,1fr);gap:20px;padding:20px 0;border-bottom:1px solid var(--rule)}
+.day-row time{font:600 .9rem var(--f-mono);color:var(--accent)}
+.day-row h3{margin-bottom:6px;font-size:1.1rem}
+.day-row p{margin:0;color:var(--ink-2);font-size:.95rem}
+.day-row code,.prose code,.step-body code,td code,li code{font-size:.84em;background:var(--surface);border:1px solid var(--rule);padding:1px 6px;border-radius:4px}
+
+/* signal journey */
+.journey{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:28px;align-items:start}
+.phases{display:grid;gap:18px}
+.phase-label{font:500 .72rem var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:0 0 6px}
+.steps{display:grid;gap:3px}
+.step-btn{display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;align-items:center;text-align:left;font:500 .92rem var(--f-body);color:var(--ink-2);background:transparent;border:1px solid transparent;border-radius:8px;padding:8px 10px;cursor:pointer;width:100%}
+.step-btn span{font:500 .75rem var(--f-mono);color:var(--ink-3)}
+.step-btn:hover{background:var(--surface)}
+.step-btn[aria-selected="true"]{background:var(--surface);border-color:var(--rule);color:var(--ink);box-shadow:inset 3px 0 0 var(--accent)}
+.step-panel{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:26px;position:sticky;top:76px;min-height:260px}
+.step-panel .kind{display:inline-block;font:500 .72rem var(--f-mono);letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);margin-bottom:14px}
+.step-panel h3{font-size:1.5rem;margin-bottom:10px}
+.step-panel p{color:var(--ink-2)}
+.step-panel .where{font:.78rem var(--f-mono);color:var(--ink-3);border-top:1px dashed var(--rule);padding-top:12px;margin:18px 0 0}
+
+/* strategies */
+.table-wrap{overflow-x:auto;border:1px solid var(--rule);border-radius:12px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:.93rem;min-width:720px}
+th{font:500 .72rem var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:14px 16px;border-bottom:1px solid var(--rule)}
+td{padding:14px 16px;border-bottom:1px solid var(--rule);vertical-align:top;color:var(--ink-2)}
+tr:last-child td{border-bottom:0}
+td strong{color:var(--ink);font-weight:600;display:block}
+.alloc{display:flex;align-items:center;gap:10px;font:500 .85rem var(--f-mono);color:var(--ink);min-width:150px}
+.alloc i{height:8px;border-radius:4px;background:var(--accent);display:block;min-width:2px}
+.alloc.off i{background:var(--rule)}
+.note{font-size:.88rem;color:var(--ink-3);margin-top:14px;max-width:70ch}
+
+/* risk */
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:24px;min-width:0}
+.card h3{margin-bottom:6px}
+.card > p{color:var(--ink-2);font-size:.95rem}
+.ladder{display:grid;gap:8px;margin-top:16px}
+.rung{display:grid;grid-template-columns:78px 62px minmax(0,1fr);gap:12px;align-items:center;padding:10px 12px;border-radius:8px;border:1px solid var(--rule);font-size:.88rem;background:var(--bg)}
+.rung b{font:600 .78rem var(--f-mono);letter-spacing:.06em}
+.rung span{font:500 .82rem var(--f-mono);color:var(--ink-2)}
+.rung.y b{color:#a67a00}.rung.o b{color:#c1560c}.rung.r b{color:var(--down)}.rung.k b{color:var(--ink)}
+.rung.k{background:var(--tape-bg);border-color:var(--tape-bg)}.rung.k b{color:var(--tape-amber)}.rung.k span{color:var(--tape-ink)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .rung.y b{color:#ffd24a}:root:not([data-theme="light"]) .rung.o b{color:#ff9b4a}}
+:root[data-theme="dark"] .rung.y b{color:#ffd24a}:root[data-theme="dark"] .rung.o b{color:#ff9b4a}
+.cascade{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:6px;counter-reset:c}
+.cascade li{counter-increment:c;display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;font-size:.9rem;color:var(--ink-2);align-items:baseline}
+.cascade li::before{content:counter(c,decimal-leading-zero);font:500 .75rem var(--f-mono);color:var(--accent)}
+.states{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px;font:500 .8rem var(--f-mono)}
+.states span{border:1px solid var(--rule);background:var(--bg);padding:6px 10px;border-radius:6px}
+.states .arrow{border:0;background:none;padding:0;color:var(--ink-3)}
+.states .ok{border-color:var(--up);color:var(--up)} .states .bad{border-color:var(--down);color:var(--down)}
+.guard-list{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:8px;font-size:.92rem;color:var(--ink-2)}
+.guard-list li{padding-left:18px;position:relative}
+.guard-list li::before{content:"";position:absolute;left:0;top:.65em;width:7px;height:7px;background:var(--accent);border-radius:2px}
+
+/* stack */
+.stack{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.stack .card{padding:20px}
+.stack h3{font-size:1rem;margin-bottom:10px}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pills span{font:500 .78rem var(--f-mono);border:1px solid var(--rule);background:var(--bg);padding:4px 9px;border-radius:6px;color:var(--ink)}
+.stack p{font-size:.88rem;color:var(--ink-3);margin:12px 0 0}
+
+/* get started */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.tab{font:600 .9rem var(--f-body);padding:10px 15px;border-radius:8px;border:1px solid var(--rule);background:var(--surface);color:var(--ink-2);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.recipe{display:grid;gap:14px;max-width:820px}
+.rstep{display:grid;grid-template-columns:36px minmax(0,1fr);gap:14px}
+.rstep > b{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font:600 .85rem var(--f-mono)}
+.rstep h3{font-size:1.05rem;margin:3px 0 6px}
+.rstep p{font-size:.93rem;color:var(--ink-2);margin:0 0 8px}
+.rstep .installer{font-size:.84rem}
+.callout{border-left:3px solid var(--accent);background:var(--accent-soft);padding:14px 16px;border-radius:0 8px 8px 0;font-size:.92rem;color:var(--ink);margin-top:22px;max-width:820px}
+
+/* cli + map */
+.cli{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
+.cmd{display:grid;gap:4px;padding:14px 16px;border:1px solid var(--rule);border-radius:10px;background:var(--surface);min-width:0}
+.cmd code{font:600 .88rem var(--f-mono);color:var(--ink);overflow-wrap:anywhere}
+.cmd span{font-size:.88rem;color:var(--ink-2)}
+.tree{background:var(--tape-bg);color:var(--tape-ink);border-radius:12px;padding:20px 22px;overflow-x:auto;font-size:.8rem;line-height:1.75;margin:0}
+.tree .m{color:var(--tape-dim)} .tree .a{color:var(--tape-amber)}
+.history{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.history .card .tag{font:500 .72rem var(--f-mono);color:var(--accent);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:10px}
+.risk-note{border:1px solid var(--down);border-radius:12px;padding:22px 24px;color:var(--ink-2);font-size:.95rem;max-width:860px}
+.risk-note strong{color:var(--ink)}
+footer{padding-block:48px 64px;border-top:1px solid var(--rule);color:var(--ink-3);font-size:.9rem}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-between}
+footer a{color:var(--ink-2)}
+
+@media (max-width:900px){
+  .hero-grid,.journey,.two,.history{grid-template-columns:minmax(0,1fr)}
+  .step-panel{position:static}
+  section{padding-block:60px}
+  .nav-links{display:none}
+  .nav .icon-btn{margin-left:auto}
+}
+@media (max-width:520px){
+  .day-row{grid-template-columns:1fr;gap:4px}
+  .rung{grid-template-columns:70px minmax(0,1fr)}
+  .rung span:last-child{grid-column:1/-1}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><i></i>Velox</a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#how">How it works</a>
+      <a href="#signal">A signal's journey</a>
+      <a href="#strategies">Strategies</a>
+      <a href="#risk">Risk</a>
+      <a href="#stack">Stack</a>
+      <a href="#start">Run it</a>
+      <a href="#map">Project map</a>
+    </nav>
+    <button class="icon-btn" id="theme" type="button" aria-label="Toggle light and dark theme" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Autonomous equity trading, in your terminal</span>
+      <h1>Velox<small>formerly AlphaFlow</small></h1>
+      <p class="lede">Six strategies, an 18-step signal pipeline, ML gating, VaR and a tiered circuit breaker, all behind one command. It trades US equities through Alpaca and runs in your terminal. No browser, no web server.</p>
+      <div class="cta-row">
+        <a class="btn primary" href="#start">Run it yourself</a>
+        <a class="btn" href="https://github.com/lumenworksco/Velox" rel="noopener">View on GitHub</a>
+      </div>
+      <div class="installer" aria-label="Quick start command">
+        <span><b>$</b> git clone https://github.com/lumenworksco/Velox.git &amp;&amp; cd Velox</span>
+        <button class="copy" type="button" data-copy="git clone https://github.com/lumenworksco/Velox.git && cd Velox">copy</button>
+      </div>
+      <div class="badges"><span>Python 3.12+</span><span>MIT license</span><span>Alpaca paper trading by default</span><span>1,500+ tests</span></div>
+    </div>
+    <div class="tape" role="img" aria-label="The Velox terminal dashboard, rendered with sample data">
+      <div class="tape-bar"><i></i><i></i><i></i> velox demo <em>sample data</em></div>
+<pre><span class="a">VELOX V12 | PAPER MODE | Regime: <span class="u">BULLISH</span> | PnL Lock: <span class="u">NORMAL</span> | Up: 3h12m</span>
+<span class="m">──────────────────────────────────────────────────────</span>
+<span class="a">PORTFOLIO</span>
+  Value:    $106,240        Cash:  $61,340
+  Day P&amp;L:  <span class="u">+$1,426  +1.4%</span>    Week:  <span class="u">+$2,480  +2.4%</span>
+<span class="a">RISK STATE</span>
+  Vol Scalar    <span class="u">1.08</span>      Beta         <span class="u">+0.12</span>
+  Consistency   <span class="u">78/100</span>    Circuit      <span class="u">INACTIVE</span>
+<span class="a">STRATEGY ALLOCATION</span>
+  MR     ########...................... 28%  (2 open)
+  PAIRS  #########..................... 31%  (2 open)
+  PEAD   ######........................ 20%  (1 open)
+  VWAP   ####.......................... 15%  (0 open)
+  MICRO  #............................. <span class="m"> 6%  (0 open)</span>
+  ORB    ..............................  <span class="m">0%  disabled</span>
+<span class="a">OPEN POSITIONS (5/12)</span>
+  AAPL   MR     entry=$231.40  qty=60   41m
+  MSFT   MR     entry=$428.10  qty=30   17m  <span class="d">SHORT</span>
+  XOM    PAIR   entry=$112.85  qty=120  24h59m  SWING
+<span class="a">RECENT TRADES</span>
+  17:09 BUY  INTC  STAT_MR  <span class="u">+$42</span>  <span class="u">W</span> (take_profit)
+  16:08 BUY  AMD   VWAP     <span class="d">-$22</span>  <span class="d">L</span> (stop_loss)</pre>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">How it works</span>
+      <h2>One trading day, start to finish</h2>
+      <p class="lede">Velox is a single long-running process. It wakes up before the open, scans the universe each cycle, sends the survivors through a pipeline of checks, and manages every position until it exits. Times are US Eastern.</p>
+    </div>
+    <div class="day">
+      <div class="day-row"><time>09:00</time><div><h3>Prepare the universe</h3><p>A dynamic universe picks ~127 symbols by volume, market cap and the current regime. Statistical mean reversion filters them with the Hurst exponent, an ADF stationarity test and the Ornstein-Uhlenbeck half-life. A pre-open gap analysis calibrates the mean-reversion and breakout strategies.</p></div></div>
+      <div class="day-row"><time>09:30</time><div><h3>Scan, every ~2 minutes</h3><p>All strategies scan for signals. The interval adapts to market activity (<code>SCAN_INTERVAL_SEC</code> defaults to 120). Each signal becomes a <code>Signal</code> object with an entry, stop-loss and take-profit.</p></div></div>
+      <div class="day-row"><time>per signal</time><div><h3>Qualify, size, submit</h3><p>Every signal runs the 18-step pipeline below: hard gates first, then a sizing stage where ML confidence, volatility targeting and sentiment adjust the position, then a bracket order with OMS tracking.</p></div></div>
+      <div class="day-row"><time>always on</time><div><h3>Manage exits</h3><p>A single <code>ExitOrchestrator</code> decides every exit with a 10-level priority cascade. A WebSocket monitor watches prices so stops react between scans.</p></div></div>
+      <div class="day-row"><time>every 15–30 min</time><div><h3>Housekeeping</h3><p>A beta neutraliser hedges with SPY if portfolio beta passes ±0.3. Corporate actions and broker reconciliation run every 30 minutes. The correlation matrix refreshes intraday.</p></div></div>
+      <div class="day-row"><time>15:45</time><div><h3>Close out</h3><p>Day-hold positions are closed before the 16:00 bell and overnight holds are chosen. On Fridays a tax-loss harvesting scan runs, with wash-sale checks.</p></div></div>
+      <div class="day-row"><time>16:15</time><div><h3>Summary</h3><p>The day's P&amp;L, per-strategy breakdown and consistency score are written to the SQLite database and shown in the dashboard. Weekly, KalmanPairs reselects its cointegrated pairs and a walk-forward check validates out-of-sample Sharpe.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="signal">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">A signal's journey</span>
+      <h2>Eighteen steps between an idea and an order</h2>
+      <p class="lede">Pick a step to see what it does. A gate can stop the signal. A sizing step can only make it smaller. Anything optional fails open, so a missing data source never freezes trading.</p>
+    </div>
+    <div class="journey">
+      <div class="phases" role="tablist" aria-label="Pipeline steps" aria-orientation="vertical" id="steps"></div>
+      <div class="step-panel" id="panel" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<section id="strategies">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Strategies</span>
+      <h2>Six strategies, five of them allocated</h2>
+      <p class="lede">Capital is split across strategies that earn in different conditions. Allocations come from <code>config/settings.py</code> and always sum to 100% across the active ones.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Strategy</th><th>Allocation</th><th>Type</th><th>Hold</th><th>Idea</th></tr></thead>
+        <tbody>
+          <tr><td><strong>StatMeanReversion</strong><code>STAT_MR</code></td><td><div class="alloc"><i style="width:84px"></i>28%</div></td><td>Mean reversion</td><td>Intraday</td><td>Fits an Ornstein-Uhlenbeck process to 2-minute bars and enters on extreme z-scores, filtered by Hurst and ADF tests.</td></tr>
+          <tr><td><strong>KalmanPairsTrader</strong><code>KALMAN_PAIRS</code></td><td><div class="alloc"><i style="width:93px"></i>31%</div></td><td>Market-neutral</td><td>Multi-day</td><td>A Kalman filter tracks a dynamic hedge ratio on cointegrated sector pairs and trades the spread.</td></tr>
+          <tr><td><strong>PEAD</strong><code>PEAD</code></td><td><div class="alloc"><i style="width:60px"></i>20%</div></td><td>Event-driven</td><td>Multi-day</td><td>Post-earnings announcement drift, confirmed by FinBERT sentiment on the news.</td></tr>
+          <tr><td><strong>VWAP v2 Hybrid</strong><code>VWAP</code></td><td><div class="alloc"><i style="width:45px"></i>15%</div></td><td>Mean reversion</td><td>Intraday</td><td>VWAP deviation plus an OU z-score as dual confirmation, with a bid-ask spread filter.</td></tr>
+          <tr><td><strong>IntradayMicroMomentum</strong><code>MICRO_MOM</code></td><td><div class="alloc"><i style="width:18px"></i>6%</div></td><td>Event-driven</td><td>~8 min</td><td>Spots SPY volume spikes and scalps high-beta stocks in the direction of the move.</td></tr>
+          <tr><td><strong>ORB v2</strong><code>ORB</code></td><td><div class="alloc off"><i style="width:2px"></i>0%</div></td><td>Breakout</td><td>Day</td><td>Opening-range breakout with gap and range quality filters. Disabled since an alpha-decay alert on 2026-04-17; the code is kept.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Want to know whether a strategy earns its allocation? <code>velox backtest</code> runs four classic baselines (EMA crossover, RSI, momentum, Bollinger mean reversion) as yardsticks.</p>
+  </div>
+</section>
+
+<section id="risk">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Risk and execution</span>
+      <h2>Built to survive a bad day first</h2>
+      <p class="lede">The defaults lean cautious: paper trading is on, short selling is off, and risk limits tighten automatically as losses build.</p>
+    </div>
+    <div class="two">
+      <div class="card">
+        <h3>Tiered circuit breaker</h3>
+        <p>Driven by the day's P&amp;L, plus a trigger for sudden VIX spikes. Each tier is stricter than the last.</p>
+        <div class="ladder">
+          <div class="rung y"><b>YELLOW</b><span>−1%</span><div>New positions at half size</div></div>
+          <div class="rung o"><b>ORANGE</b><span>−2%</span><div>No new entries</div></div>
+          <div class="rung r"><b>RED</b><span>−3%</span><div>Close day trades, keep swings</div></div>
+          <div class="rung k"><b>BLACK</b><span>−4%</span><div>Kill switch: close everything</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Exit cascade</h3>
+        <p>One orchestrator decides every exit. The first matching level wins, so a hard stop always beats a trailing stop.</p>
+        <ol class="cascade">
+          <li>Hard stop loss</li><li>Strategy-specific exits</li><li>Adaptive VIX exit (mean reversion)</li><li>Scaled take-profit and profit tiers</li><li>ATR trailing stop</li><li>RSI momentum exit</li><li>Volatility-expansion exit</li><li>Dead-signal detection</li><li>Scale out of a loser</li><li>Time stops</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3>Order management</h3>
+        <p>Every order is tracked through a state machine with idempotency keys, so a retry never double-submits. Five API failures in five minutes trip the kill switch.</p>
+        <div class="states" aria-label="Order states">
+          <span>PENDING</span><span class="arrow">→</span><span>SUBMITTED</span><span class="arrow">→</span><span>PARTIAL_FILL</span><span class="arrow">→</span><span class="ok">FILLED</span>
+        </div>
+        <div class="states"><span class="bad">CANCELLED</span><span class="bad">REJECTED</span><span class="bad">EXPIRED</span><span class="bad">FAILED</span></div>
+      </div>
+      <div class="card">
+        <h3>Portfolio guards</h3>
+        <ul class="guard-list">
+          <li><strong>VaR monitor:</strong> parametric, historical and Monte Carlo (10,000 paths) at 95% and 99%.</li>
+          <li><strong>Correlation limiter:</strong> eigenvalue-based effective bets plus a 30% sector cap.</li>
+          <li><strong>Volatility targeting:</strong> sizes positions toward a 1% daily portfolio volatility.</li>
+          <li><strong>Daily P&amp;L lock:</strong> sizing drops to 30% after +1.5%, and new trades halt at −1.0%.</li>
+          <li><strong>TWAP execution:</strong> orders over $2,000 are split into five slices.</li>
+          <li><strong>Restart recovery:</strong> positions are reconciled with the broker on startup.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="stack">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">What it uses</span>
+      <h2>A plain Python stack</h2>
+      <p class="lede">One process, one SQLite file, no message broker and no web framework. Pinned versions live in <code>requirements.txt</code>.</p>
+    </div>
+    <div class="stack">
+      <div class="card"><h3>Broker and data</h3><div class="pills"><span>alpaca-py</span><span>yfinance</span><span>websockets</span></div><p>Orders, positions and market data from Alpaca, VIX and daily bars from Yahoo, live price updates over WebSocket.</p></div>
+      <div class="card"><h3>Machine learning</h3><div class="pills"><span>XGBoost</span><span>LightGBM</span><span>CatBoost</span><span>scikit-learn</span><span>Optuna</span></div><p>A four-model averaging ensemble scores signals from 50 features. Optuna tunes hyperparameters.</p></div>
+      <div class="card"><h3>Statistics</h3><div class="pills"><span>statsmodels</span><span>SciPy</span><span>hmmlearn</span><span>pykalman</span><span>pandas-ta</span></div><p>ADF and cointegration tests, HMM market regimes, Kalman-filter hedge ratios and technical indicators.</p></div>
+      <div class="card"><h3>Language models</h3><div class="pills"><span>FinBERT</span><span>Claude (optional)</span></div><p>FinBERT runs locally for news sentiment. A Claude model can optionally score signals.</p></div>
+      <div class="card"><h3>Terminal interface</h3><div class="pills"><span>Rich</span><span>structlog</span></div><p>Rich draws the live dashboard and the tables. Structured JSON logs are available for servers.</p></div>
+      <div class="card"><h3>Storage and ops</h3><div class="pills"><span>SQLite</span><span>Docker</span><span>pytest</span><span>GitHub Actions</span></div><p>Trades, positions and snapshots live in <code>bot.db</code>. CI runs the suite on Python 3.12 and 3.13.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Use it yourself</span>
+      <h2>From clone to running, in minutes</h2>
+      <p class="lede">You need Python 3.12+ and, to trade, a free Alpaca paper-trading account. You can explore the dashboard and backtests without any account at all.</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Setup path">
+      <button class="tab" role="tab" id="tab-look" aria-selected="true" aria-controls="r-look" type="button">Look around (no keys)</button>
+      <button class="tab" role="tab" id="tab-paper" aria-selected="false" aria-controls="r-paper" type="button">Paper trading</button>
+      <button class="tab" role="tab" id="tab-docker" aria-selected="false" aria-controls="r-docker" type="button">Docker</button>
+    </div>
+
+    <div class="recipe" role="tabpanel" id="r-look" aria-labelledby="tab-look">
+      <div class="rstep"><b>1</b><div><h3>Install</h3><p>Clone the repository and install the dependencies in a virtual environment.</p>
+        <div class="installer"><span><b>$</b> python3 -m venv .venv &amp;&amp; source .venv/bin/activate &amp;&amp; pip install -r requirements.txt</span><button class="copy" type="button" data-copy="python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt">copy</button></div></div></div>
+      <div class="rstep"><b>2</b><div><h3>Preview the dashboard</h3><p>Renders the live terminal view with synthetic data, so you can see what the bot shows without a broker.</p>
+        <div class="installer"><span><b>$</b> python velox.py demo</span><button class="copy" type="button" data-copy="python velox.py demo">copy</button></div></div></div>
+      <div class="rstep"><b>3</b><div><h3>Backtest the baselines</h3><p>Runs four classic strategies on bundled sample data, with each symbol's buy-and-hold return for comparison.</p>
+        <div class="installer"><span><b>$</b> python velox.py backtest --symbols AAPL,SPY</span><button class="copy" type="button" data-copy="python velox.py backtest --symbols AAPL,SPY">copy</button></div></div></div>
+    </div>
+
+    <div class="recipe" role="tabpanel" id="r-paper" aria-labelledby="tab-paper" hidden>
+      <div class="rstep"><b>1</b><div><h3>Create an Alpaca paper account</h3><p>Sign up at alpaca.markets, open the paper-trading dashboard and generate an API key and secret. Paper money only.</p></div></div>
+      <div class="rstep"><b>2</b><div><h3>Add your keys</h3><p>Copy the template and fill in <code>ALPACA_API_KEY</code> and <code>ALPACA_API_SECRET</code>. Leave <code>ALPACA_LIVE=false</code>.</p>
+        <div class="installer"><span><b>$</b> cp .env.example .env</span><button class="copy" type="button" data-copy="cp .env.example .env">copy</button></div></div></div>
+      <div class="rstep"><b>3</b><div><h3>Run it</h3><p>Starts the bot with the live dashboard in this terminal. Press Ctrl-C for a clean shutdown.</p>
+        <div class="installer"><span><b>$</b> python velox.py run</span><button class="copy" type="button" data-copy="python velox.py run">copy</button></div></div></div>
+      <div class="rstep"><b>4</b><div><h3>Watch it, and know how to stop it</h3><p>From a second terminal, check on it or ask it to close everything.</p>
+        <div class="installer"><span><b>$</b> python velox.py status --watch</span><button class="copy" type="button" data-copy="python velox.py status --watch">copy</button></div>
+        <div class="installer" style="margin-top:8px"><span><b>$</b> python velox.py kill</span><button class="copy" type="button" data-copy="python velox.py kill">copy</button></div></div></div>
+    </div>
+
+    <div class="recipe" role="tabpanel" id="r-docker" aria-labelledby="tab-docker" hidden>
+      <div class="rstep"><b>1</b><div><h3>Configure</h3><p>Copy <code>.env.example</code> to <code>.env</code> and add your paper keys.</p>
+        <div class="installer"><span><b>$</b> cp .env.example .env</span><button class="copy" type="button" data-copy="cp .env.example .env">copy</button></div></div></div>
+      <div class="rstep"><b>2</b><div><h3>Start the stack</h3><p>Runs the bot plus a daily SQLite backup service. The health check reads the bot's heartbeat file.</p>
+        <div class="installer"><span><b>$</b> docker compose up -d</span><button class="copy" type="button" data-copy="docker compose up -d">copy</button></div></div></div>
+      <div class="rstep"><b>3</b><div><h3>Attach to the dashboard</h3><p>The terminal dashboard is the interface. Detach with Ctrl-P then Ctrl-Q.</p>
+        <div class="installer"><span><b>$</b> docker attach velox-v12</span><button class="copy" type="button" data-copy="docker attach velox-v12">copy</button></div></div></div>
+    </div>
+
+    <div class="callout"><strong>Before you go live:</strong> run on paper for weeks, read <code>config/settings.py</code> end to end, and keep <code>ALPACA_LIVE=false</code> until you understand every limit. Velox is experimental software and carries real risk of loss.</div>
+
+    <h3 style="margin:56px 0 18px">Command reference</h3>
+    <div class="cli">
+      <div class="cmd"><code>velox run [--live] [--diagnose]</code><span>Run the bot here with the live dashboard.</span></div>
+      <div class="cmd"><code>velox start / stop</code><span>Run in the background, or stop gracefully.</span></div>
+      <div class="cmd"><code>velox status [--watch]</code><span>Heartbeat, open positions, recent trades.</span></div>
+      <div class="cmd"><code>velox kill</code><span>Close all positions and cancel all orders.</span></div>
+      <div class="cmd"><code>velox health</code><span>Exit 0 if the heartbeat is fresh.</span></div>
+      <div class="cmd"><code>velox backtest</code><span>Baselines on CSV or yfinance data, or <code>--strategy velox</code>.</span></div>
+      <div class="cmd"><code>velox tearsheet --days 90</code><span>Performance report from the trade database.</span></div>
+      <div class="cmd"><code>velox demo</code><span>The dashboard with synthetic data.</span></div>
+      <div class="cmd"><code>velox strategies</code><span>Strategies, allocations and baselines.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="map">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Project map</span>
+      <h2>Where things live</h2>
+      <p class="lede">Roughly 54,000 lines of Python in a flat set of packages, with about 1,500 tests.</p>
+    </div>
+<pre class="tree"><span class="a">velox.py</span>          <span class="m"># the CLI: run, status, kill, backtest, ...</span>
+<span class="a">main.py</span>           <span class="m"># startup, position recovery, the main trading loop</span>
+<span class="a">dashboard.py</span>      <span class="m"># Rich live terminal dashboard</span>
+config/            <span class="m"># every strategy and risk parameter (settings.py)</span>
+database.py        <span class="m"># SQLite: trades, positions, snapshots, signal log</span>
+
+<span class="a">engine/</span>           <span class="m"># the trading engine</span>
+  scanner.py         <span class="m"># strategy scans, adaptive intervals</span>
+  signal_processor.py<span class="m"># the 18-step pipeline</span>
+  exit_orchestrator.py <span class="m"># 10-level exit cascade</span>
+  broker_sync.py     <span class="m"># reconciliation with the broker</span>
+  daily_tasks.py     <span class="m"># daily reset, weekly tasks, EOD close</span>
+<span class="a">strategies/</span>       <span class="m"># StatMR, KalmanPairs, PEAD, VWAP, MicroMomentum, ORB</span>
+<span class="a">risk/</span>             <span class="m"># circuit breaker, VaR, correlation, vol targeting, P&amp;L lock</span>
+<span class="a">oms/</span>              <span class="m"># order state machine, idempotency, kill switch</span>
+execution/         <span class="m"># bracket orders, TWAP, chase logic</span>
+ml/                <span class="m"># features, ensemble inference, training, FinBERT</span>
+analytics/         <span class="m"># metrics, OU fitting, Hurst, HMM regimes</span>
+backtesting/       <span class="m"># Monte Carlo, classic baselines</span>
+data/              <span class="m"># market data, feed monitor, sample CSVs</span>
+compliance/ ops/   <span class="m"># audit trail, PDT rule; disaster recovery, tax harvesting</span>
+tests/             <span class="m"># pytest suite</span></pre>
+  </div>
+</section>
+
+<section id="history">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">History</span>
+      <h2>Where Velox came from</h2>
+      <p class="lede">Velox grew over twelve major versions. In 2026 it absorbed two earlier projects and became terminal-only.</p>
+    </div>
+    <div class="history">
+      <div class="card"><span class="tag">Predecessor</span><h3>AlphaFlow</h3><p>A Python and FastAPI trading platform for Alpaca with a strategy engine, backtester, risk manager and a React interface. Velox is its direct successor.</p></div>
+      <div class="card"><span class="tag">Merged in</span><h3>Trading Algorithms</h3><p>A Rust workspace with SIMD indicators and a backtester. Its MA-crossover, RSI, momentum and Bollinger strategies now live on as Velox's backtest baselines.</p></div>
+      <div class="card"><span class="tag">Today</span><h3>Terminal only</h3><p>The web dashboard, Prometheus and Grafana were removed. A <code>velox</code> command, a terminal kill switch and a heartbeat health check replaced them.</p></div>
+    </div>
+    <div class="risk-note" style="margin-top:36px"><strong>Risk warning.</strong> This is experimental software provided for education and research. Trading equities involves substantial risk of loss and past performance does not predict future results. You are responsible for any losses incurred.</div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Velox, formerly AlphaFlow. MIT license.</span>
+    <span><a href="https://github.com/lumenworksco/Velox" rel="noopener">GitHub</a> · <a href="https://github.com/lumenworksco/Velox/blob/main/README.md" rel="noopener">README</a> · <a href="https://github.com/lumenworksco/Velox/blob/main/CHANGELOG.md" rel="noopener">Changelog</a></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  /* ---- theme toggle (remembered per viewer when storage is available) ---- */
+  var root=document.documentElement;
+  try{var saved=localStorage.getItem("velox-theme");if(saved)root.setAttribute("data-theme",saved);}catch(e){}
+  document.getElementById("theme").addEventListener("click",function(){
+    var dark=root.getAttribute("data-theme")==="dark"||(!root.getAttribute("data-theme")&&matchMedia("(prefers-color-scheme: dark)").matches);
+    var next=dark?"light":"dark";root.setAttribute("data-theme",next);
+    try{localStorage.setItem("velox-theme",next);}catch(e){}
+  });
+
+  /* ---- copy buttons ---- */
+  document.querySelectorAll(".copy").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      var text=btn.getAttribute("data-copy"),label=btn.textContent;
+      function done(ok){btn.textContent=ok?"copied":"select it";setTimeout(function(){btn.textContent=label;},1400);}
+      function fallback(){
+        var span=btn.parentNode.querySelector("span");
+        try{var r=document.createRange();r.selectNodeContents(span);var s=getSelection();s.removeAllRanges();s.addRange(r);}catch(e){}
+        done(false);
+      }
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){done(true);},fallback);}else{fallback();}
+    });
+  });
+
+  /* ---- setup tabs ---- */
+  var tabs=[["tab-look","r-look"],["tab-paper","r-paper"],["tab-docker","r-docker"]];
+  tabs.forEach(function(pair){
+    document.getElementById(pair[0]).addEventListener("click",function(){
+      tabs.forEach(function(p){
+        var on=p[0]===pair[0];
+        document.getElementById(p[0]).setAttribute("aria-selected",on?"true":"false");
+        document.getElementById(p[1]).hidden=!on;
+      });
+    });
+  });
+
+  /* ---- signal journey ---- */
+  var PHASES=[
+    {name:"Gates: any of these can stop the signal",kind:"Gate",items:[
+      ["Position conflict","Skips the signal if the symbol is already held, so Velox never stacks two entries on one name.","engine/signal_processor.py"],
+      ["Halt detection","Skips symbols that look halted or that Alpaca marks as not tradable. If the asset check itself fails, the symbol is blocked until it succeeds.","engine/signal_processor.py"],
+      ["Re-entry cooldown","After a stop-loss, the symbol is blocked for 15 minutes (REENTRY_COOLDOWN_MIN) so the bot does not chase a falling knife.","engine/signal_processor.py"],
+      ["Recently traded","Any symbol traded in the last five minutes is skipped, whatever the strategy. This prevents churn.","engine/signal_processor.py"],
+      ["Per-symbol loss cap","Stops further entries in a symbol that has already lost its daily allowance.","engine/signal_processor.py"],
+      ["Pattern-day-trader rule","Blocks a trade that would violate the Pattern Day Trader rule.","risk/pdt_tracker.py"],
+      ["Earnings filter","Skips symbols with earnings inside the next two days.","earnings.py"],
+      ["Data-quality gate","Rejects signals built on stale or anomalous bars.","data/quality.py"],
+      ["Short pre-check","Short signals need shorting enabled and the stock to be shortable and easy to borrow.","engine/signal_processor.py"]]},
+    {name:"Risk limits: the portfolio gets a vote",kind:"Risk gate",items:[
+      ["Risk limits","Position count (12 max), position size (8% of the portfolio), circuit-breaker tier and the daily P&L lock all have to allow a new entry.","risk/risk_manager.py"],
+      ["Sector exposure","Blocks the trade if its sector would exceed 30% of the portfolio.","engine/signal_processor.py"],
+      ["Correlation concentration","Uses an eigenvalue-based effective-bets measure to refuse trades that would make the book too correlated. Pairs are exempt, since they are correlated by design.","risk/correlation_limiter.py"]]},
+    {name:"Sizing: only ever makes it smaller or larger, never blocks",kind:"Sizing",items:[
+      ["News sentiment","A soft filter from Alpaca news. Strongly negative news can veto a long.","news_sentiment.py"],
+      ["Optional LLM score","If enabled, a Claude model scores the signal. It fails open: no key, no score, no problem.","llm_signal_scorer.py"],
+      ["Position sizing","The base size comes from 0.8% risk per trade and volatility targeting. Then regime fit, drawdown, seasonality, cross-asset bias, VaR budget, ML ensemble confidence, VPIN toxicity, FinBERT sentiment, lead-lag bias and gap analysis adjust it. The adjustments are blended into one conviction score rather than multiplied, so they cannot compound into a zero.","risk/vol_targeting.py"],
+      ["Transaction-cost filter","Rejects the trade if spread, slippage and commission would eat the expected profit.","oms/transaction_cost.py"]]},
+    {name:"Execution",kind:"Execution",items:[
+      ["Bracket order","Submits an entry with its take-profit and stop-loss attached at the broker. Large orders are sliced with TWAP. The order is registered in the OMS first, so a crash cannot lose track of it.","execution/core.py"],
+      ["Register the trade","Records the position with its time stops and max-hold date, subscribes to its price stream and emits a <code>position.opened</code> event.","engine/signal_processor.py"]]}
+  ];
+  var list=document.getElementById("steps"),panel=document.getElementById("panel"),flat=[],n=0;
+  PHASES.forEach(function(ph){
+    var wrap=document.createElement("div");
+    var label=document.createElement("p");label.className="phase-label";label.textContent=ph.name;wrap.appendChild(label);
+    var group=document.createElement("div");group.className="steps";group.setAttribute("role","presentation");
+    ph.items.forEach(function(it){
+      n++;var idx=n-1;flat.push({n:n,title:it[0],body:it[1],where:it[2],kind:ph.kind});
+      var b=document.createElement("button");b.type="button";b.className="step-btn";b.setAttribute("role","tab");b.setAttribute("aria-selected","false");
+      var num=document.createElement("span");num.textContent=String(n).padStart(2,"0");
+      var t=document.createElement("div");t.textContent=it[0];
+      b.appendChild(num);b.appendChild(t);
+      b.addEventListener("click",function(){show(idx);});
+      b.addEventListener("keydown",function(e){
+        if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();var to=Math.max(0,Math.min(flat.length-1,idx+(e.key==="ArrowDown"?1:-1)));show(to);btns[to].focus();}
+      });
+      group.appendChild(b);
+    });
+    wrap.appendChild(group);list.appendChild(wrap);
+  });
+  var btns=Array.prototype.slice.call(list.querySelectorAll(".step-btn"));
+  function show(i){
+    var s=flat[i];
+    btns.forEach(function(b,k){b.setAttribute("aria-selected",k===i?"true":"false");b.tabIndex=k===i?0:-1;});
+    panel.innerHTML='<span class="kind"></span><h3></h3><p></p><p class="where"></p>';
+    panel.querySelector(".kind").textContent="Step "+s.n+" of "+flat.length+" · "+s.kind;
+    panel.querySelector("h3").textContent=s.title;
+    panel.querySelector("p").innerHTML=s.body;
+    panel.querySelector(".where").textContent=s.where;
+  }
+  show(0);
+})();
+</script>
+
+</body>
+</html>
