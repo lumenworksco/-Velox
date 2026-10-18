@@ -116,7 +116,7 @@ microstructure/              # VPIN, spread, dark pool, trade classification
 compliance/, ops/            # Audit trail, best execution, PDT; disaster recovery, tax harvesting
 monitoring/                  # Latency tracker, metrics pipeline, watchdog, reconciliation
 scripts/                     # Training, tear sheet, demo dashboard, setup, backup/restore
-tests/                       # 1,600+ tests
+tests/                       # 1,500+ tests
 ```
 
 ---
@@ -268,7 +268,7 @@ pytest tests/test_v10_events.py -v
 pytest tests/test_v10_phase4.py -v
 ```
 
-1,630+ tests across 70 test files covering all strategies, risk modules, OMS, exit orchestrator, event bus, circuit breaker, ML pipeline, and analytics.
+1,560+ tests across 70 test files covering all strategies, risk modules, OMS, exit orchestrator, event bus, circuit breaker, ML pipeline, and analytics.
 
 ---
 

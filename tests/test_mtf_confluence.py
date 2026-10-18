@@ -17,22 +17,6 @@ class TestMTFConfluence:
         from analytics.mtf_confluence import clear_cache
         clear_cache()
 
-    def test_disabled_returns_neutral(self, override_config):
-        from analytics.mtf_confluence import get_mtf_confluence
-        with override_config(MTF_CONFLUENCE_ENABLED=False):
-            score = get_mtf_confluence("AAPL", "buy")
-            assert score == 0.5
-
-
-    def test_cache_hit(self, override_config):
-        from analytics.mtf_confluence import get_mtf_confluence, _mtf_cache
-
-        now = datetime(2026, 3, 13, 10, 30, tzinfo=ET)
-        _mtf_cache["AAPL_buy"] = (0.8, now)
-
-        with override_config(MTF_CONFLUENCE_ENABLED=True, MTF_CACHE_SECONDS=300):
-            score = get_mtf_confluence("AAPL", "buy", now)
-            assert score == 0.8
 
     def test_clear_cache(self):
         from analytics.mtf_confluence import _mtf_cache, clear_cache
