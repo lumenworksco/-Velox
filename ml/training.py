@@ -70,25 +70,6 @@ except ImportError:
     pass
 
 
-def _check_ml_deps(require_all: bool = False) -> bool:
-    """Check ML library availability."""
-    if require_all:
-        missing = []
-        if not _HAS_LGBM:
-            missing.append("lightgbm")
-        if not _HAS_XGB:
-            missing.append("xgboost")
-        if not _HAS_CATBOOST:
-            missing.append("catboost")
-        if not _HAS_SKLEARN:
-            missing.append("scikit-learn")
-        if missing:
-            logger.warning("Missing ML libraries: %s — install with pip", ", ".join(missing))
-            return False
-        return True
-    return _HAS_SKLEARN
-
-
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------

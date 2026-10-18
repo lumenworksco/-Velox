@@ -147,10 +147,3 @@ def is_too_correlated(new_symbol: str, open_symbols: list[str],
     return False
 
 
-def get_correlation(symbol_a: str, symbol_b: str) -> float | None:
-    """Get correlation between two symbols. Returns None if unavailable."""
-    if _corr_matrix is None or _corr_matrix.empty:
-        return None
-    if symbol_a not in _corr_matrix.columns or symbol_b not in _corr_matrix.columns:
-        return None
-    return float(_corr_matrix.loc[symbol_a, symbol_b])

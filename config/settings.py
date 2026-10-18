@@ -1197,26 +1197,6 @@ _settings_cache: Settings | None = None
 _settings_cache_lock = _threading.Lock()
 
 
-def get_settings() -> Settings:
-    """T2-002: Return the structured settings object (cached, rebuilt on YAML reload).
-
-    Call this from new code that prefers grouped access over flat variables.
-    The underlying module-level variables remain the source of truth.
-    """
-    global _settings_cache
-    with _settings_cache_lock:
-        if _settings_cache is None:
-            _settings_cache = _build_settings()
-        return _settings_cache
-
-
-def invalidate_settings_cache():
-    """Force rebuild of the structured settings object (call after YAML reload)."""
-    global _settings_cache
-    with _settings_cache_lock:
-        _settings_cache = None
-
-
 def get_yaml_config() -> dict:
     """Get the currently loaded YAML config (read-only copy)."""
     with _yaml_lock:
