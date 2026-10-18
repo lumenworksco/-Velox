@@ -384,28 +384,3 @@ class TaxLossHarvester:
         """
         return self.substitute_map.get(symbol, [])
 
-    def get_annual_summary(self) -> Dict[str, float]:
-        """Get summary of realized gains/losses for the current tax year."""
-        current_year = date.today().year
-        year_sales = [
-            s for s in self._sale_history
-            if s.sale_date.year == current_year
-        ]
-
-        total_proceeds = sum(s.proceeds for s in year_sales)
-        total_losses = sum(
-            s.proceeds for s in year_sales if s.was_loss
-        )
-        total_gains = sum(
-            s.proceeds for s in year_sales if not s.was_loss
-        )
-        num_wash_sales = 0  # Would need to cross-reference with purchases
-
-        return {
-            "total_sales": len(year_sales),
-            "total_proceeds": round(total_proceeds, 2),
-            "realized_gains": round(total_gains, 2),
-            "realized_losses": round(total_losses, 2),
-            "net": round(total_gains + total_losses, 2),
-            "wash_sale_violations": num_wash_sales,
-        }

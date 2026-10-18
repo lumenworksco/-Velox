@@ -339,14 +339,3 @@ class CrossAssetSignalGenerator:
         else:
             return "NEUTRAL"
 
-    def get_state_summary(self) -> Dict[str, float]:
-        """Return current state as a flat dictionary for logging/dashboard."""
-        return {
-            "bond_curve": self._state.bond_curve_slope,
-            "credit_spread": self._state.credit_spread,
-            "dollar_strength": self._state.dollar_strength,
-            "gold_momentum": self._state.gold_momentum,
-            "vix_term": self._state.vix_term_structure,
-            "composite": self._state.composite,
-            "regime": self._state.regime,
-        }

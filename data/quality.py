@@ -511,20 +511,6 @@ class DataQualityFramework:
             results[symbol] = self.check(bars, symbol, now=now)
         return results
 
-    def get_tradeable_symbols(self, bars_dict: Dict[str, pd.DataFrame],
-                              now: Optional[datetime] = None
-                              ) -> List[str]:
-        """Return only symbols that pass quality checks.
-
-        Args:
-            bars_dict: Mapping of symbol -> OHLCV DataFrame.
-            now: Current time for staleness checks.
-
-        Returns:
-            List of symbols with is_tradeable=True.
-        """
-        scores = self.check_multiple(bars_dict, now=now)
-        return [sym for sym, s in scores.items() if s.is_tradeable]
 
     def stats(self) -> dict:
         """Return framework statistics."""

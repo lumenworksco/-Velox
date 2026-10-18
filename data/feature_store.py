@@ -431,34 +431,6 @@ class FeatureStore:
         return features
 
 
-    def get_feature(self, symbol: str, feature_name: str) -> float:
-        """Get a single cached feature value.
-
-        Args:
-            symbol: Ticker symbol.
-            feature_name: Registered feature name.
-
-        Returns:
-            Cached feature value, or NaN if unavailable/stale.
-        """
-        with self._lock:
-            sym_features = self._online.get(symbol)
-            if sym_features is None:
-                return np.nan
-
-            value = sym_features.get(feature_name, np.nan)
-
-            # Check staleness
-            meta = self._registry.get(feature_name)
-            ts = self._timestamps.get(symbol, {}).get(feature_name, 0)
-            if meta and (_time.time() - ts) > meta.staleness_threshold_sec:
-                logger.debug("FeatureStore: stale feature %s for %s (age=%.0fs)",
-                             feature_name, symbol, _time.time() - ts)
-                return np.nan
-
-            return value
-
-
     def get_all_features(self, symbol: str) -> Dict[str, float]:
         """Return all cached features for a symbol (no recompute)."""
         with self._lock:

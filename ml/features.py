@@ -762,19 +762,3 @@ class FeatureEngine:
     # Utility
     # ------------------------------------------------------------------
 
-    def get_feature_names(self) -> List[str]:
-        """Return a sorted list of all feature names produced by this engine.
-
-        Useful for ensuring feature alignment across train/predict.
-        Generates names from a minimal synthetic dataset.
-        """
-        dummy_bars = pd.DataFrame({
-            "open": np.random.uniform(99, 101, 250),
-            "high": np.random.uniform(100, 102, 250),
-            "low": np.random.uniform(98, 100, 250),
-            "close": np.random.uniform(99, 101, 250),
-            "volume": np.random.randint(1000, 10000, 250),
-        }, index=pd.date_range("2024-01-01", periods=250, freq="h"))
-
-        feats = self.compute_all_features("DUMMY", dummy_bars)
-        return sorted(feats.keys())

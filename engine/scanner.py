@@ -683,19 +683,6 @@ class ScanScheduler:
         else:
             return 30
 
-    def get_q_table_stats(self) -> Dict:
-        """Return Q-table statistics for monitoring."""
-        with self._lock:
-            n_states = len(self._q_table)
-            if n_states == 0:
-                return {"states": 0, "avg_q": 0.0}
-            all_q = [q for state_qs in self._q_table.values() for q in state_qs.values()]
-            return {
-                "states": n_states,
-                "avg_q": float(self._np.mean(all_q)) if all_q else 0.0,
-                "max_q": float(max(all_q)) if all_q else 0.0,
-                "min_q": float(min(all_q)) if all_q else 0.0,
-            }
 
     def save_policy(self, path: str):
         """Save the Q-table to a JSON file for persistence."""

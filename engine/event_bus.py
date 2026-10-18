@@ -311,10 +311,6 @@ class AsyncEventBus:
             if len(self._dead_letters) > self._max_dead_letters:
                 self._dead_letters = self._dead_letters[-self._max_dead_letters:]
 
-    def get_dead_letters(self, limit: int = 50) -> list[dict]:
-        """Return recent dead letter entries."""
-        with self._lock:
-            return list(self._dead_letters[-limit:])
 
     # ------------------------------------------------------------------
     # History / introspection

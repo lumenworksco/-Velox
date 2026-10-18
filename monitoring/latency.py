@@ -217,25 +217,6 @@ class LatencyTracker:
             breaches=breaches,
         )
 
-    def get_all_stats(self) -> dict[str, LatencyStats]:
-        """Get stats for all tracked operations."""
-        with self._samples_lock:
-            operations = list(self._samples.keys())
-        return {op: self.get_stats(op) for op in operations}
-
-    def get_active_timers(self) -> list[dict]:
-        """Return info about currently running timers (for debugging stalls)."""
-        now = time.monotonic()
-        result = []
-        with self._active_lock:
-            for tid, (op, start, meta) in self._active.items():
-                result.append({
-                    "timer_id": tid,
-                    "operation": op,
-                    "elapsed_ms": (now - start) * 1000.0,
-                    "metadata": meta,
-                })
-        return result
 
     # ------------------------------------------------------------------
     # Public API — decorator

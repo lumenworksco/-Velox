@@ -240,14 +240,6 @@ class AuditTrail:
         except Exception:
             return f"T-{datetime.now(config.ET).strftime('%Y%m%d%H%M%S%f')}"
 
-    def get_event_count(self) -> int:
-        """Return total events logged this session."""
-        return self._event_counter
-
-    def get_recent_events(self, n: int = 100) -> list[AuditEvent]:
-        """Return the N most recent events from memory cache."""
-        with self._lock:
-            return list(self._recent_events[-n:])
 
     # ------------------------------------------------------------------
     # Internal

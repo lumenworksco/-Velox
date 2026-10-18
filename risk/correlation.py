@@ -240,30 +240,6 @@ class DynamicCorrelation:
     # Cached lookups
     # ------------------------------------------------------------------
 
-    def get_pairwise(self, sym1: str, sym2: str) -> float:
-        """Look up a pairwise correlation from the cached matrix.
-
-        Args:
-            sym1: First symbol.
-            sym2: Second symbol.
-
-        Returns:
-            Correlation coefficient, or 0.0 if symbols are not in the cache.
-        """
-        with self._lock:
-            if self._cached_corr is None or not self._cached_symbols:
-                return 0.0
-            try:
-                i = self._cached_symbols.index(sym1)
-                j = self._cached_symbols.index(sym2)
-                return float(self._cached_corr[i, j])
-            except ValueError:
-                return 0.0
-
-    def get_cached_matrix(self) -> Optional[np.ndarray]:
-        """Return the most recently computed correlation matrix, or None."""
-        with self._lock:
-            return self._cached_corr.copy() if self._cached_corr is not None else None
 
     # ------------------------------------------------------------------
     # Periodic refresh

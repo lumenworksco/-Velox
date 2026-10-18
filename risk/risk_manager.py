@@ -745,17 +745,6 @@ class RiskManager:
         with self._lock:
             return dict(self._strategy_weights)
 
-    def get_weight(self, strategy: str) -> float:
-        """T1-004: Get a single strategy's capital weight (thread-safe).
-
-        Returns the weight for the given strategy, or 1.0 if not found.
-        Encapsulates locking so callers don't need to manage it.
-        """
-        with self._lock:
-            weights = self._strategy_weights
-            if not weights:
-                return 1.0
-            return weights.get(strategy, 1.0)
 
     @staticmethod
     def _compute_strategy_daily_returns(trades: list[dict]) -> list[float]:

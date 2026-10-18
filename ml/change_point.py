@@ -624,24 +624,6 @@ class OnlineBOCPD(BOCPD):
         """Update the default online detection threshold."""
         self._online_threshold = max(0.0, min(1.0, threshold))
 
-    def get_state_snapshot(self) -> Dict[str, Any]:
-        """Return a compact snapshot of the online state.
-
-        Useful for checkpointing without serialising the full BOCPD
-        internal state.
-        """
-        return {
-            "total_steps": self._total_steps,
-            "ema_cp_prob": self._ema_cp_prob,
-            "steps_since_cp": self._steps_since_cp,
-            "last_cp_step": self._last_cp_step,
-            "buffer_mean": float(self._cp_buffer[:self._buffer_count].mean())
-            if self._buffer_count > 0
-            else 0.0,
-            "regime_stability": self.get_regime_stability(),
-            "recent_cp_rate": self.get_recent_cp_rate(),
-            "map_run_length": self.get_map_run_length(),
-        }
 
     def reset_online(self) -> None:
         """Reset both the base BOCPD and the online state."""

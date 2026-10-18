@@ -281,17 +281,3 @@ class DrawdownRiskManager:
 
         return float(np.mean(worst_drawdowns))
 
-    def get_metrics_summary(self, equity_curve: np.ndarray) -> Dict[str, float]:
-        """Return metrics as a flat dictionary for logging/dashboard."""
-        m = self.compute_metrics(equity_curve)
-        return {
-            "current_dd": m.current_drawdown,
-            "max_dd": m.max_drawdown,
-            "dd_duration": m.drawdown_duration_days,
-            "calmar": m.calmar_ratio,
-            "cdar": m.cdar,
-            "ulcer_index": m.ulcer_index,
-            "recovery_factor": m.recovery_factor,
-            "exposure_mult": m.exposure_multiplier,
-            "num_episodes": m.num_drawdowns,
-        }

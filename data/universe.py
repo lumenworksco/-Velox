@@ -288,49 +288,6 @@ class DynamicUniverse:
     # Universe access (per-strategy)
     # ------------------------------------------------------------------
 
-    def get_universe(self, strategy_type: Optional[str] = None) -> List[str]:
-        """Return the symbol universe, optionally filtered for a strategy.
-
-        Args:
-            strategy_type: One of STAT_MR, VWAP, KALMAN_PAIRS, ORB,
-                          MICRO_MOM, PEAD, or None for full universe.
-
-        Returns:
-            List of ticker symbols.
-        """
-        with self._lock:
-            if not self._universe:
-                # Auto-load fallback if never refreshed
-                self._universe = {
-                    sym: AssetInfo(symbol=sym, status="active")
-                    for sym in self._fallback_symbols
-                }
-
-            # Start with full universe minus exclusions
-            symbols = [
-                sym for sym in self._universe
-                if sym not in self._excluded
-            ]
-
-        if strategy_type is None:
-            return symbols
-
-        params = _STRATEGY_UNIVERSE_DEFAULTS.get(strategy_type, {})
-        max_symbols = params.get("max_symbols", 50)
-        exclude_earnings = params.get("exclude_earnings", True)
-
-        # Filter out upcoming earnings if needed
-        if exclude_earnings:
-            symbols = [s for s in symbols if s not in self._earnings_calendar]
-
-        # Sort by ADV (highest first) for strategy-specific slicing
-        with self._lock:
-            symbols.sort(
-                key=lambda s: self._universe.get(s, AssetInfo(symbol=s)).avg_daily_volume,
-                reverse=True,
-            )
-
-        return symbols[:max_symbols]
 
     # ------------------------------------------------------------------
     # Health checks

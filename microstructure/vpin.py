@@ -212,24 +212,6 @@ class VPIN:
         self._total_trades_processed = 0
         logger.debug("VPIN state reset")
 
-    @classmethod
-    def from_adv(cls, adv: float, n_buckets: int = 50, toxic_threshold: float = 0.35) -> "VPIN":
-        """Create a VPIN instance with bucket volume = 1/50 x ADV.
-
-        Per Easley, Lopez de Prado, O'Hara (2012), the optimal bucket
-        volume V* = ADV / 50 ensures ~50 buckets per day.
-
-        Args:
-            adv: Average daily volume in shares.
-            n_buckets: Number of rolling buckets (default 50).
-            toxic_threshold: VPIN level to flag as TOXIC_FLOW (default 0.35).
-
-        Returns:
-            Configured VPIN instance.
-        """
-        bucket_vol = max(1, int(adv / 50))
-        return cls(bucket_volume=bucket_vol, n_buckets=n_buckets, high_vpin_threshold=toxic_threshold)
-
 
     def __repr__(self) -> str:
         vpin = self.compute_vpin()

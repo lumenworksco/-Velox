@@ -762,14 +762,6 @@ class IntradayRegimeDetector:
             logger.error(f"Intraday HMM update failed: {e}")
             return self._current_regime
 
-    def get_intraday_regime(self) -> str:
-        """Get current intraday regime as string.
-
-        Returns:
-            One of 'trending_up', 'trending_down', 'mean_reverting'.
-        """
-        with self._lock:
-            return self._current_regime.value
 
     @property
     def intraday_regime(self) -> IntradayRegimeState:

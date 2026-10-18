@@ -437,16 +437,3 @@ class EnhancedSeasonality:
 
         return None
 
-    def get_components(self, timestamp: datetime, vix_level: Optional[float] = None) -> Dict[str, float]:
-        """Return all seasonality components for transparency/debugging."""
-        cal_effects = self.get_calendar_effect(timestamp.date())
-        cal_score = sum(e["score"] for e in cal_effects.values()) if cal_effects else 0.0
-
-        return {
-            "intraday": self._get_intraday_score(timestamp),
-            "day_of_week": DAY_OF_WEEK_SCORES.get(timestamp.weekday(), 0.0),
-            "month": MONTH_SCORES.get(timestamp.month, 0.0),
-            "vix_regime": self._get_vix_regime_score(vix_level),
-            "calendar": np.clip(cal_score, -1, 1),
-            "composite": self.get_seasonality_score(timestamp, vix_level),
-        }

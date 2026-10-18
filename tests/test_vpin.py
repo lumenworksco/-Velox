@@ -186,15 +186,6 @@ class TestVPINSizingModifier:
 class TestVPINFactoryAndReset:
     """Test from_adv factory and reset."""
 
-    def test_from_adv(self):
-        v = VPIN.from_adv(adv=500_000, n_buckets=50, toxic_threshold=0.35)
-        assert v._bucket_volume == 10_000
-        assert v._n_buckets == 50
-        assert v._high_vpin_threshold == 0.35
-
-    def test_from_adv_small(self):
-        v = VPIN.from_adv(adv=10)
-        assert v._bucket_volume >= 1
 
     def test_reset(self):
         v = VPIN(bucket_volume=100, n_buckets=5)

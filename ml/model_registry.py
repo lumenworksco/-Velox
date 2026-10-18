@@ -249,18 +249,6 @@ class ModelRegistry:
         logger.info("PROD-007: Rolled back %s to v%d", name, target.version)
         return target
 
-    def list_versions(self, name: str) -> List[ModelVersion]:
-        """List all versions of a model, newest first."""
-        return sorted(
-            self._models.get(name, []),
-            key=lambda v: v.version,
-            reverse=True,
-        )
-
-    def list_models(self) -> List[str]:
-        """List all registered model names."""
-        return list(self._models.keys())
-
 
     def stats(self) -> dict:
         """Return registry statistics."""
