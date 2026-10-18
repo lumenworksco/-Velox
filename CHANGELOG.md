@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 - **Terminal kill switch** -- `velox kill` drops a request file that the main loop consumes (replaces the web endpoint)
 - **Heartbeat every 30s** from the main loop; Docker and CI health checks use `velox health`
 - **Baseline strategies** ported from the Rust *Trading Algorithms* project (EMA crossover, RSI, momentum, Bollinger mean reversion) in `backtesting/baselines.py`, with sample market data in `data/samples/`
-- **Predecessor projects merged** with history preserved under `legacy/`: AlphaFlow (Velox's predecessor) and Trading Algorithms (Rust). Secrets, `node_modules` and logs were stripped first
+- **Predecessor projects merged** with history preserved (the working copies were then folded into Velox and removed): AlphaFlow (Velox's predecessor) and Trading Algorithms (Rust). Secrets, `node_modules` and logs were stripped first
 - Issue/PR templates and a code of conduct
 
 ### Changed
