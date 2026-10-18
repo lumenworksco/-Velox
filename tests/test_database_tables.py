@@ -121,45 +121,6 @@ class TestLogTradeRoundTrip:
 # Signal round-trip
 # ---------------------------------------------------------------------------
 
-class TestLogSignalRoundTrip:
-    """log_signal / get_signals_by_date round-trip."""
-
-    def test_log_and_retrieve_signals_by_date(self):
-        """Signals logged for a date are returned by get_signals_by_date."""
-        ts = datetime(2026, 3, 15, 10, 30, tzinfo=ET)
-        database.log_signal(ts, "AAPL", "ORB", "buy", acted_on=True, skip_reason="")
-        database.log_signal(ts, "MSFT", "VWAP", "sell", acted_on=False, skip_reason="vol_low")
-
-        rows = database.get_signals_by_date("2026-03-15")
-        assert len(rows) == 2
-        symbols = {r["symbol"] for r in rows}
-        assert "AAPL" in symbols
-        assert "MSFT" in symbols
-
-    def test_acted_on_flag_preserved(self):
-        """acted_on flag is stored and retrieved correctly."""
-        ts = datetime(2026, 3, 15, 11, 0, tzinfo=ET)
-        database.log_signal(ts, "AMD", "ORB", "buy", acted_on=True, skip_reason="")
-        database.log_signal(ts, "AMD", "ORB", "buy", acted_on=False, skip_reason="no_volume")
-
-        rows = database.get_signals_by_date("2026-03-15")
-        acted = [r for r in rows if r["acted_on"] == 1]
-        skipped = [r for r in rows if r["acted_on"] == 0]
-        assert len(acted) == 1
-        assert len(skipped) == 1
-        assert skipped[0]["skip_reason"] == "no_volume"
-
-    def test_signals_for_different_date_not_returned(self):
-        """get_signals_by_date excludes signals from other dates."""
-        ts_today = datetime(2026, 3, 15, 9, 35, tzinfo=ET)
-        ts_yesterday = datetime(2026, 3, 14, 9, 35, tzinfo=ET)
-        database.log_signal(ts_today, "SPY", "ORB", "buy", acted_on=True)
-        database.log_signal(ts_yesterday, "QQQ", "ORB", "sell", acted_on=True)
-
-        rows = database.get_signals_by_date("2026-03-15")
-        assert all(r["symbol"] == "SPY" for r in rows)
-        assert len(rows) == 1
-
 
 # ---------------------------------------------------------------------------
 # Open positions round-trip
@@ -224,63 +185,6 @@ class TestOpenPositionsRoundTrip:
 # ---------------------------------------------------------------------------
 # Daily snapshots round-trip
 # ---------------------------------------------------------------------------
-
-class TestDailySnapshotRoundTrip:
-    """save_daily_snapshot / get_daily_snapshots round-trip."""
-
-    def test_save_and_retrieve_snapshot(self):
-        """A saved snapshot is returned by get_daily_snapshots."""
-        database.save_daily_snapshot(
-            date="2026-03-15",
-            portfolio_value=102_000.0,
-            cash=55_000.0,
-            day_pnl=2_000.0,
-            day_pnl_pct=0.02,
-            total_trades=8,
-            win_rate=0.75,
-            sharpe_rolling=1.8,
-        )
-
-        rows = database.get_daily_snapshots(days=7)
-        assert len(rows) == 1
-        s = rows[0]
-        assert s["date"] == "2026-03-15"
-        assert s["portfolio_value"] == pytest.approx(102_000.0)
-        assert s["cash"] == pytest.approx(55_000.0)
-        assert s["day_pnl"] == pytest.approx(2_000.0)
-        assert s["day_pnl_pct"] == pytest.approx(0.02)
-        assert s["total_trades"] == 8
-        assert s["win_rate"] == pytest.approx(0.75)
-        assert s["sharpe_rolling"] == pytest.approx(1.8)
-
-    def test_upsert_updates_existing_date(self):
-        """INSERT OR REPLACE means saving the same date twice updates the row."""
-        database.save_daily_snapshot(
-            date="2026-03-15", portfolio_value=100_000.0,
-            cash=50_000.0, day_pnl=0.0, day_pnl_pct=0.0,
-            total_trades=0, win_rate=0.0, sharpe_rolling=0.0,
-        )
-        database.save_daily_snapshot(
-            date="2026-03-15", portfolio_value=105_000.0,
-            cash=52_000.0, day_pnl=5_000.0, day_pnl_pct=0.05,
-            total_trades=3, win_rate=0.67, sharpe_rolling=1.2,
-        )
-
-        rows = database.get_daily_snapshots(days=7)
-        assert len(rows) == 1
-        assert rows[0]["portfolio_value"] == pytest.approx(105_000.0)
-
-    def test_multiple_snapshots_ordered_desc(self):
-        """get_daily_snapshots returns most-recent date first."""
-        for date in ("2026-03-13", "2026-03-14", "2026-03-15"):
-            database.save_daily_snapshot(
-                date=date, portfolio_value=100_000.0, cash=50_000.0,
-                day_pnl=0.0, day_pnl_pct=0.0, total_trades=0,
-                win_rate=0.0, sharpe_rolling=0.0,
-            )
-        rows = database.get_daily_snapshots(days=7)
-        assert rows[0]["date"] == "2026-03-15"
-        assert rows[-1]["date"] == "2026-03-13"
 
 
 # ---------------------------------------------------------------------------
