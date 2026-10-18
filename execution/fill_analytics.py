@@ -273,68 +273,6 @@ class FillAnalytics:
 
         return report
 
-    def get_strategy_summary(self, strategy: str, lookback_days: int = 30) -> dict:
-        """Get execution quality summary for a specific strategy.
-
-        Args:
-            strategy: Strategy name (e.g. "STAT_MR").
-            lookback_days: Number of calendar days to look back.
-
-        Returns:
-            Dict with aggregate metrics and trend data.
-        """
-        cutoff = datetime.now() - timedelta(days=lookback_days)
-        with self._lock:
-            all_strat_fills = list(self._strategy_fills.get(strategy, []))
-        fills = [
-            f for f in all_strat_fills
-            if f.fill_time and f.fill_time >= cutoff
-        ]
-
-        if not fills:
-            return {
-                "strategy": strategy,
-                "period_days": lookback_days,
-                "total_fills": 0,
-                "message": "No fills in lookback period",
-            }
-
-        metrics = self._compute_aggregate_metrics(fills)
-        metrics["strategy"] = strategy
-        metrics["period_days"] = lookback_days
-
-        # Weekly trend within the period
-        weekly_is: list[float] = []
-        for week_offset in range(0, lookback_days, 7):
-            week_start = datetime.now() - timedelta(days=week_offset + 7)
-            week_end = datetime.now() - timedelta(days=week_offset)
-            week_fills = [
-                f for f in fills
-                if f.fill_time and week_start <= f.fill_time < week_end
-            ]
-            if week_fills:
-                avg_is = statistics.mean(f.impl_shortfall_bps for f in week_fills)
-                weekly_is.append(round(avg_is, 2))
-
-        metrics["weekly_impl_shortfall_trend"] = weekly_is
-
-        return metrics
-
-    def get_fill_history(self, symbol: str = "", limit: int = 50) -> list[FillRecord]:
-        """Get recent fill records, optionally filtered by symbol.
-
-        Args:
-            symbol: Filter by symbol (empty = all).
-            limit: Maximum records to return.
-
-        Returns:
-            List of FillRecords, most recent first.
-        """
-        with self._lock:
-            fills = list(self._fills)
-        if symbol:
-            fills = [f for f in fills if f.symbol == symbol]
-        return list(reversed(fills[-limit:]))
 
     def _build_report(
         self,

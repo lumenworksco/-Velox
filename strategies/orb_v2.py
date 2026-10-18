@@ -46,29 +46,6 @@ class ORBStrategyV2:
     # Morning prep
     # ------------------------------------------------------------------
 
-    def prepare_morning_universe(self, symbols: list[str], now: datetime):
-        """At 9:35 AM, rank symbols by pre-market volume and keep top N."""
-        ranked = []
-        for symbol in symbols:
-            try:
-                snap = get_snapshot(symbol)
-                if snap is None:
-                    continue
-                vol = getattr(snap, "latest_trade", None)
-                # Snapshots expose minute_bar with volume; use latest bar volume
-                minute_bar = getattr(snap, "minute_bar", None)
-                pre_vol = minute_bar.volume if minute_bar else 0
-                ranked.append((symbol, pre_vol))
-            except Exception as e:
-                logger.debug(f"Snapshot failed for {symbol}: {e}")
-                continue
-
-        ranked.sort(key=lambda x: x[1], reverse=True)
-        self._universe = [s for s, _ in ranked[:config.ORB_SCAN_SYMBOLS]]
-        logger.info(
-            f"ORBv2 morning universe: {len(self._universe)} symbols "
-            f"(from {len(symbols)} candidates)"
-        )
 
     # ------------------------------------------------------------------
     # Record opening range (called at 10:00 AM)

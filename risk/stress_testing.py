@@ -463,30 +463,6 @@ class StressTestFramework:
 
         return adversarial
 
-    def run_adversarial_stress_tests(
-        self,
-        positions: dict[str, Any],
-        portfolio_equity: float | None = None,
-    ) -> list[StressTestResult]:
-        """RISK-008: Generate and run adversarial scenarios in one call.
-
-        Combines generate_adversarial_scenarios + run_stress_tests using
-        the adversarial scenarios instead of predefined ones.
-        """
-        scenarios = self.generate_adversarial_scenarios(positions, portfolio_equity)
-        if not scenarios:
-            return []
-
-        # Temporarily swap scenarios
-        old_scenarios = self._scenarios
-        self._scenarios = scenarios
-
-        try:
-            results = self.run_stress_tests(positions, portfolio_equity)
-        finally:
-            self._scenarios = old_scenarios
-
-        return results
 
     def _adversarial_concentration(
         self,
@@ -663,97 +639,6 @@ class StressTestFramework:
     # T7-002: VAE-generated tail scenarios
     # ------------------------------------------------------------------
 
-    def run_vae_stress_tests(
-        self,
-        positions: dict[str, Any],
-        portfolio_equity: float | None = None,
-        n_scenarios: int = 1000,
-        tail_multiplier: float = 2.0,
-    ) -> list[StressTestResult]:
-        """T7-002: Generate and run VAE-sampled tail-risk scenarios.
-
-        Uses MarketScenarioVAE to generate synthetic market scenarios,
-        filters for extreme losses (> tail_multiplier × historical max daily
-        loss), and runs them as stress tests.
-
-        Falls back to parametric tail sampling if PyTorch is unavailable.
-
-        Args:
-            positions: Dict of symbol -> position info.
-            portfolio_equity: Total portfolio equity.
-            n_scenarios: Number of scenarios to generate from VAE.
-            tail_multiplier: Only keep scenarios with loss > this × historical max.
-
-        Returns:
-            List of StressTestResult from tail scenarios.
-        """
-        if not positions:
-            return []
-
-        pos_list = self._normalize_positions(positions)
-        if not pos_list:
-            return []
-
-        if portfolio_equity is None:
-            portfolio_equity = sum(p["notional"] for p in pos_list) * 2.0
-
-        try:
-            vae = MarketScenarioVAE()
-            # Generate scenarios as arrays of equity moves per position
-            n_assets = len(pos_list)
-            tail_scenarios = vae.generate_tail_scenarios(
-                n_generate=n_scenarios,
-                n_assets=n_assets,
-                tail_multiplier=tail_multiplier,
-            )
-
-            if not tail_scenarios:
-                logger.info("T7-002: No tail scenarios exceeded threshold")
-                return []
-
-            # Convert VAE scenarios to stress test results
-            results: list[StressTestResult] = []
-            for i, scenario_returns in enumerate(tail_scenarios[:20]):  # Cap at 20
-                total_pnl = 0.0
-                worst_sym = ""
-                worst_pnl = 0.0
-                pos_details = {}
-
-                for j, pos in enumerate(pos_list):
-                    asset_return = scenario_returns[j % len(scenario_returns)]
-                    pos_pnl = pos["notional"] * asset_return * pos["side_mult"]
-                    total_pnl += pos_pnl
-
-                    if pos_pnl < worst_pnl:
-                        worst_pnl = pos_pnl
-                        worst_sym = pos["symbol"]
-                    pos_details[pos["symbol"]] = round(pos_pnl, 2)
-
-                pnl_pct = total_pnl / portfolio_equity if portfolio_equity > 0 else 0.0
-
-                results.append(StressTestResult(
-                    scenario_name=f"VAE Tail Scenario #{i+1}",
-                    scenario_type=ScenarioType.FLASH_CRASH,
-                    estimated_pnl_pct=pnl_pct,
-                    estimated_pnl_dollars=total_pnl,
-                    positions_affected=len(pos_list),
-                    worst_position=worst_sym,
-                    worst_position_pnl=worst_pnl,
-                    details={"position_pnl": pos_details, "source": "vae_tail"},
-                ))
-
-            if results:
-                worst = min(results, key=lambda r: r.estimated_pnl_pct)
-                logger.info(
-                    f"T7-002: Generated {len(results)} VAE tail scenarios. "
-                    f"Worst: {worst.estimated_pnl_pct:.2%} (${worst.estimated_pnl_dollars:+,.0f})"
-                )
-
-            return results
-
-        except Exception as e:
-            logger.warning(f"T7-002: VAE stress test failed: {e}", exc_info=True)
-            return []
 
     # ------------------------------------------------------------------
     # Status
@@ -1079,40 +964,3 @@ class MarketScenarioVAE:
 
         return [tail_scenarios[i] for i in range(len(tail_scenarios))]
 
-    def augment_var_data(
-        self,
-        historical_returns: np.ndarray,
-        n_synthetic: int = 5000,
-        tail_multiplier: float = 2.0,
-    ) -> np.ndarray:
-        """Augment VaR calibration data with synthetic tail scenarios.
-
-        Fits the VAE on historical returns, generates tail scenarios,
-        and appends them to the calibration dataset.
-
-        Args:
-            historical_returns: (n_days, n_assets) historical daily returns.
-            n_synthetic: Number of synthetic scenarios to generate.
-            tail_multiplier: Tail filter multiplier.
-
-        Returns:
-            Augmented returns array (n_days + n_tail, n_assets).
-        """
-        self.fit(historical_returns)
-        tail = self.generate_tail_scenarios(
-            n_generate=n_synthetic,
-            tail_multiplier=tail_multiplier,
-        )
-
-        if not tail:
-            return historical_returns
-
-        tail_array = np.array(tail)
-        augmented = np.vstack([historical_returns, tail_array])
-
-        logger.info(
-            f"T7-002: Augmented VaR data: {len(historical_returns)} historical + "
-            f"{len(tail_array)} synthetic tail = {len(augmented)} total samples"
-        )
-
-        return augmented

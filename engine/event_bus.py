@@ -207,17 +207,6 @@ class AsyncEventBus:
         logger.debug("AsyncEventBus: %s subscribed to %s (pri=%d, async=%s)",
                       name, event_type.__name__, priority, is_async)
 
-    def subscribe_all(
-        self,
-        handler: Callable[[BaseEvent], Any],
-        priority: int = Priority.LOW,
-    ) -> None:
-        """Register *handler* to receive ALL event types (wildcard)."""
-        is_async = asyncio.iscoroutinefunction(handler)
-        entry = _PrioritizedHandler(priority, handler, is_async)
-        with self._lock:
-            self._wildcard_handlers.append(entry)
-            self._wildcard_handlers.sort()
 
     def unsubscribe(
         self,
@@ -311,10 +300,6 @@ class AsyncEventBus:
             if len(self._dead_letters) > self._max_dead_letters:
                 self._dead_letters = self._dead_letters[-self._max_dead_letters:]
 
-    def get_dead_letters(self, limit: int = 50) -> list[dict]:
-        """Return recent dead letter entries."""
-        with self._lock:
-            return list(self._dead_letters[-limit:])
 
     # ------------------------------------------------------------------
     # History / introspection

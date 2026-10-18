@@ -215,14 +215,6 @@ class DataFeedMonitor:
                         result[sym] = price
         return result
 
-    def get_cache_age(self, symbol: str) -> Optional[float]:
-        """Get the age in seconds of the cached price for a symbol."""
-        with self._lock:
-            entry = self._price_cache.get(symbol)
-            if entry is None:
-                return None
-            _, ts = entry
-            return _time.monotonic() - ts
 
     # ------------------------------------------------------------------
     # OU staleness check
@@ -315,13 +307,6 @@ class DataFeedMonitor:
             ),
         }
 
-    def get_symbols_with_failures(self, min_consecutive: int = 3) -> List[str]:
-        """Return symbols that have failed consecutively >= min_consecutive times."""
-        with self._lock:
-            return [
-                sym for sym, count in self._consecutive_failures.items()
-                if count >= min_consecutive
-            ]
 
     def __repr__(self) -> str:
         state = "DOWN" if self.is_feed_down else "OK"

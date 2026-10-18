@@ -206,40 +206,6 @@ class AlertManager:
             self._maintenance_windows.append(window)
         logger.info(f"Maintenance window added: {start} to {end} — {reason}")
 
-    def remove_expired_windows(self):
-        """Remove maintenance windows that have ended."""
-        now = datetime.now(config.ET)
-        with self._lock:
-            self._maintenance_windows = [
-                w for w in self._maintenance_windows if w.end > now
-            ]
-
-    def get_alert_history(self, level: AlertLevel | None = None,
-                          source: str | None = None,
-                          since: datetime | None = None,
-                          limit: int = 100) -> list[Alert]:
-        """Query alert history with optional filters.
-
-        Args:
-            level: Filter by alert level.
-            source: Filter by source component.
-            since: Only return alerts after this time.
-            limit: Max number of results.
-
-        Returns:
-            List of Alert objects (most recent first).
-        """
-        with self._lock:
-            results = list(reversed(self._history))
-
-        if level is not None:
-            results = [a for a in results if a.level == level]
-        if source is not None:
-            results = [a for a in results if a.source == source]
-        if since is not None:
-            results = [a for a in results if a.timestamp >= since]
-
-        return results[:limit]
 
     def get_stats(self) -> dict:
         """Return summary statistics about alerts."""

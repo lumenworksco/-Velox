@@ -189,25 +189,6 @@ class TestPortfolioFactorExposures:
 # portfolio_factor_risk()
 # ===================================================================
 
-class TestPortfolioFactorRisk:
-
-    def test_portfolio_factor_risk_structure(self, model, returns_data):
-        positions = {"AAPL": 10_000.0, "TSLA": 10_000.0}
-        result = model.portfolio_factor_risk(positions, returns_data)
-        assert "exposures" in result
-        assert "violations" in result
-        assert "concentrated" in result
-
-    def test_concentrated_portfolio_flagged(self, model, returns_data):
-        """A portfolio with high factor exposure should be flagged."""
-        # Use only high-beta stock
-        positions = {"TSLA": 100_000.0}
-        result = model.portfolio_factor_risk(positions, returns_data)
-        # May or may not trigger depending on synthetic data,
-        # but the structure should be correct
-        assert isinstance(result["violations"], list)
-        assert isinstance(result["concentrated"], bool)
-
 
 # ===================================================================
 # Sector exposure limits

@@ -291,9 +291,6 @@ class FractionalDifferentiator:
     # Utilities
     # ------------------------------------------------------------------
 
-    def get_cached_d_values(self) -> dict[str, float]:
-        """Return cached optimal d values from previous transform_features calls."""
-        return dict(self._d_cache)
 
     def clear_cache(self) -> None:
         """Clear the cached d values."""

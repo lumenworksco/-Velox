@@ -689,55 +689,6 @@ class RiskManager:
 
     # --- Dynamic Capital Allocation ---
 
-    def update_strategy_weights(self):
-        """Recalculate capital allocation weights based on rolling Sharpe.
-
-        Called daily at 9:00 AM. Strategies with higher recent Sharpe
-        get proportionally more capital.
-        """
-        if not config.DYNAMIC_ALLOCATION:
-            return
-
-        try:
-            sharpes = {}
-            strategies = list(config.STRATEGY_ALLOCATIONS.keys())
-
-            for strategy in strategies:
-                trades = database.get_recent_trades_by_strategy(
-                    strategy, days=config.ALLOCATION_LOOKBACK_DAYS
-                )
-                if len(trades) < 5:
-                    sharpes[strategy] = 0.5  # Default if insufficient data
-                else:
-                    daily_pnls = self._compute_strategy_daily_returns(trades)
-                    sharpes[strategy] = max(self._compute_sharpe(daily_pnls), 0.1)
-
-            total_sharpe = sum(sharpes.values())
-            if total_sharpe <= 0:
-                return
-
-            new_weights = {
-                s: max(sharpe / total_sharpe, config.ALLOCATION_MIN_WEIGHT)
-                for s, sharpe in sharpes.items()
-            }
-
-            # Normalize so weights sum to 1.0
-            total_weight = sum(new_weights.values())
-            if total_weight > 0:
-                new_weights = {
-                    s: w / total_weight for s, w in new_weights.items()
-                }
-
-            # T1-004 + BUG-007: Atomically swap immutable dict snapshot under lock
-            frozen_weights = dict(new_weights)  # Immutable copy for atomic swap
-            with self._lock:
-                self._strategy_weights = frozen_weights
-
-            logger.info(f"Capital allocation updated: {new_weights}")
-            database.log_allocation_weights(new_weights)
-
-        except Exception as e:
-            logger.error(f"Failed to update strategy weights: {e}")
 
     def get_strategy_weights(self) -> dict:
         """Get current strategy capital weights (thread-safe snapshot)."""
@@ -745,28 +696,6 @@ class RiskManager:
         with self._lock:
             return dict(self._strategy_weights)
 
-    def get_weight(self, strategy: str) -> float:
-        """T1-004: Get a single strategy's capital weight (thread-safe).
-
-        Returns the weight for the given strategy, or 1.0 if not found.
-        Encapsulates locking so callers don't need to manage it.
-        """
-        with self._lock:
-            weights = self._strategy_weights
-            if not weights:
-                return 1.0
-            return weights.get(strategy, 1.0)
-
-    @staticmethod
-    def _compute_strategy_daily_returns(trades: list[dict]) -> list[float]:
-        """Compute daily return series from a list of trade dicts."""
-        from collections import defaultdict
-        daily = defaultdict(float)
-        for t in trades:
-            exit_date = t.get("exit_time", "")[:10]
-            if exit_date:
-                daily[exit_date] += t.get("pnl_pct", 0.0)
-        return list(daily.values()) if daily else []
 
     @staticmethod
     def _compute_sharpe(daily_returns: list[float], rf_annual: float = 0.045) -> float:
@@ -812,25 +741,3 @@ class RiskManager:
             ],
         }
 
-    def load_from_dict(self, d: dict, now: datetime):
-        """Restore state from JSON (legacy, for migration)."""
-        self.starting_equity = d.get("starting_equity", 0)
-        self.day_pnl = d.get("day_pnl", 0)
-        self.circuit_breaker_active = d.get("circuit_breaker_active", False)
-        self.signals_today = d.get("signals_today", 0)
-
-        for symbol, td in d.get("open_trades", {}).items():
-            self.open_trades[symbol] = TradeRecord(
-                symbol=td["symbol"],
-                strategy=td["strategy"],
-                side=td["side"],
-                entry_price=td["entry_price"],
-                entry_time=datetime.fromisoformat(td["entry_time"]),
-                qty=td["qty"],
-                take_profit=td["take_profit"],
-                stop_loss=td["stop_loss"],
-                order_id=td.get("order_id", ""),
-                time_stop=datetime.fromisoformat(td["time_stop"]) if td.get("time_stop") else None,
-                hold_type=td.get("hold_type", "day"),
-            )
-        logger.info(f"Restored {len(self.open_trades)} open trades from state")

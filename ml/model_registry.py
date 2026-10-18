@@ -249,49 +249,6 @@ class ModelRegistry:
         logger.info("PROD-007: Rolled back %s to v%d", name, target.version)
         return target
 
-    def list_versions(self, name: str) -> List[ModelVersion]:
-        """List all versions of a model, newest first."""
-        return sorted(
-            self._models.get(name, []),
-            key=lambda v: v.version,
-            reverse=True,
-        )
-
-    def list_models(self) -> List[str]:
-        """List all registered model names."""
-        return list(self._models.keys())
-
-    def delete_version(self, name: str, version: int, delete_file: bool = False) -> bool:
-        """Delete a model version from the registry.
-
-        Args:
-            name: Model family name.
-            version: Version number to delete.
-            delete_file: Also delete the model file from disk.
-
-        Returns:
-            True if the version was deleted.
-        """
-        versions = self._models.get(name, [])
-        target = None
-        for i, v in enumerate(versions):
-            if v.version == version:
-                target = versions.pop(i)
-                break
-
-        if target is None:
-            return False
-
-        if delete_file and os.path.exists(target.model_path):
-            try:
-                os.remove(target.model_path)
-                logger.info("PROD-007: Deleted model file %s", target.model_path)
-            except Exception as e:
-                logger.warning("PROD-007: Failed to delete model file: %s", e)
-
-        self._save()
-        logger.info("PROD-007: Deleted %s v%d from registry", name, version)
-        return True
 
     def stats(self) -> dict:
         """Return registry statistics."""

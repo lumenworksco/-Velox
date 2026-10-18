@@ -461,13 +461,3 @@ class OptionsFlowDetector:
         results.sort(key=lambda s: abs(s.net_score), reverse=True)
         return results
 
-    def clear_data(self, symbol: Optional[str] = None) -> None:
-        """Clear cached data for one or all symbols."""
-        if symbol:
-            self._chains.pop(symbol, None)
-            self._trades.pop(symbol, None)
-            self._summaries.pop(symbol, None)
-        else:
-            self._chains.clear()
-            self._trades.clear()
-            self._summaries.clear()

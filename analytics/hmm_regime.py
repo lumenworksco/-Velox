@@ -709,67 +709,6 @@ class IntradayRegimeDetector:
             logger.error(f"Intraday HMM fitting failed: {e}")
             return False
 
-    def update_intraday_regime(self, recent_5min_data: pd.DataFrame) -> IntradayRegimeState:
-        """Update intraday regime based on recent 5-minute bars.
-
-        Called every 5 minutes. Uses the fitted HMM to classify the
-        current intraday state.
-
-        Args:
-            recent_5min_data: Recent 5-minute bars (at least 20 bars).
-
-        Returns:
-            Current IntradayRegimeState.
-        """
-        if not getattr(config, "INTRADAY_REGIME_ENABLED", False):
-            return self._current_regime
-
-        if not self._fitted or self.model is None:
-            return self._current_regime
-
-        try:
-            raw = _compute_intraday_features(recent_5min_data)
-            if len(raw) == 0:
-                return self._current_regime
-
-            features, _, _ = _normalize_features(raw, self._feature_means, self._feature_stds)
-            if len(features) == 0:
-                return self._current_regime
-
-            log_prob, posteriors = self.model.score_samples(features)
-
-            if np.isnan(log_prob).any() or np.isnan(posteriors).any():
-                logger.warning("Intraday HMM produced NaN — returning fallback")
-                return self._current_regime
-
-            last_posteriors = posteriors[-1]
-
-            probs: dict[IntradayRegimeState, float] = {}
-            for state_idx, prob in enumerate(last_posteriors):
-                regime = self._label_map.get(state_idx, IntradayRegimeState.MEAN_REVERTING)
-                probs[regime] = probs.get(regime, 0.0) + prob
-
-            best_regime = max(probs, key=lambda r: probs[r])
-
-            with self._lock:
-                self._current_regime = best_regime
-                self._regime_probabilities = probs
-                self._last_update_ts = __import__('time').time()
-
-            return best_regime
-
-        except Exception as e:
-            logger.error(f"Intraday HMM update failed: {e}")
-            return self._current_regime
-
-    def get_intraday_regime(self) -> str:
-        """Get current intraday regime as string.
-
-        Returns:
-            One of 'trending_up', 'trending_down', 'mean_reverting'.
-        """
-        with self._lock:
-            return self._current_regime.value
 
     @property
     def intraday_regime(self) -> IntradayRegimeState:

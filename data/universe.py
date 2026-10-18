@@ -288,49 +288,6 @@ class DynamicUniverse:
     # Universe access (per-strategy)
     # ------------------------------------------------------------------
 
-    def get_universe(self, strategy_type: Optional[str] = None) -> List[str]:
-        """Return the symbol universe, optionally filtered for a strategy.
-
-        Args:
-            strategy_type: One of STAT_MR, VWAP, KALMAN_PAIRS, ORB,
-                          MICRO_MOM, PEAD, or None for full universe.
-
-        Returns:
-            List of ticker symbols.
-        """
-        with self._lock:
-            if not self._universe:
-                # Auto-load fallback if never refreshed
-                self._universe = {
-                    sym: AssetInfo(symbol=sym, status="active")
-                    for sym in self._fallback_symbols
-                }
-
-            # Start with full universe minus exclusions
-            symbols = [
-                sym for sym in self._universe
-                if sym not in self._excluded
-            ]
-
-        if strategy_type is None:
-            return symbols
-
-        params = _STRATEGY_UNIVERSE_DEFAULTS.get(strategy_type, {})
-        max_symbols = params.get("max_symbols", 50)
-        exclude_earnings = params.get("exclude_earnings", True)
-
-        # Filter out upcoming earnings if needed
-        if exclude_earnings:
-            symbols = [s for s in symbols if s not in self._earnings_calendar]
-
-        # Sort by ADV (highest first) for strategy-specific slicing
-        with self._lock:
-            symbols.sort(
-                key=lambda s: self._universe.get(s, AssetInfo(symbol=s)).avg_daily_volume,
-                reverse=True,
-            )
-
-        return symbols[:max_symbols]
 
     # ------------------------------------------------------------------
     # Health checks
@@ -363,72 +320,11 @@ class DynamicUniverse:
 
         return removed
 
-    def exclude_symbol(self, symbol: str, reason: str):
-        """Manually exclude a symbol from the universe."""
-        with self._lock:
-            self._excluded.add(symbol)
-            self._exclusion_reasons[symbol] = reason
-        logger.info("DynamicUniverse: excluded %s (%s)", symbol, reason)
-
-    def reinstate_symbol(self, symbol: str):
-        """Re-include a previously excluded symbol."""
-        with self._lock:
-            self._excluded.discard(symbol)
-            self._exclusion_reasons.pop(symbol, None)
-        logger.info("DynamicUniverse: reinstated %s", symbol)
-
-    def set_earnings_calendar(self, calendar: Dict[str, str]):
-        """Update the earnings calendar.
-
-        Args:
-            calendar: Mapping of symbol -> next earnings date (ISO format).
-        """
-        with self._lock:
-            self._earnings_calendar = dict(calendar)
-        logger.info("DynamicUniverse: updated earnings calendar (%d symbols)",
-                     len(calendar))
 
     # ------------------------------------------------------------------
     # Snapshot persistence (for backtesting)
     # ------------------------------------------------------------------
 
-    def store_snapshot(self, date: str):
-        """Persist the current universe as a JSON snapshot for a given date.
-
-        Args:
-            date: ISO date string (e.g., '2025-03-15').
-        """
-        if not self._snapshot_dir:
-            logger.warning("DynamicUniverse: no snapshot_dir configured")
-            return
-
-        with self._lock:
-            snapshot = {
-                "date": date,
-                "refreshed_at": self._last_refresh.isoformat() if self._last_refresh else None,
-                "symbols": list(self._universe.keys()),
-                "excluded": list(self._excluded),
-                "exclusion_reasons": dict(self._exclusion_reasons),
-                "asset_details": {
-                    sym: {
-                        "name": info.name,
-                        "exchange": info.exchange,
-                        "price": info.price,
-                        "adv": info.avg_daily_volume,
-                        "is_etf": info.is_etf,
-                    }
-                    for sym, info in self._universe.items()
-                },
-            }
-
-        path = os.path.join(self._snapshot_dir, f"universe_{date}.json")
-        try:
-            with open(path, "w") as f:
-                json.dump(snapshot, f, indent=2)
-            logger.info("DynamicUniverse: stored snapshot for %s (%d symbols) -> %s",
-                        date, len(snapshot["symbols"]), path)
-        except Exception as e:
-            logger.error("DynamicUniverse: failed to store snapshot: %s", e)
 
     def load_snapshot(self, date: str) -> List[str]:
         """Load a historical universe snapshot for backtesting.

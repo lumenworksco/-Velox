@@ -243,31 +243,6 @@ class EnhancedSeasonality:
 
         return effects
 
-    def record_observation(
-        self, timestamp: datetime, return_pct: float
-    ):
-        """Record an observed return for adaptive learning.
-
-        Over time, this adjusts intraday scores based on actual observed
-        returns in each 15-minute bucket.
-
-        Args:
-            timestamp: When the return was observed.
-            return_pct: The observed return (e.g., 0.002 for 0.2%).
-        """
-        if not self._learning_enabled:
-            return
-
-        bucket = self._get_bucket(timestamp)
-        # MED-004: protect _learned_scores mutations
-        with self._lock:
-            if bucket not in self._learned_scores:
-                self._learned_scores[bucket] = []
-            self._learned_scores[bucket].append(return_pct)
-
-            # Cap history at 500 observations per bucket
-            if len(self._learned_scores[bucket]) > 500:
-                self._learned_scores[bucket] = self._learned_scores[bucket][-500:]
 
     def _get_intraday_score(self, timestamp: datetime) -> float:
         """Get the intraday seasonality score for the current 15-min bucket."""
@@ -437,16 +412,3 @@ class EnhancedSeasonality:
 
         return None
 
-    def get_components(self, timestamp: datetime, vix_level: Optional[float] = None) -> Dict[str, float]:
-        """Return all seasonality components for transparency/debugging."""
-        cal_effects = self.get_calendar_effect(timestamp.date())
-        cal_score = sum(e["score"] for e in cal_effects.values()) if cal_effects else 0.0
-
-        return {
-            "intraday": self._get_intraday_score(timestamp),
-            "day_of_week": DAY_OF_WEEK_SCORES.get(timestamp.weekday(), 0.0),
-            "month": MONTH_SCORES.get(timestamp.month, 0.0),
-            "vix_regime": self._get_vix_regime_score(vix_level),
-            "calendar": np.clip(cal_score, -1, 1),
-            "composite": self.get_seasonality_score(timestamp, vix_level),
-        }

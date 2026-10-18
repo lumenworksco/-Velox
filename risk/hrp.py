@@ -168,13 +168,6 @@ class HierarchicalRiskParity:
             logger.error(f"HRP computation failed: {e}", exc_info=True)
             return self._equal_weight(strategies)
 
-    def should_rebalance(self) -> bool:
-        """Check if enough time has passed since last rebalance."""
-        with self._lock:
-            if self._last_rebalance is None:
-                return True
-            elapsed = datetime.now(config.ET) - self._last_rebalance
-            return elapsed >= timedelta(days=self._rebalance_days)
 
     # ------------------------------------------------------------------
     # HRP internals

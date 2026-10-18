@@ -210,15 +210,6 @@ class MarketRegime:
 
         return self.regime
 
-    def is_spy_positive_today(self) -> bool:
-        """Check if SPY is positive on the day (for momentum filter)."""
-        try:
-            df = get_daily_bars("SPY", days=2)
-            if df.empty or len(df) < 2:
-                return False
-            return df["close"].iloc[-1] > df["close"].iloc[-2]
-        except Exception:
-            return False
 
     def get_regime_affinity(self, strategy: str) -> float:
         """Get the regime affinity multiplier for a strategy.

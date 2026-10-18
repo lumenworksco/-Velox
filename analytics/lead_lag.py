@@ -502,48 +502,6 @@ class LeadLagAnalyzer:
         signal = leader_returns.shift(optimal_lag) * np.sign(correlation_sign)
         return signal.dropna()
 
-    @staticmethod
-    def rolling_lead_lag(
-        x: pd.Series,
-        y: pd.Series,
-        window: int = 60,
-        lag: int = 1,
-    ) -> pd.Series:
-        """Compute rolling cross-correlation at a fixed lag.
-
-        Useful for monitoring if a lead-lag relationship is stable
-        or time-varying.
-
-        Args:
-            x: Leader series.
-            y: Follower series.
-            window: Rolling window size.
-            lag: Fixed lag to compute correlation at.
-
-        Returns:
-            pd.Series of rolling correlations.
-        """
-        aligned = pd.concat([x, y], axis=1).dropna()
-        if len(aligned) < window + lag:
-            return pd.Series(dtype=float)
-
-        x_vals = aligned.iloc[:, 0]
-        y_vals = aligned.iloc[:, 1]
-
-        correlations: List[float] = []
-        dates: List = []
-
-        for i in range(window + lag, len(aligned)):
-            x_window = x_vals.iloc[i - window - lag: i - lag].values
-            y_window = y_vals.iloc[i - window: i].values
-            if len(x_window) != len(y_window):
-                continue
-            corr = np.corrcoef(x_window, y_window)[0, 1]
-            correlations.append(float(corr) if np.isfinite(corr) else 0.0)
-            dates.append(aligned.index[i])
-
-        return pd.Series(correlations, index=dates)
-
 
 # ---------------------------------------------------------------------------
 # T5-013: Real-Time Lead-Lag Signal for Strategy Integration

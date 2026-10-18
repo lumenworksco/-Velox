@@ -183,36 +183,6 @@ class BlackLittermanOptimizer:
         """Add a strategy view."""
         self._views.append(view)
 
-    def clear_views(self):
-        """Clear all views for a fresh session."""
-        self._views.clear()
-
-    def add_signal_views(
-        self,
-        signals: dict[str, float],
-        base_confidence: float = 0.5,
-    ):
-        """Convert strategy signals to Black-Litterman views.
-
-        Each signal is an expected return (positive = bullish, negative = bearish).
-        Translates to absolute views on individual assets.
-
-        Args:
-            signals: Dict of symbol -> expected return (decimal).
-            base_confidence: Base confidence level for views [0, 1].
-        """
-        for symbol, expected_ret in signals.items():
-            if symbol not in self._symbols:
-                continue
-            idx = self._symbols.index(symbol)
-            # Confidence scales with signal magnitude
-            confidence = min(1.0, base_confidence * (1.0 + abs(expected_ret) * 10.0))
-            self._views.append(ViewSpec(
-                assets=[idx],
-                weights=[1.0],
-                expected_return=expected_ret,
-                confidence=confidence,
-            ))
 
     # ------------------------------------------------------------------
     # Core: Black-Litterman computation
@@ -462,47 +432,6 @@ class BlackLittermanOptimizer:
     # Session rebalancing
     # ------------------------------------------------------------------
 
-    def compute_rebalance_trades(
-        self,
-        current_weights: dict[str, float],
-        portfolio_value: float,
-        min_trade_value: float = 100.0,
-    ) -> dict[str, float]:
-        """Compute trades needed to rebalance to BL-optimal weights.
-
-        Args:
-            current_weights: Dict of symbol -> current weight.
-            portfolio_value: Total portfolio value in dollars.
-            min_trade_value: Minimum trade size to execute.
-
-        Returns:
-            Dict of symbol -> dollar amount to trade (positive = buy, negative = sell).
-        """
-        if self._last_result is None:
-            logger.warning("T7-005: No BL result available for rebalancing")
-            return {}
-
-        trades = {}
-        result = self._last_result
-
-        for i, symbol in enumerate(result.symbols):
-            target_weight = result.weights[i]
-            current_weight = current_weights.get(symbol, 0.0)
-            delta_weight = target_weight - current_weight
-            trade_value = delta_weight * portfolio_value
-
-            if abs(trade_value) >= min_trade_value:
-                trades[symbol] = round(trade_value, 2)
-
-        if trades:
-            total_buy = sum(v for v in trades.values() if v > 0)
-            total_sell = sum(v for v in trades.values() if v < 0)
-            logger.info(
-                f"T7-005: Rebalance plan: {len(trades)} trades, "
-                f"buy ${total_buy:+,.0f}, sell ${total_sell:+,.0f}"
-            )
-
-        return trades
 
     # ------------------------------------------------------------------
     # Status

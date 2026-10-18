@@ -58,20 +58,6 @@ class MarketConditions:
     vix: float = 0.0          # VIX level for regime awareness
     last_price: float = 0.0
 
-    @classmethod
-    def from_quote(cls, bid: float, ask: float, bid_size: int = 100,
-                   ask_size: int = 100, adv: float = 1_000_000,
-                   volatility: float = 0.25, vix: float = 18.0) -> "MarketConditions":
-        """Build conditions from a live quote."""
-        mid = (bid + ask) / 2 if bid > 0 and ask > 0 else 0
-        spread = ask - bid if ask > bid else 0
-        spread_bps = (spread / mid * 10_000) if mid > 0 else 0
-        return cls(
-            bid=bid, ask=ask, mid=mid, spread=spread,
-            spread_bps=spread_bps, bid_size=bid_size, ask_size=ask_size,
-            adv=adv, volatility=volatility, vix=vix, last_price=mid,
-        )
-
 
 @dataclass
 class OrderParams:
@@ -265,35 +251,6 @@ class SmartOrderRouter:
         )
         return params
 
-    def get_escalated_order_type(
-        self, elapsed_sec: float, urgency: UrgencyLevel
-    ) -> OrderTypeChoice:
-        """Get the escalated order type based on time elapsed.
-
-        Used for chase logic: if an order hasn't filled, escalate aggressiveness.
-
-        Args:
-            elapsed_sec: Seconds since initial order submission.
-            urgency: Original urgency level.
-
-        Returns:
-            Escalated OrderTypeChoice.
-        """
-        # Higher urgency = faster escalation
-        urgency_multiplier = {
-            UrgencyLevel.LOW: 2.0,       # Slow escalation
-            UrgencyLevel.MEDIUM: 1.0,    # Normal
-            UrgencyLevel.HIGH: 0.5,      # Fast
-            UrgencyLevel.CRITICAL: 0.25, # Immediate
-        }
-        mult = urgency_multiplier.get(urgency, 1.0)
-        effective_elapsed = elapsed_sec / mult
-
-        result = OrderTypeChoice.LIMIT_PASSIVE
-        for threshold_sec, order_type in _ESCALATION_SCHEDULE:
-            if effective_elapsed >= threshold_sec:
-                result = order_type
-        return result
 
     def _select_order_type(
         self,

@@ -410,23 +410,6 @@ class TestPredictiveSignal:
             )
 
 
-class TestRollingLeadLag:
-    def test_basic_output(self):
-        """Returns a Series of rolling correlations."""
-        x = _make_returns(n=200, seed=1)
-        y = _make_returns(n=200, seed=2)
-        result = LeadLagAnalyzer.rolling_lead_lag(x, y, window=30, lag=1)
-        assert isinstance(result, pd.Series)
-        assert len(result) > 0
-
-    def test_insufficient_data(self):
-        """Returns empty Series when data is too short."""
-        x = _make_returns(n=10, seed=1)
-        y = _make_returns(n=10, seed=2)
-        result = LeadLagAnalyzer.rolling_lead_lag(x, y, window=60, lag=1)
-        assert len(result) == 0
-
-
 # ===================================================================
 # T5-013: Real-time lead-lag signal helpers
 # ===================================================================

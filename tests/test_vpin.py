@@ -156,26 +156,6 @@ class TestVPINToxicity:
             v.add_trade(price=100.0, volume=100, side="buy")
         assert v.is_toxic() is True
 
-    def test_estimate_toxicity_output_format(self):
-        v = VPIN(bucket_volume=100, n_buckets=5)
-        for _ in range(5):
-            v.add_trade(price=100.0, volume=100, side="buy")
-        result = v.estimate_toxicity()
-        assert "vpin" in result
-        assert "is_toxic" in result
-        assert "label" in result
-        assert "buckets_filled" in result
-        assert "sizing_modifier" in result
-        assert isinstance(result["vpin"], float)
-        assert isinstance(result["is_toxic"], bool)
-        assert result["label"] in ("TOXIC_FLOW", "NORMAL")
-
-    def test_estimate_toxicity_with_trades(self):
-        v = VPIN(bucket_volume=100, n_buckets=5)
-        trades = [{"price": 100.0, "volume": 100, "side": "buy"}] * 5
-        result = v.estimate_toxicity(trades=trades)
-        assert result["buckets_filled"] == 5
-
 
 class TestVPINSizingModifier:
     """Test position sizing based on VPIN."""
@@ -206,15 +186,6 @@ class TestVPINSizingModifier:
 class TestVPINFactoryAndReset:
     """Test from_adv factory and reset."""
 
-    def test_from_adv(self):
-        v = VPIN.from_adv(adv=500_000, n_buckets=50, toxic_threshold=0.35)
-        assert v._bucket_volume == 10_000
-        assert v._n_buckets == 50
-        assert v._high_vpin_threshold == 0.35
-
-    def test_from_adv_small(self):
-        v = VPIN.from_adv(adv=10)
-        assert v._bucket_volume >= 1
 
     def test_reset(self):
         v = VPIN(bucket_volume=100, n_buckets=5)

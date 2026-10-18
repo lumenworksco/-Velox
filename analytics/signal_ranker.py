@@ -144,20 +144,6 @@ class SignalRanker:
         rr = reward / risk
         return min(rr / 5.0, 1.0)
 
-    @staticmethod
-    def _obv_score() -> float:
-        """Placeholder — returns neutral 0.5."""
-        return 0.5
-
-    @staticmethod
-    def _seasonality_score() -> float:
-        """Placeholder — returns neutral 0.5."""
-        return 0.5
-
-    @staticmethod
-    def _liquidity_score() -> float:
-        """Placeholder — returns neutral 0.5."""
-        return 0.5
 
     # ------------------------------------------------------------------
     # Trade history helpers

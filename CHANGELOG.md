@@ -22,6 +22,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - Telegram notifications and every trace of them: `notifications.py`, the `TELEGRAM_*` settings, setup prompts and docs. Alerts now go to the log only
 - Unreachable code (~60 modules): the `ml/models` research models, `strategies/options`, `sector_momentum`, the unused SQLAlchemy/Alembic `db/` package, `exit_manager.py`, `replay.py`, Kelly sizing, shadowed root `data.py`/`execution.py`/`config.py`, and their tests
+- ~100 unreferenced methods and ~75 unreferenced functions (accessors, async paths, feature-store builtins) and the tests that exercised only them. Tests that merely used an accessor as an assertion helper were kept, along with the accessor
 - ~60 unused module-level functions (database getters, async fetchers, profit-maximizer helpers, scanner async paths) and the tests that only exercised them
 - HTML tear sheet export and SPY-benchmark fetch (`velox tearsheet` is terminal only); committed `reports/tearsheet_*.html`
 - FastAPI web dashboard, JWT auth, Prometheus metrics, Grafana, Alertmanager

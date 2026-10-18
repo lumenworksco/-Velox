@@ -260,12 +260,6 @@ class BayesianOptimizer:
         min_improvement = getattr(config, "PARAM_OPTIMIZER_MIN_IMPROVEMENT", 0.15)
         return improvement_pct >= min_improvement
 
-    # ------------------------------------------------------------------
-    def apply_optimized_params(self, result: OptimizationResult):
-        """Apply optimized parameters via config.set_param()."""
-        for key, value in result.optimized_params.items():
-            config.set_param(key, value)
-            logger.info("Applied optimized param: %s = %s", key, value)
 
     # ------------------------------------------------------------------
     def get_last_results(self) -> dict[str, OptimizationResult]:
