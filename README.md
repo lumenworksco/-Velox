@@ -116,7 +116,6 @@ microstructure/              # VPIN, spread, dark pool, trade classification
 compliance/, ops/            # Audit trail, best execution, PDT; disaster recovery, tax harvesting
 monitoring/                  # Latency tracker, metrics pipeline, watchdog, reconciliation
 scripts/                     # Training, tear sheet, demo dashboard, setup, backup/restore
-legacy/                      # Imported AlphaFlow and Trading Algorithms (history preserved)
 tests/                       # 1,600+ tests
 ```
 
@@ -296,10 +295,10 @@ pytest tests/test_v10_phase4.py -v
 
 ## Lineage
 
-Velox grew out of two earlier projects, both merged into this repository with their git history intact under [`legacy/`](legacy/):
+Velox grew out of two earlier projects. Both were merged into this repository with their git history intact (browse it with `git log --follow` on the paths below), then their code was folded into Velox and removed from the tree:
 
-- **AlphaFlow** (`legacy/alphaflow`): the original Python/FastAPI trading platform for Alpaca (strategy engine, backtester, risk manager, React UI). Velox is its direct successor, so the project is "Velox, formerly AlphaFlow".
-- **Trading Algorithms** (`legacy/trading-algorithms`): a Rust workspace with SIMD indicators, a backtester and paper trading. Its classic strategies (MA crossover, RSI, momentum, Bollinger mean reversion) now live on as the `velox backtest` baselines in `backtesting/baselines.py`, and its sample market data ships in `data/samples/`.
+- **AlphaFlow** (`legacy/alphaflow` in history): the original Python/FastAPI trading platform for Alpaca (strategy engine, backtester, risk manager, React UI). Velox is its direct successor, so the project is "Velox, formerly AlphaFlow".
+- **Trading Algorithms** (`legacy/trading-algorithms` in history): a Rust workspace with SIMD indicators, a backtester and paper trading. Its classic strategies (MA crossover, RSI, momentum, Bollinger mean reversion) live on as the `velox backtest` baselines in `backtesting/baselines.py`, and its sample market data ships in `data/samples/`.
 
 Secrets, `node_modules` and logs were stripped from both histories before the import.
 

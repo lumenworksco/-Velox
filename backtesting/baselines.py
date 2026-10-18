@@ -1,6 +1,6 @@
 """Classic baseline strategies for benchmarking Velox against.
 
-Ported from the predecessor Rust project (legacy/trading-algorithms): MA
+Ported from the predecessor Rust project (its history lives under legacy/trading-algorithms): MA
 crossover, RSI reversal, momentum and Bollinger-band mean reversion. They run
 on daily bars, long-only, one symbol at a time, with signals computed at the
 close and filled at the next bar's open (no look-ahead). They are not traded
