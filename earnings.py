@@ -215,19 +215,6 @@ def get_earnings_date(symbol: str) -> str | None:
     return edate_str
 
 
-def get_earnings_calendar() -> dict[str, str]:
-    """V12 12.3: Get all cached earnings dates as {symbol: date_string}.
-
-    Only includes symbols with known upcoming earnings dates.
-    """
-    return {sym: d for sym, d in _earnings_dates.items() if d is not None}
-
-
-def get_excluded_count() -> int:
-    """Get count of symbols excluded due to earnings."""
-    return sum(1 for v in _earnings_cache.values() if v)
-
-
 def get_earnings_count_this_week() -> int:
     """V12 FINAL: Count symbols with earnings this week (Mon-Fri).
 

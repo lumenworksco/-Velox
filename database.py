@@ -1074,24 +1074,6 @@ def close_shadow_trade(trade_id, exit_price, exit_time, exit_reason):
         conn.commit()
 
 
-def get_shadow_performance(strategy=None, days=14):
-    """Get shadow trade performance stats."""
-    conn = _get_conn()
-    query = """SELECT strategy, COUNT(*) as trades,
-               SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) as wins,
-               SUM(pnl) as total_pnl, AVG(pnl_pct) as avg_pnl_pct
-               FROM shadow_trades WHERE exit_time IS NOT NULL
-               AND entry_time >= datetime('now', ?)"""
-    params = [f"-{days} days"]
-    if strategy:
-        query += " AND strategy = ?"
-        params.append(strategy)
-    query += " GROUP BY strategy"
-    rows = conn.execute(query, params).fetchall()
-    cols = ["strategy", "trades", "wins", "total_pnl", "avg_pnl_pct"]
-    return [dict(zip(cols, row)) for row in rows]
-
-
 # =============================================================================
 # V5 ADDITIONS — Trade Analysis
 # =============================================================================
@@ -1159,16 +1141,6 @@ def get_ou_parameters(symbol: str, date: str) -> dict | None:
     return dict(row) if row else None
 
 
-def get_mr_universe(date: str) -> list[dict]:
-    """Get all symbols that passed MR universe filter on a date."""
-    conn = _get_conn()
-    rows = conn.execute(
-        "SELECT * FROM ou_parameters WHERE date = ? ORDER BY hurst ASC",
-        (date,),
-    ).fetchall()
-    return [dict(r) for r in rows]
-
-
 # =============================================================================
 # --- Kalman Pairs ---
 # =============================================================================
@@ -1217,13 +1189,6 @@ def get_active_kalman_pairs() -> list[dict]:
         "SELECT * FROM kalman_pairs WHERE active = 1 ORDER BY coint_pvalue ASC"
     ).fetchall()
     return [dict(r) for r in rows]
-
-
-def deactivate_kalman_pair(pair_id: int):
-    """Deactivate a Kalman pair."""
-    conn = _get_conn()
-    conn.execute("UPDATE kalman_pairs SET active = 0 WHERE id = ?", (pair_id,))
-    conn.commit()
 
 
 def deactivate_all_kalman_pairs():
@@ -1279,103 +1244,17 @@ def save_consistency_log(date: str, consistency_score: float,
     conn.commit()
 
 
-def get_consistency_log(days: int = 30) -> list[dict]:
-    """Get recent consistency log entries."""
-    conn = _get_conn()
-    rows = conn.execute(
-        "SELECT * FROM consistency_log ORDER BY date DESC LIMIT ?",
-        (days,),
-    ).fetchall()
-    return [dict(r) for r in rows]
-
-
 # --- V7 additions ---
-
-def get_trades_by_strategy(strategy: str, days: int = 30) -> list[dict]:
-    """Get closed trades for a specific strategy within the last N days."""
-    from datetime import timedelta
-    cutoff = _to_iso(datetime.now(config.ET) - timedelta(days=days))  # V10 BUG-043
-    conn = _get_conn()
-    rows = conn.execute(
-        "SELECT * FROM trades WHERE strategy = ? AND exit_time > ? ORDER BY exit_time DESC",
-        (strategy, cutoff),
-    ).fetchall()
-    return [dict(r) for r in rows]
-
-
-def get_signals_by_strategy(strategy: str, days: int = 7) -> list[dict]:
-    """Get signal records for a specific strategy within the last N days."""
-    from datetime import timedelta
-    cutoff = _to_iso(datetime.now(config.ET) - timedelta(days=days))  # V10 BUG-043
-    conn = _get_conn()
-    rows = conn.execute(
-        "SELECT * FROM signals WHERE strategy = ? AND timestamp > ? ORDER BY timestamp DESC",
-        (strategy, cutoff),
-    ).fetchall()
-    return [dict(r) for r in rows]
 
 
 # =============================================================================
 # --- Monte Carlo Tail Risk ---
 # =============================================================================
 
-def save_monte_carlo_result(date: str, var_95: float, var_99: float,
-                            cvar_95: float, cvar_99: float,
-                            horizon_days: int, simulations: int):
-    """Save Monte Carlo risk analysis results."""
-    conn = _get_conn()
-    conn.execute(
-        """INSERT INTO monte_carlo_results
-           (date, var_95, var_99, cvar_95, cvar_99, horizon_days, simulations, computed_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-        (date, var_95, var_99, cvar_95, cvar_99, horizon_days, simulations,
-         datetime.now(config.ET).isoformat()),
-    )
-    conn.commit()
-
 
 # =============================================================================
 # --- Execution Analytics ---
 # =============================================================================
-
-def save_execution_analytics(order_id: str, symbol: str, strategy: str, side: str,
-                             expected_price: float, filled_price: float,
-                             slippage_pct: float, submitted_at, filled_at,
-                             latency_ms: int, qty_requested: int,
-                             qty_filled: int, fill_rate: float):
-    """Save execution analytics record."""
-    conn = _get_conn()
-    conn.execute(
-        """INSERT INTO execution_analytics
-           (order_id, symbol, strategy, side, expected_price, filled_price,
-            slippage_pct, submitted_at, filled_at, latency_ms,
-            qty_requested, qty_filled, fill_rate)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (order_id, symbol, strategy, side, expected_price, filled_price,
-         slippage_pct,
-         submitted_at.isoformat() if hasattr(submitted_at, 'isoformat') else str(submitted_at),
-         filled_at.isoformat() if hasattr(filled_at, 'isoformat') else str(filled_at),
-         latency_ms, qty_requested, qty_filled, fill_rate),
-    )
-    conn.commit()
-
-
-def get_execution_analytics(strategy: str | None = None, days: int = 30) -> list[dict]:
-    """Get execution analytics records."""
-    conn = _get_conn()
-    if strategy:
-        rows = conn.execute(
-            """SELECT * FROM execution_analytics WHERE strategy = ?
-               AND submitted_at >= datetime('now', ?) ORDER BY submitted_at DESC""",
-            (strategy, f"-{days} days"),
-        ).fetchall()
-    else:
-        rows = conn.execute(
-            """SELECT * FROM execution_analytics
-               WHERE submitted_at >= datetime('now', ?) ORDER BY submitted_at DESC""",
-            (f"-{days} days",),
-        ).fetchall()
-    return [dict(r) for r in rows]
 
 
 # --- V10: Event log ---
@@ -1391,22 +1270,6 @@ def insert_event_log(event_type: str, source: str, symbol: str | None = None,
         (_to_iso(datetime.now(config.ET)), event_type, source, symbol, strategy, details, severity),
     )
     conn.commit()
-
-
-def get_event_log(event_type: str | None = None, limit: int = 100) -> list[dict]:
-    """Get recent event log entries, optionally filtered by type."""
-    conn = _get_conn()
-    if event_type:
-        rows = conn.execute(
-            "SELECT * FROM event_log WHERE event_type = ? ORDER BY timestamp DESC LIMIT ?",
-            (event_type, limit),
-        ).fetchall()
-    else:
-        rows = conn.execute(
-            "SELECT * FROM event_log ORDER BY timestamp DESC LIMIT ?",
-            (limit,),
-        ).fetchall()
-    return [dict(r) for r in rows]
 
 
 # =============================================================================
@@ -1437,23 +1300,3 @@ def batch_insert(table: str, columns: list[str], rows: list[tuple]):
     logger.debug(f"Batch inserted {len(rows)} rows into {table}")
 
 
-def batch_log_trades(trades: list[dict]):
-    """MED-038: Batch-insert multiple trade records at once.
-
-    Each dict should have keys: symbol, strategy, side, entry_price, exit_price,
-    qty, entry_time, exit_time, exit_reason, pnl, pnl_pct.
-    """
-    columns = ["symbol", "strategy", "side", "entry_price", "exit_price",
-               "qty", "entry_time", "exit_time", "exit_reason", "pnl", "pnl_pct"]
-    rows = []
-    for t in trades:
-        entry_time = t.get("entry_time")
-        exit_time = t.get("exit_time")
-        rows.append((
-            t["symbol"], t["strategy"], t["side"],
-            t["entry_price"], t["exit_price"], t["qty"],
-            entry_time.isoformat() if hasattr(entry_time, 'isoformat') else str(entry_time),
-            exit_time.isoformat() if hasattr(exit_time, 'isoformat') else str(exit_time),
-            t.get("exit_reason", ""), t["pnl"], t["pnl_pct"],
-        ))
-    batch_insert("trades", columns, rows)
