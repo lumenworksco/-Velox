@@ -548,11 +548,3 @@ _hash_chain_audit: HashChainAuditLog | None = None
 _hca_lock = threading.Lock()
 
 
-def get_hash_chain_audit() -> HashChainAuditLog:
-    """Get or create the global HashChainAuditLog singleton."""
-    global _hash_chain_audit
-    if _hash_chain_audit is None:
-        with _hca_lock:
-            if _hash_chain_audit is None:
-                _hash_chain_audit = HashChainAuditLog()
-    return _hash_chain_audit

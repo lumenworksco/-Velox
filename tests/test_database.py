@@ -90,33 +90,3 @@ class TestOpenPositions:
         assert rows[0]["symbol"] == "NVDA"
 
 
-class TestDailySnapshot:
-    def test_daily_snapshot(self):
-        """Insert and query daily snapshot."""
-        database.save_daily_snapshot(
-            date="2026-03-13", portfolio_value=100_500.0,
-            cash=50_000.0, day_pnl=500.0, day_pnl_pct=0.005,
-            total_trades=5, win_rate=0.60, sharpe_rolling=1.5,
-        )
-
-        snapshots = database.get_daily_snapshots(days=7)
-        assert len(snapshots) == 1
-        s = snapshots[0]
-        assert s["date"] == "2026-03-13"
-        assert s["portfolio_value"] == 100_500.0
-        assert s["win_rate"] == 0.60
-
-
-class TestSignalLogging:
-    def test_signal_logging(self):
-        """Log and query signals."""
-        # Use actual "today" in ET so get_signal_stats_today matches
-        import config
-        now = datetime.now(config.ET).replace(hour=10, minute=30, second=0, microsecond=0)
-        database.log_signal(now, "AAPL", "ORB", "buy", True, "")
-        database.log_signal(now, "MSFT", "VWAP", "sell", False, "ml_filter_0.35")
-
-        stats = database.get_signal_stats_today()
-        assert stats["total"] == 2
-        assert stats["acted"] == 1
-        assert stats["skipped"] == 1

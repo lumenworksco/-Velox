@@ -463,51 +463,6 @@ def _logsumexp(log_x: np.ndarray) -> float:
     return c + math.log(float(np.sum(np.exp(log_x - c))))
 
 
-def detect_volatility_regime_change(
-    returns: np.ndarray,
-    hazard_lambda: float = 100.0,
-    threshold: float = 0.5,
-) -> Tuple[List[float], List[int]]:
-    """Convenience function: run BOCPD on squared returns to detect
-    volatility regime shifts.
-
-    Parameters
-    ----------
-    returns : array-like
-        1-D array of returns.
-    hazard_lambda : float
-        Expected regime duration.
-    threshold : float
-        Detection threshold.
-
-    Returns
-    -------
-    cp_probs : list of float
-        Change-point probability at each time step.
-    change_points : list of int
-        Indices where a change-point was detected.
-    """
-    returns = np.asarray(returns, dtype=np.float64).ravel()
-    squared = returns ** 2
-
-    det = BOCPD(hazard_lambda=hazard_lambda)
-    cp_probs: List[float] = []
-    change_points: List[int] = []
-
-    for i, val in enumerate(squared):
-        prob = det.update(val)
-        cp_probs.append(prob)
-        if prob > threshold:
-            change_points.append(i)
-
-    logger.info(
-        "Volatility regime detection: %d change-points in %d observations.",
-        len(change_points),
-        len(returns),
-    )
-    return cp_probs, change_points
-
-
 # ---------------------------------------------------------------------------
 # COMP-012: O(1) Online BOCPD Extension
 # ---------------------------------------------------------------------------

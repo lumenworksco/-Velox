@@ -234,21 +234,6 @@ def prefetch_bars(
     return results
 
 
-def get_cached_bars(symbol: str) -> Optional[pd.DataFrame]:
-    """Retrieve bars from the prefetch cache for a single symbol.
-
-    Returns None if not cached (caller should fall back to direct fetch).
-    """
-    return _bars_cache.get(symbol)
-
-
-def clear_bars_cache():
-    """Clear the prefetched bars cache (call at end of scan cycle or EOD)."""
-    global _bars_cache, _cache_timestamp
-    _bars_cache.clear()
-    _cache_timestamp = None
-
-
 def scan_all_strategies(
     current: datetime,
     regime: str,
@@ -408,116 +393,6 @@ def scan_all_strategies(
 # =============================================================================
 
 import asyncio
-
-
-async def _async_scan_strategy(name: str, strategy, current: datetime, regime: str,
-                               extra_kwargs: dict | None = None) -> tuple[str, list[Signal]]:
-    """Run a single strategy scan in the async event loop.
-
-    The actual strategy.scan() is synchronous, so we run it in the default
-    executor (thread pool) to avoid blocking the event loop.
-    """
-    loop = asyncio.get_running_loop()
-    kwargs = {"regime": regime}
-    if extra_kwargs:
-        kwargs.update(extra_kwargs)
-
-    def _scan():
-        return strategy.scan(current, **kwargs)
-
-    try:
-        sigs = await loop.run_in_executor(None, _scan)
-        return name, sigs
-    except Exception as e:
-        logger.error(f"Async {name} scan failed: {e}")
-        return name, []
-
-
-async def _async_scan_all_strategies_impl(
-    current: datetime,
-    regime: str,
-    strategy_map: dict,
-    signal_ranker=None,
-    extra_kwargs: dict | None = None,
-) -> list[Signal]:
-    """T2-001: Internal async implementation — fans out strategy scans via asyncio.gather().
-
-    Args:
-        current: Current datetime.
-        regime: Market regime string.
-        strategy_map: Dict of {name: strategy_instance} (only non-None strategies).
-        signal_ranker: Optional signal ranker.
-        extra_kwargs: Per-strategy extra kwargs dict keyed by name.
-
-    Returns:
-        Combined (optionally ranked) signal list.
-    """
-    extra_kwargs = extra_kwargs or {}
-
-    tasks = [
-        _async_scan_strategy(name, strat, current, regime, extra_kwargs.get(name))
-        for name, strat in strategy_map.items()
-        if strat is not None
-    ]
-
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-
-    all_signals: list[Signal] = []
-    counts: dict[str, int] = {}
-    for result in results:
-        if isinstance(result, Exception):
-            logger.error(f"Async scan task raised: {result}")
-            continue
-        name, sigs = result
-        all_signals.extend(sigs)
-        counts[name] = len(sigs)
-
-    if signal_ranker and all_signals:
-        try:
-            all_signals = signal_ranker.rank(all_signals)
-        except Exception:
-            pass
-
-    parts = " ".join(f"{k}={v}" for k, v in counts.items())
-    logger.info(
-        "Async scan complete: %d signals (%s) regime=%s",
-        len(all_signals), parts, regime,
-    )
-    return all_signals
-
-
-def async_scan_all_strategies(
-    current: datetime,
-    regime: str,
-    strategy_map: dict,
-    signal_ranker=None,
-    extra_kwargs: dict | None = None,
-) -> list[Signal]:
-    """T2-001: Public sync-compatible wrapper — runs async scan in a dedicated thread.
-
-    This keeps the main loop synchronous while the scans fan out concurrently.
-    Uses asyncio.run() in a dedicated thread to avoid event loop conflicts.
-
-    Args:
-        current: Current datetime.
-        regime: Market regime string.
-        strategy_map: Dict of {name: strategy_instance} (only non-None).
-        signal_ranker: Optional signal ranker.
-        extra_kwargs: Per-strategy extra kwargs dict.
-
-    Returns:
-        Combined signal list.
-    """
-    import concurrent.futures
-
-    def _run_async():
-        return asyncio.run(_async_scan_all_strategies_impl(
-            current, regime, strategy_map, signal_ranker, extra_kwargs,
-        ))
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(_run_async)
-        return future.result(timeout=120)  # 2 minute hard timeout
 
 
 def check_all_exits(

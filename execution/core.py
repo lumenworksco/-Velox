@@ -137,36 +137,6 @@ _COMPILED_TRANSIENT = [re.compile(p, re.IGNORECASE) for p in _TRANSIENT_PATTERNS
 _COMPILED_NO_RETRY = [re.compile(p, re.IGNORECASE) for p in _DO_NOT_RETRY_PATTERNS]
 
 
-def classify_rejection(error: Exception) -> RejectionClass:
-    """V12 7.1: Classify an order rejection error into a retry strategy.
-
-    Args:
-        error: The exception from order submission.
-
-    Returns:
-        RejectionClass indicating how to handle the failure.
-    """
-    msg = str(error)
-
-    # Check DO_NOT_RETRY first (most specific, prevents wasting retries)
-    for pattern in _COMPILED_NO_RETRY:
-        if pattern.search(msg):
-            return RejectionClass.DO_NOT_RETRY
-
-    # Check RETRY_WITH_LESS (sizing issues)
-    for pattern in _COMPILED_RETRY_LESS:
-        if pattern.search(msg):
-            return RejectionClass.RETRY_WITH_LESS
-
-    # Check TRANSIENT (infrastructure issues)
-    for pattern in _COMPILED_TRANSIENT:
-        if pattern.search(msg):
-            return RejectionClass.TRANSIENT
-
-    # Default: treat unknown errors as DO_NOT_RETRY to avoid infinite loops
-    return RejectionClass.DO_NOT_RETRY
-
-
 # ============================================================
 # V12 7.2: Chase logic for unfilled limit orders
 # ============================================================
@@ -391,119 +361,9 @@ def _start_chase_thread(order_id: str, signal: Signal, qty: int) -> None:
 _STALE_ORDER_THRESHOLD_SEC = 300  # 5 minutes
 
 
-def cancel_stale_orders(client=None, order_manager=None) -> list[str]:
-    """V12 7.3: Cancel any orders in open status for >5 minutes.
-
-    Called every scan cycle from main.py.
-
-    Returns:
-        List of cancelled order IDs.
-    """
-    if client is None:
-        client = get_trading_client()
-
-    cancelled: list[str] = []
-    now = datetime.now(timezone.utc)
-
-    try:
-        from alpaca.trading.requests import GetOrdersRequest
-        from alpaca.trading.enums import QueryOrderStatus
-        request = GetOrdersRequest(status=QueryOrderStatus.OPEN)
-        open_orders = client.get_orders(request)
-    except Exception as e:
-        logger.debug(f"V12 7.3: Failed to fetch open orders: {e}")
-        return cancelled
-
-    for order in open_orders:
-        try:
-            status = str(order.status).lower()
-            if status not in ("new", "accepted", "pending_new",
-                              "accepted_for_bidding", "held"):
-                continue
-
-            # Check order age
-            submitted_at = order.submitted_at or order.created_at
-            if submitted_at is None:
-                continue
-
-            # Ensure timezone-aware comparison
-            if submitted_at.tzinfo is None:
-                submitted_at = submitted_at.replace(tzinfo=timezone.utc)
-
-            age_sec = (now - submitted_at).total_seconds()
-            if age_sec > _STALE_ORDER_THRESHOLD_SEC:
-                try:
-                    client.cancel_order_by_id(str(order.id))
-                    cancelled.append(str(order.id))
-                    logger.warning(
-                        f"V12 7.3: Cancelled stale order {order.id} "
-                        f"for {order.symbol} — age={age_sec:.0f}s "
-                        f"status={status}"
-                    )
-                    # V12 AUDIT: Update OMS state when cancelling stale orders
-                    try:
-                        if order_manager:
-                            from oms.order import OrderState
-                            oms_order = order_manager.get_by_broker_id(str(order.id))
-                            if oms_order:
-                                order_manager.update_state(oms_order.oms_id, OrderState.CANCELLED)
-                    except Exception as e:
-                        logger.debug("V12 AUDIT: OMS state update for cancelled order failed: %s", e)
-                except Exception as ce:
-                    logger.debug(
-                        f"V12 7.3: Failed to cancel stale order {order.id}: {ce}"
-                    )
-        except Exception as e:
-            logger.debug(f"V12 7.3: Error processing order {order.id}: {e}")
-
-    if cancelled:
-        logger.info(f"V12 7.3: Cancelled {len(cancelled)} stale orders")
-    return cancelled
-
-
 # ============================================================
 # V12 7.4: Post-Trade Slippage Feedback
 # ============================================================
-
-def record_slippage_feedback(
-    symbol: str,
-    predicted_bps: float,
-    actual_fill_price: float,
-    expected_price: float,
-    side: str,
-) -> None:
-    """V12 7.4: Record prediction error in the slippage model after a fill.
-
-    Computes actual slippage in bps from fill vs expected price, then
-    calls slippage_model.record_prediction_error(predicted, actual).
-
-    Args:
-        symbol: The filled symbol.
-        predicted_bps: Slippage prediction made before the trade (0 if none).
-        actual_fill_price: Actual fill price from broker.
-        expected_price: Expected price at order time (entry_price).
-        side: "buy" or "sell".
-    """
-    if expected_price <= 0:
-        return
-
-    # Calculate actual slippage in bps (positive = cost)
-    if side == "buy":
-        actual_bps = (actual_fill_price - expected_price) / expected_price * 10000
-    else:
-        actual_bps = (expected_price - actual_fill_price) / expected_price * 10000
-
-    slippage_model = _get_slippage_model()
-    if slippage_model is not None:
-        try:
-            slippage_model.record_prediction_error(predicted_bps, actual_bps)
-            logger.debug(
-                f"V12 7.4: Slippage feedback for {symbol}: "
-                f"predicted={predicted_bps:.1f}bps actual={actual_bps:.1f}bps "
-                f"error={actual_bps - predicted_bps:.1f}bps"
-            )
-        except Exception as e:
-            logger.debug(f"V12 7.4: Slippage feedback failed for {symbol}: {e}")
 
 
 # ============================================================

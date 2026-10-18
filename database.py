@@ -143,16 +143,6 @@ _connection_pool: Optional[ConnectionPool] = None
 _pool_lock = threading.Lock()
 
 
-def get_connection_pool() -> ConnectionPool:
-    """Get or create the global connection pool singleton."""
-    global _connection_pool
-    with _pool_lock:
-        if _connection_pool is None:
-            pool_size = int(getattr(config, "DB_POOL_SIZE", 10))  # QW-011: default 10
-            _connection_pool = ConnectionPool(config.DB_FILE, pool_size=pool_size)
-    return _connection_pool
-
-
 # Legacy single-connection support (backward compatible)
 _conn: sqlite3.Connection | None = None
 
@@ -906,16 +896,6 @@ def get_all_trades() -> list[dict]:
     return [dict(row) for row in rows]
 
 
-def get_daily_snapshots(days: int = 30) -> list[dict]:
-    """Get daily snapshots for the last N days."""
-    conn = _get_conn()
-    rows = conn.execute(
-        "SELECT * FROM daily_snapshots ORDER BY date DESC LIMIT ?",
-        (days,),
-    ).fetchall()
-    return [dict(row) for row in rows]
-
-
 def get_daily_pnl_series(days: int = 30) -> list[float]:
     """Get list of daily P&L percentages for analytics."""
     conn = _get_conn()
@@ -934,21 +914,6 @@ def get_portfolio_values(days: int = 30) -> list[float]:
         (days,),
     ).fetchall()
     return [row["portfolio_value"] for row in reversed(rows)]
-
-
-def get_signal_stats_today() -> dict:
-    """Get today's signal statistics."""
-    conn = _get_conn()
-    today = datetime.now(config.ET).strftime("%Y-%m-%d")
-    total = conn.execute(
-        "SELECT COUNT(*) as cnt FROM signals WHERE timestamp LIKE ?",
-        (f"{today}%",),
-    ).fetchone()["cnt"]
-    acted = conn.execute(
-        "SELECT COUNT(*) as cnt FROM signals WHERE timestamp LIKE ? AND acted_on = 1",
-        (f"{today}%",),
-    ).fetchone()["cnt"]
-    return {"total": total, "acted": acted, "skipped": total - acted}
 
 
 # --- Backtest Results ---
@@ -1023,76 +988,10 @@ def get_recent_trades_by_strategy(strategy: str, days: int = 20) -> list[dict]:
     return [dict(row) for row in rows]
 
 
-def get_signals_with_outcomes() -> list[dict]:
-    """JOIN signals that were acted on with their trade outcomes for ML training.
-
-    Returns rows with signal fields + trade pnl/pnl_pct (if trade exists).
-    Only returns signals that were acted on (acted_on=1) and have a matching trade.
-    """
-    conn = _get_conn()
-    rows = conn.execute("""
-        SELECT
-            s.timestamp, s.symbol, s.strategy, s.signal_type,
-            t.entry_price, t.exit_price, t.qty,
-            t.entry_time, t.exit_time, t.exit_reason,
-            t.pnl, t.pnl_pct,
-            CASE WHEN t.pnl > 0 THEN 1 ELSE 0 END as profitable
-        FROM signals s
-        INNER JOIN trades t
-            ON s.symbol = t.symbol
-            AND s.strategy = t.strategy
-            AND s.acted_on = 1
-            AND ABS(julianday(s.timestamp) - julianday(t.entry_time)) < 0.01
-        ORDER BY s.timestamp
-    """).fetchall()
-    return [dict(row) for row in rows]
-
-
-def get_trade_count_by_strategy(strategy: str) -> int:
-    """Get total number of completed trades for a strategy."""
-    conn = _get_conn()
-    row = conn.execute(
-        "SELECT COUNT(*) as cnt FROM trades WHERE strategy = ?",
-        (strategy,),
-    ).fetchone()
-    return row["cnt"]
-
-
 # --- ML Model Performance ---
-
-def log_model_performance(strategy: str, train_samples: int,
-                          test_precision: float, test_recall: float,
-                          test_f1: float, features_used: list[str],
-                          model_version: str):
-    """Log ML model training results."""
-    conn = _get_conn()
-    conn.execute(
-        """INSERT INTO model_performance
-           (timestamp, strategy, train_samples, test_precision, test_recall,
-            test_f1, features_used, model_version)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-        (datetime.now(config.ET).isoformat(), strategy, train_samples,
-         test_precision, test_recall, test_f1,
-         json.dumps(features_used), model_version),
-    )
-    conn.commit()
 
 
 # --- Optimization History ---
-
-def log_optimization(strategy: str, old_params: dict, new_params: dict,
-                     old_sharpe: float, new_sharpe: float, applied: bool):
-    """Log a parameter optimization run."""
-    conn = _get_conn()
-    conn.execute(
-        """INSERT INTO optimization_history
-           (timestamp, strategy, old_params, new_params, old_sharpe, new_sharpe, applied)
-           VALUES (?, ?, ?, ?, ?, ?, ?)""",
-        (datetime.now(config.ET).isoformat(), strategy,
-         json.dumps(old_params), json.dumps(new_params),
-         old_sharpe, new_sharpe, 1 if applied else 0),
-    )
-    conn.commit()
 
 
 # --- Allocation History ---
@@ -1108,47 +1007,6 @@ def log_allocation_weights(weights: dict):
 
 
 # --- Signal Statistics (extended for web dashboard) ---
-
-def get_signals_by_date(date_str: str) -> list[dict]:
-    """Get all signals for a specific date."""
-    conn = _get_conn()
-    rows = conn.execute(
-        "SELECT * FROM signals WHERE timestamp LIKE ? ORDER BY timestamp",
-        (f"{date_str}%",),
-    ).fetchall()
-    return [dict(row) for row in rows]
-
-
-def get_signal_skip_reasons(days: int = 7) -> dict:
-    """Get breakdown of signal skip reasons over last N days."""
-    conn = _get_conn()
-    cutoff = (datetime.now(config.ET) - __import__('datetime').timedelta(days=days)).isoformat()
-    rows = conn.execute(
-        """SELECT skip_reason, COUNT(*) as cnt
-           FROM signals
-           WHERE timestamp >= ? AND acted_on = 0 AND skip_reason != ''
-           GROUP BY skip_reason
-           ORDER BY cnt DESC""",
-        (cutoff,),
-    ).fetchall()
-    return {row["skip_reason"]: row["cnt"] for row in rows}
-
-
-def get_trades_paginated(limit: int = 100, offset: int = 0,
-                         strategy: str | None = None) -> list[dict]:
-    """Get trades with pagination and optional strategy filter."""
-    conn = _get_conn()
-    if strategy:
-        rows = conn.execute(
-            "SELECT * FROM trades WHERE strategy = ? ORDER BY exit_time DESC LIMIT ? OFFSET ?",
-            (strategy, limit, offset),
-        ).fetchall()
-    else:
-        rows = conn.execute(
-            "SELECT * FROM trades ORDER BY exit_time DESC LIMIT ? OFFSET ?",
-            (limit, offset),
-        ).fetchall()
-    return [dict(row) for row in rows]
 
 
 # =============================================================================
@@ -1214,24 +1072,6 @@ def close_shadow_trade(trade_id, exit_price, exit_time, exit_reason):
              exit_reason, round(pnl, 2), round(pnl_pct, 4), trade_id),
         )
         conn.commit()
-
-
-def get_shadow_performance(strategy=None, days=14):
-    """Get shadow trade performance stats."""
-    conn = _get_conn()
-    query = """SELECT strategy, COUNT(*) as trades,
-               SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) as wins,
-               SUM(pnl) as total_pnl, AVG(pnl_pct) as avg_pnl_pct
-               FROM shadow_trades WHERE exit_time IS NOT NULL
-               AND entry_time >= datetime('now', ?)"""
-    params = [f"-{days} days"]
-    if strategy:
-        query += " AND strategy = ?"
-        params.append(strategy)
-    query += " GROUP BY strategy"
-    rows = conn.execute(query, params).fetchall()
-    cols = ["strategy", "trades", "wins", "total_pnl", "avg_pnl_pct"]
-    return [dict(zip(cols, row)) for row in rows]
 
 
 # =============================================================================
@@ -1301,16 +1141,6 @@ def get_ou_parameters(symbol: str, date: str) -> dict | None:
     return dict(row) if row else None
 
 
-def get_mr_universe(date: str) -> list[dict]:
-    """Get all symbols that passed MR universe filter on a date."""
-    conn = _get_conn()
-    rows = conn.execute(
-        "SELECT * FROM ou_parameters WHERE date = ? ORDER BY hurst ASC",
-        (date,),
-    ).fetchall()
-    return [dict(r) for r in rows]
-
-
 # =============================================================================
 # --- Kalman Pairs ---
 # =============================================================================
@@ -1359,13 +1189,6 @@ def get_active_kalman_pairs() -> list[dict]:
         "SELECT * FROM kalman_pairs WHERE active = 1 ORDER BY coint_pvalue ASC"
     ).fetchall()
     return [dict(r) for r in rows]
-
-
-def deactivate_kalman_pair(pair_id: int):
-    """Deactivate a Kalman pair."""
-    conn = _get_conn()
-    conn.execute("UPDATE kalman_pairs SET active = 0 WHERE id = ?", (pair_id,))
-    conn.commit()
 
 
 def deactivate_all_kalman_pairs():
@@ -1421,103 +1244,17 @@ def save_consistency_log(date: str, consistency_score: float,
     conn.commit()
 
 
-def get_consistency_log(days: int = 30) -> list[dict]:
-    """Get recent consistency log entries."""
-    conn = _get_conn()
-    rows = conn.execute(
-        "SELECT * FROM consistency_log ORDER BY date DESC LIMIT ?",
-        (days,),
-    ).fetchall()
-    return [dict(r) for r in rows]
-
-
 # --- V7 additions ---
-
-def get_trades_by_strategy(strategy: str, days: int = 30) -> list[dict]:
-    """Get closed trades for a specific strategy within the last N days."""
-    from datetime import timedelta
-    cutoff = _to_iso(datetime.now(config.ET) - timedelta(days=days))  # V10 BUG-043
-    conn = _get_conn()
-    rows = conn.execute(
-        "SELECT * FROM trades WHERE strategy = ? AND exit_time > ? ORDER BY exit_time DESC",
-        (strategy, cutoff),
-    ).fetchall()
-    return [dict(r) for r in rows]
-
-
-def get_signals_by_strategy(strategy: str, days: int = 7) -> list[dict]:
-    """Get signal records for a specific strategy within the last N days."""
-    from datetime import timedelta
-    cutoff = _to_iso(datetime.now(config.ET) - timedelta(days=days))  # V10 BUG-043
-    conn = _get_conn()
-    rows = conn.execute(
-        "SELECT * FROM signals WHERE strategy = ? AND timestamp > ? ORDER BY timestamp DESC",
-        (strategy, cutoff),
-    ).fetchall()
-    return [dict(r) for r in rows]
 
 
 # =============================================================================
 # --- Monte Carlo Tail Risk ---
 # =============================================================================
 
-def save_monte_carlo_result(date: str, var_95: float, var_99: float,
-                            cvar_95: float, cvar_99: float,
-                            horizon_days: int, simulations: int):
-    """Save Monte Carlo risk analysis results."""
-    conn = _get_conn()
-    conn.execute(
-        """INSERT INTO monte_carlo_results
-           (date, var_95, var_99, cvar_95, cvar_99, horizon_days, simulations, computed_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-        (date, var_95, var_99, cvar_95, cvar_99, horizon_days, simulations,
-         datetime.now(config.ET).isoformat()),
-    )
-    conn.commit()
-
 
 # =============================================================================
 # --- Execution Analytics ---
 # =============================================================================
-
-def save_execution_analytics(order_id: str, symbol: str, strategy: str, side: str,
-                             expected_price: float, filled_price: float,
-                             slippage_pct: float, submitted_at, filled_at,
-                             latency_ms: int, qty_requested: int,
-                             qty_filled: int, fill_rate: float):
-    """Save execution analytics record."""
-    conn = _get_conn()
-    conn.execute(
-        """INSERT INTO execution_analytics
-           (order_id, symbol, strategy, side, expected_price, filled_price,
-            slippage_pct, submitted_at, filled_at, latency_ms,
-            qty_requested, qty_filled, fill_rate)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (order_id, symbol, strategy, side, expected_price, filled_price,
-         slippage_pct,
-         submitted_at.isoformat() if hasattr(submitted_at, 'isoformat') else str(submitted_at),
-         filled_at.isoformat() if hasattr(filled_at, 'isoformat') else str(filled_at),
-         latency_ms, qty_requested, qty_filled, fill_rate),
-    )
-    conn.commit()
-
-
-def get_execution_analytics(strategy: str | None = None, days: int = 30) -> list[dict]:
-    """Get execution analytics records."""
-    conn = _get_conn()
-    if strategy:
-        rows = conn.execute(
-            """SELECT * FROM execution_analytics WHERE strategy = ?
-               AND submitted_at >= datetime('now', ?) ORDER BY submitted_at DESC""",
-            (strategy, f"-{days} days"),
-        ).fetchall()
-    else:
-        rows = conn.execute(
-            """SELECT * FROM execution_analytics
-               WHERE submitted_at >= datetime('now', ?) ORDER BY submitted_at DESC""",
-            (f"-{days} days",),
-        ).fetchall()
-    return [dict(r) for r in rows]
 
 
 # --- V10: Event log ---
@@ -1533,22 +1270,6 @@ def insert_event_log(event_type: str, source: str, symbol: str | None = None,
         (_to_iso(datetime.now(config.ET)), event_type, source, symbol, strategy, details, severity),
     )
     conn.commit()
-
-
-def get_event_log(event_type: str | None = None, limit: int = 100) -> list[dict]:
-    """Get recent event log entries, optionally filtered by type."""
-    conn = _get_conn()
-    if event_type:
-        rows = conn.execute(
-            "SELECT * FROM event_log WHERE event_type = ? ORDER BY timestamp DESC LIMIT ?",
-            (event_type, limit),
-        ).fetchall()
-    else:
-        rows = conn.execute(
-            "SELECT * FROM event_log ORDER BY timestamp DESC LIMIT ?",
-            (limit,),
-        ).fetchall()
-    return [dict(r) for r in rows]
 
 
 # =============================================================================
@@ -1579,23 +1300,3 @@ def batch_insert(table: str, columns: list[str], rows: list[tuple]):
     logger.debug(f"Batch inserted {len(rows)} rows into {table}")
 
 
-def batch_log_trades(trades: list[dict]):
-    """MED-038: Batch-insert multiple trade records at once.
-
-    Each dict should have keys: symbol, strategy, side, entry_price, exit_price,
-    qty, entry_time, exit_time, exit_reason, pnl, pnl_pct.
-    """
-    columns = ["symbol", "strategy", "side", "entry_price", "exit_price",
-               "qty", "entry_time", "exit_time", "exit_reason", "pnl", "pnl_pct"]
-    rows = []
-    for t in trades:
-        entry_time = t.get("entry_time")
-        exit_time = t.get("exit_time")
-        rows.append((
-            t["symbol"], t["strategy"], t["side"],
-            t["entry_price"], t["exit_price"], t["qty"],
-            entry_time.isoformat() if hasattr(entry_time, 'isoformat') else str(entry_time),
-            exit_time.isoformat() if hasattr(exit_time, 'isoformat') else str(exit_time),
-            t.get("exit_reason", ""), t["pnl"], t["pnl_pct"],
-        ))
-    batch_insert("trades", columns, rows)

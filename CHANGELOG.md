@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 - **Terminal kill switch** -- `velox kill` drops a request file that the main loop consumes (replaces the web endpoint)
 - **Heartbeat every 30s** from the main loop; Docker and CI health checks use `velox health`
 - **Baseline strategies** ported from the Rust *Trading Algorithms* project (EMA crossover, RSI, momentum, Bollinger mean reversion) in `backtesting/baselines.py`, with sample market data in `data/samples/`
-- **Predecessor projects merged** with history preserved under `legacy/`: AlphaFlow (Velox's predecessor) and Trading Algorithms (Rust). Secrets, `node_modules` and logs were stripped first
+- **Predecessor projects merged** with history preserved (the working copies were then folded into Velox and removed): AlphaFlow (Velox's predecessor) and Trading Algorithms (Rust). Secrets, `node_modules` and logs were stripped first
 - Issue/PR templates and a code of conduct
 
 ### Changed
@@ -22,6 +22,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - Telegram notifications and every trace of them: `notifications.py`, the `TELEGRAM_*` settings, setup prompts and docs. Alerts now go to the log only
 - Unreachable code (~60 modules): the `ml/models` research models, `strategies/options`, `sector_momentum`, the unused SQLAlchemy/Alembic `db/` package, `exit_manager.py`, `replay.py`, Kelly sizing, shadowed root `data.py`/`execution.py`/`config.py`, and their tests
+- ~60 unused module-level functions (database getters, async fetchers, profit-maximizer helpers, scanner async paths) and the tests that only exercised them
 - HTML tear sheet export and SPY-benchmark fetch (`velox tearsheet` is terminal only); committed `reports/tearsheet_*.html`
 - FastAPI web dashboard, JWT auth, Prometheus metrics, Grafana, Alertmanager
 - PostgreSQL service and backups (the bot only ever used SQLite)

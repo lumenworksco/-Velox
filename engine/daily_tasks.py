@@ -40,46 +40,6 @@ except ImportError:
     _TLH = None
 
 
-def backup_database(db_name: str = "bot.db") -> bool:
-    """V12 11.3: Copy bot.db to backups/bot_YYYYMMDD.db. Keep last 30 days.
-
-    Returns True if backup succeeded, False otherwise.
-    """
-    src = _BOT_DIR / db_name
-    if not src.exists():
-        logger.warning(f"V12 11.3: Database file {src} not found — skipping backup")
-        return False
-
-    try:
-        _BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-        date_str = datetime.now(config.ET).strftime("%Y%m%d")
-        dst = _BACKUP_DIR / f"bot_{date_str}.db"
-
-        shutil.copy2(str(src), str(dst))
-        logger.info(f"V12 11.3: Database backed up to {dst}")
-
-        # Prune backups older than retention period
-        cutoff = datetime.now(config.ET) - timedelta(days=_BACKUP_RETENTION_DAYS)
-        pruned = 0
-        for backup_file in _BACKUP_DIR.glob("bot_*.db"):
-            try:
-                # Extract date from filename: bot_YYYYMMDD.db
-                date_part = backup_file.stem.split("_", 1)[1]
-                file_date = datetime.strptime(date_part, "%Y%m%d")
-                if file_date < cutoff.replace(tzinfo=None):
-                    backup_file.unlink()
-                    pruned += 1
-            except (ValueError, IndexError):
-                continue  # Skip files that don't match the naming pattern
-
-        if pruned:
-            logger.info(f"V12 11.3: Pruned {pruned} old backup(s) (>{_BACKUP_RETENTION_DAYS} days)")
-        return True
-    except Exception as e:
-        logger.error(f"V12 11.3: Database backup failed: {e}")
-        return False
-
-
 def daily_reset(
     risk,
     stat_mr, kalman_pairs, micro_mom, vwap_strategy,

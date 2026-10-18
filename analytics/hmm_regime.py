@@ -167,15 +167,6 @@ def _normalize_features(features: np.ndarray,
     return normalized, means, stds
 
 
-def _compute_features(df: pd.DataFrame) -> np.ndarray:
-    """Compute normalized HMM features. Convenience wrapper for backward compat."""
-    raw = _compute_raw_features(df)
-    if len(raw) == 0:
-        return raw
-    normalized, _, _ = _normalize_features(raw)
-    return normalized
-
-
 def _label_states(model, features: np.ndarray) -> dict[int, MarketRegimeState]:
     """Map HMM state indices to MarketRegimeState enum based on fitted means.
 
@@ -795,11 +786,6 @@ class IntradayRegimeDetector:
     @property
     def is_fitted(self) -> bool:
         return self._fitted
-
-
-def get_strategy_regime_affinity() -> dict[str, dict[MarketRegimeState, float]]:
-    """Return strategy-regime affinity mapping."""
-    return STRATEGY_REGIME_AFFINITY
 
 
 def get_regime_size_multiplier(strategy: str, regime: MarketRegimeState,
