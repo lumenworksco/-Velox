@@ -42,16 +42,6 @@ class FailureMode(enum.Enum):
 _failure_counts: dict[str, int] = {}  # context_key -> count
 
 
-def get_failure_counts() -> dict[str, int]:
-    """Return a snapshot of per-context failure counts since startup."""
-    return dict(_failure_counts)
-
-
-def reset_failure_counts():
-    """Clear failure counters (useful for tests or daily reset)."""
-    _failure_counts.clear()
-
-
 # ---------------------------------------------------------------------------
 # Core dispatcher
 # ---------------------------------------------------------------------------

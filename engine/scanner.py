@@ -234,21 +234,6 @@ def prefetch_bars(
     return results
 
 
-def get_cached_bars(symbol: str) -> Optional[pd.DataFrame]:
-    """Retrieve bars from the prefetch cache for a single symbol.
-
-    Returns None if not cached (caller should fall back to direct fetch).
-    """
-    return _bars_cache.get(symbol)
-
-
-def clear_bars_cache():
-    """Clear the prefetched bars cache (call at end of scan cycle or EOD)."""
-    global _bars_cache, _cache_timestamp
-    _bars_cache.clear()
-    _cache_timestamp = None
-
-
 def scan_all_strategies(
     current: datetime,
     regime: str,
@@ -484,40 +469,6 @@ async def _async_scan_all_strategies_impl(
         len(all_signals), parts, regime,
     )
     return all_signals
-
-
-def async_scan_all_strategies(
-    current: datetime,
-    regime: str,
-    strategy_map: dict,
-    signal_ranker=None,
-    extra_kwargs: dict | None = None,
-) -> list[Signal]:
-    """T2-001: Public sync-compatible wrapper — runs async scan in a dedicated thread.
-
-    This keeps the main loop synchronous while the scans fan out concurrently.
-    Uses asyncio.run() in a dedicated thread to avoid event loop conflicts.
-
-    Args:
-        current: Current datetime.
-        regime: Market regime string.
-        strategy_map: Dict of {name: strategy_instance} (only non-None).
-        signal_ranker: Optional signal ranker.
-        extra_kwargs: Per-strategy extra kwargs dict.
-
-    Returns:
-        Combined signal list.
-    """
-    import concurrent.futures
-
-    def _run_async():
-        return asyncio.run(_async_scan_all_strategies_impl(
-            current, regime, strategy_map, signal_ranker, extra_kwargs,
-        ))
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(_run_async)
-        return future.result(timeout=120)  # 2 minute hard timeout
 
 
 def check_all_exits(

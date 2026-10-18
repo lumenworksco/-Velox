@@ -132,33 +132,6 @@ def get_mtf_confluence(symbol: str, side: str, now: datetime | None = None) -> f
     return score
 
 
-def check_mtf_filter(symbol: str, strategy: str, side: str,
-                     now: datetime | None = None) -> tuple[bool, str]:
-    """Check if a trade passes the MTF confluence filter.
-
-    Returns (allowed, reason).
-    """
-    if not config.MTF_CONFLUENCE_ENABLED:
-        return True, ""
-
-    confluence = get_mtf_confluence(symbol, side, now)
-
-    # Breakout strategies need trend alignment
-    if strategy in ("ORB", "MICRO_MOM"):
-        if confluence < config.MTF_MIN_CONFLUENCE_BREAKOUT:
-            return False, f"mtf_confluence={confluence:.2f}<{config.MTF_MIN_CONFLUENCE_BREAKOUT}"
-        return True, ""
-
-    # Mean reversion strategies want dislocation
-    if strategy in ("STAT_MR", "VWAP"):
-        if confluence > config.MTF_MAX_CONFLUENCE_MEANREV:
-            return False, f"mtf_confluence={confluence:.2f}>{config.MTF_MAX_CONFLUENCE_MEANREV}"
-        return True, ""
-
-    # Other strategies — no filter
-    return True, ""
-
-
 def clear_cache():
     """Clear the MTF cache."""
     global _mtf_cache

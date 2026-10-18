@@ -561,36 +561,3 @@ def verify_data_feed(symbol: str = "SPY") -> bool:
     except Exception as e:
         logger.error(f"Data feed verification failed for {symbol}: {e}")
         return False
-
-
-# =============================================================================
-# T2-001: Async I/O variants for non-blocking data fetching
-# =============================================================================
-
-# Conditional httpx import — async methods degrade gracefully if unavailable
-try:
-    import httpx
-    _HTTPX_AVAILABLE = True
-except ImportError:
-    httpx = None
-    _HTTPX_AVAILABLE = False
-
-_BASE_URL_DATA = "https://data.alpaca.markets/v2"
-_BASE_URL_TRADING_PAPER = "https://paper-api.alpaca.markets/v2"
-_BASE_URL_TRADING_LIVE = "https://api.alpaca.markets/v2"
-
-
-def _get_async_headers() -> dict[str, str]:
-    """Build auth headers for httpx async requests."""
-    return {
-        "APCA-API-KEY-ID": config.API_KEY,
-        "APCA-API-SECRET-KEY": config.API_SECRET,
-        "Accept": "application/json",
-    }
-
-
-def _get_trading_base_url() -> str:
-    """Return the correct trading API base URL based on paper/live mode."""
-    return _BASE_URL_TRADING_PAPER if config.PAPER_MODE else _BASE_URL_TRADING_LIVE
-
-
