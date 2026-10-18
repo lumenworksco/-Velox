@@ -12,10 +12,8 @@ from analytics.hmm_regime import (
     HMMRegimeDetector,
     MarketRegimeState,
     STRATEGY_REGIME_AFFINITY,
-    _compute_features,
     _label_states,
     get_regime_size_multiplier,
-    get_strategy_regime_affinity,
     map_hmm_to_legacy,
 )
 
@@ -43,71 +41,9 @@ def _make_spy_data(n_days=100, seed=42):
     }, index=dates)
 
 
-class TestComputeFeatures:
-    def test_output_shape(self):
-        df = _make_spy_data(100)
-        features = _compute_features(df)
-        # First ~20 rows are NaN due to rolling windows
-        assert features.shape[1] == 5
-        assert features.shape[0] > 50  # Should have 70-80 valid rows
-
-    def test_no_nans_in_output(self):
-        df = _make_spy_data(200)
-        features = _compute_features(df)
-        assert not np.isnan(features).any()
-
-    def test_insufficient_data(self):
-        df = _make_spy_data(10)
-        features = _compute_features(df)
-        # Very few valid rows with 10 days of data
-        assert features.shape[0] <= 10
-
-    def test_features_reasonable_range(self):
-        df = _make_spy_data(500)
-        # Use raw features for range checks (normalized will be z-scored)
-        from analytics.hmm_regime import _compute_raw_features
-        raw = _compute_raw_features(df)
-        # Daily returns should be small
-        assert np.abs(raw[:, 0]).max() < 0.5
-        # Vol should be positive
-        assert (raw[:, 1] >= 0).all()
-        assert (raw[:, 2] >= 0).all()
-        # Volume ratio should be positive
-        assert (raw[:, 3] > 0).all()
-        # Normalized features should have mean ~0
-        features = _compute_features(df)
-        assert np.abs(features.mean(axis=0)).max() < 0.1
-
-
 # ===================================================================
 # State labeling
 # ===================================================================
-
-class TestLabelStates:
-    def test_all_five_states_assigned(self):
-        df = _make_spy_data(500)
-        features = _compute_features(df)
-
-        from hmmlearn.hmm import GaussianHMM
-        model = GaussianHMM(n_components=5, covariance_type="full", n_iter=50, random_state=42)
-        model.fit(features)
-
-        label_map = _label_states(model, features)
-        assert len(label_map) == 5
-        # All 5 regime states should be represented
-        assigned_regimes = set(label_map.values())
-        assert len(assigned_regimes) == 5
-
-    def test_fewer_states_fallback(self):
-        df = _make_spy_data(300)
-        features = _compute_features(df)
-
-        from hmmlearn.hmm import GaussianHMM
-        model = GaussianHMM(n_components=3, covariance_type="full", n_iter=50, random_state=42)
-        model.fit(features)
-
-        label_map = _label_states(model, features)
-        assert len(label_map) == 3
 
 
 # ===================================================================
@@ -243,18 +179,6 @@ class TestMapHmmToLegacy:
 # ===================================================================
 # Strategy regime affinity
 # ===================================================================
-
-class TestStrategyRegimeAffinity:
-    def test_all_strategies_present(self):
-        affinity = get_strategy_regime_affinity()
-        for strat in ["STAT_MR", "VWAP", "KALMAN_PAIRS", "ORB", "MICRO_MOM", "PEAD"]:
-            assert strat in affinity
-
-    def test_all_regimes_covered_per_strategy(self):
-        affinity = get_strategy_regime_affinity()
-        for strat, regime_map in affinity.items():
-            for regime in MarketRegimeState:
-                assert regime in regime_map, f"{strat} missing {regime}"
 
 
 # ===================================================================

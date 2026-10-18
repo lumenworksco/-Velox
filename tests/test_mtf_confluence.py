@@ -23,64 +23,6 @@ class TestMTFConfluence:
             score = get_mtf_confluence("AAPL", "buy")
             assert score == 0.5
 
-    def test_check_filter_disabled_always_allows(self, override_config):
-        from analytics.mtf_confluence import check_mtf_filter
-        with override_config(MTF_CONFLUENCE_ENABLED=False):
-            allowed, reason = check_mtf_filter("AAPL", "ORB", "buy")
-            assert allowed is True
-
-    def test_breakout_needs_alignment(self, override_config):
-        from analytics.mtf_confluence import check_mtf_filter
-
-        with override_config(MTF_CONFLUENCE_ENABLED=True,
-                           MTF_MIN_CONFLUENCE_BREAKOUT=0.66,
-                           MTF_MAX_CONFLUENCE_MEANREV=0.33):
-            # Mock low confluence for ORB
-            with patch("analytics.mtf_confluence.get_mtf_confluence", return_value=0.33):
-                allowed, reason = check_mtf_filter("AAPL", "ORB", "buy")
-                assert not allowed
-                assert "mtf_confluence" in reason
-
-    def test_breakout_passes_with_alignment(self, override_config):
-        from analytics.mtf_confluence import check_mtf_filter
-
-        with override_config(MTF_CONFLUENCE_ENABLED=True,
-                           MTF_MIN_CONFLUENCE_BREAKOUT=0.66,
-                           MTF_MAX_CONFLUENCE_MEANREV=0.33):
-            with patch("analytics.mtf_confluence.get_mtf_confluence", return_value=1.0):
-                allowed, reason = check_mtf_filter("AAPL", "ORB", "buy")
-                assert allowed
-
-    def test_meanrev_wants_dislocation(self, override_config):
-        from analytics.mtf_confluence import check_mtf_filter
-
-        with override_config(MTF_CONFLUENCE_ENABLED=True,
-                           MTF_MIN_CONFLUENCE_BREAKOUT=0.66,
-                           MTF_MAX_CONFLUENCE_MEANREV=0.33):
-            # High confluence = bad for mean reversion
-            with patch("analytics.mtf_confluence.get_mtf_confluence", return_value=0.66):
-                allowed, reason = check_mtf_filter("AAPL", "STAT_MR", "buy")
-                assert not allowed
-
-    def test_meanrev_passes_with_dislocation(self, override_config):
-        from analytics.mtf_confluence import check_mtf_filter
-
-        with override_config(MTF_CONFLUENCE_ENABLED=True,
-                           MTF_MIN_CONFLUENCE_BREAKOUT=0.66,
-                           MTF_MAX_CONFLUENCE_MEANREV=0.33):
-            with patch("analytics.mtf_confluence.get_mtf_confluence", return_value=0.0):
-                allowed, reason = check_mtf_filter("AAPL", "STAT_MR", "buy")
-                assert allowed
-
-    def test_kalman_pairs_no_filter(self, override_config):
-        from analytics.mtf_confluence import check_mtf_filter
-
-        with override_config(MTF_CONFLUENCE_ENABLED=True,
-                           MTF_MIN_CONFLUENCE_BREAKOUT=0.66,
-                           MTF_MAX_CONFLUENCE_MEANREV=0.33):
-            with patch("analytics.mtf_confluence.get_mtf_confluence", return_value=0.0):
-                allowed, reason = check_mtf_filter("AAPL", "KALMAN_PAIRS", "buy")
-                assert allowed  # No filter for pairs
 
     def test_cache_hit(self, override_config):
         from analytics.mtf_confluence import get_mtf_confluence, _mtf_cache

@@ -355,11 +355,3 @@ _async_bus: AsyncEventBus | None = None
 _async_bus_lock = threading.Lock()
 
 
-def get_async_event_bus() -> AsyncEventBus:
-    """Get or create the global async event bus (thread-safe)."""
-    global _async_bus
-    if _async_bus is None:
-        with _async_bus_lock:
-            if _async_bus is None:
-                _async_bus = AsyncEventBus()
-    return _async_bus

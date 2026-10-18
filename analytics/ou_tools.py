@@ -86,8 +86,3 @@ def compute_zscore(current_price: float, mu: float, sigma: float) -> float:
     return max(-5.0, min(5.0, z))
 
 
-def compute_zscore_series(prices: pd.Series, mu: float, sigma: float) -> pd.Series:
-    """Compute z-score for entire price series."""
-    if sigma <= 0:
-        return pd.Series(0.0, index=prices.index)
-    return (prices - mu) / sigma
