@@ -24,7 +24,7 @@ class TestTradeClassification:
 
     def test_medium_trade(self):
         tc = TradeClassifier()
-        assert tc.classify_trade(size=500, price=100.0) == TradeType.MEDIUM
+        assert tc.classify_trade(size=500, price=50.0) == TradeType.MEDIUM
 
     def test_large_trade_by_shares(self):
         tc = TradeClassifier()

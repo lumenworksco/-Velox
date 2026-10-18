@@ -59,3 +59,8 @@ bot.log
 
 # Claude
 .claude/
+
+# Runtime artifacts
+heartbeat.json
+*.db.bak*
+*.db.backup*
