@@ -423,16 +423,6 @@ class ChangePointMonitor:
             results[name] = det.update(value)
         return results
 
-    def detect_changes(
-        self,
-        threshold: Optional[float] = None,
-    ) -> Dict[str, bool]:
-        """Return ``{series_name: bool}`` for each tracked series."""
-        t = threshold if threshold is not None else self.threshold
-        return {
-            name: det.detect_change(t)
-            for name, det in self._detectors.items()
-        }
 
     def summary(self) -> Dict[str, Dict]:
         """Per-series summary with latest cp probability and MAP run length."""

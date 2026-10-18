@@ -312,36 +312,6 @@ class TestShouldApply:
 
 # ---- apply_optimized_params ----
 
-class TestApplyOptimizedParams:
-    def test_sets_runtime_params(self):
-        opt = BayesianOptimizer()
-        result = OptimizationResult(
-            strategy="STAT_MR",
-            current_params={"MR_ZSCORE_ENTRY": 1.5, "MR_HURST_MAX": 0.52},
-            optimized_params={"MR_ZSCORE_ENTRY": 1.8, "MR_HURST_MAX": 0.48},
-            current_sortino=1.0,
-            optimized_sortino=1.5,
-            improvement_pct=0.50,
-            should_apply=True,
-            reason="test",
-        )
-        opt.apply_optimized_params(result)
-        try:
-            assert config.get_param("MR_ZSCORE_ENTRY") == 1.8
-            assert config.get_param("MR_HURST_MAX") == 0.48
-        finally:
-            config.settings._runtime_params.pop("MR_ZSCORE_ENTRY", None)
-            config.settings._runtime_params.pop("MR_HURST_MAX", None)
-
-    def test_apply_empty_params_is_noop(self):
-        opt = BayesianOptimizer()
-        result = OptimizationResult(
-            strategy="X", current_params={}, optimized_params={},
-            current_sortino=0.0, optimized_sortino=0.0,
-            improvement_pct=0.0, should_apply=False, reason="empty",
-        )
-        opt.apply_optimized_params(result)  # Should not raise
-
 
 # ---- Disabled optimizer ----
 

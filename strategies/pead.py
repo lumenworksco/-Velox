@@ -440,35 +440,6 @@ class PEADStrategy:
 
         return results
 
-    def check_pre_earnings_exits(self, open_trades: dict, now: datetime) -> list[dict]:
-        """Check exits for pre-earnings positions.
-
-        Exit within 2 days post-earnings or at 1.5x ATR stop.
-        """
-        exits = []
-        for symbol, trade in open_trades.items():
-            if trade.strategy != "PEAD":
-                continue
-            if "pre-earnings" not in getattr(trade, 'exit_reason', ''):
-                # Check if this is a pre-earnings trade by reason
-                if not hasattr(trade, 'reason'):
-                    continue
-
-            try:
-                if hasattr(trade, "entry_time") and trade.entry_time:
-                    hold_days = (now - trade.entry_time).total_seconds() / 86400.0
-                    # Pre-earnings trades exit faster: entry_days + post_days
-                    max_hold = config.PEAD_PRE_ENTRY_DAYS + config.PEAD_POST_EXIT_DAYS
-                    if hold_days >= max_hold:
-                        exits.append({
-                            "symbol": symbol,
-                            "action": "full",
-                            "reason": f"PEAD pre-earnings time stop ({hold_days}d >= {max_hold}d)",
-                        })
-            except Exception as e:
-                logger.debug(f"PEAD pre-earnings exit check error for {symbol}: {e}")
-
-        return exits
 
     def reset_daily(self):
         """Clear daily state (allow re-scan next day)."""

@@ -178,21 +178,6 @@ class FinGPT:
         scores = [self._score_single(c) for c in chunks]
         return float(np.mean(scores)) if scores else 0.0
 
-    def analyze_filing(self, text: str) -> Dict[str, Any]:
-        """Analyse an SEC filing (10-K, 10-Q, 8-K, etc.).
-
-        Returns a dict with overall sentiment plus section-level scores when
-        detectable section headers are present.
-        """
-        overall = self.analyze_earnings_call(text)
-        sections = self._split_filing_sections(text)
-        section_scores = {name: self.analyze_earnings_call(body) for name, body in sections.items()}
-        return {
-            "overall_sentiment": overall,
-            "section_sentiments": section_scores,
-            "n_sections": len(section_scores),
-            "backend": self._backend,
-        }
 
     def batch_analyze(self, texts: List[str]) -> List[float]:
         """Score a list of texts, returning sentiment in [-1, 1] for each."""

@@ -430,50 +430,6 @@ class FeatureStore:
 
         return features
 
-    def compute_features_incremental(self, symbol: str, bars: pd.DataFrame) -> Dict[str, float]:
-        """PROD-003 / MED-042: Incremental feature computation — skip if no new bars.
-
-        Tracks the last computed index per symbol via `_last_computed` dict.
-        Only recomputes features when new bars arrive beyond the previously
-        computed index. This avoids redundant full recomputation when bars
-        haven't changed.
-
-        For most technical indicators the full lookback window is needed,
-        so we still pass the full bars DataFrame to compute functions.
-        The savings come from skipping the entire computation when no new
-        data has arrived.
-
-        Args:
-            symbol: Ticker symbol.
-            bars: OHLCV DataFrame.
-
-        Returns:
-            Dict mapping feature name to computed value (cached or fresh).
-        """
-        if bars is None or bars.empty:
-            return self.get_all_features(symbol)
-
-        current_count = len(bars)
-        with self._lock:
-            prev_computed = self._last_computed.get(symbol, 0)
-            cached = self._online.get(symbol)
-
-        # PROD-003: If no new bars since last computation and we have cache, return it
-        if current_count <= prev_computed and cached:
-            logger.debug(
-                "PROD-003: Skipping recompute for %s (bars=%d, last_computed=%d)",
-                symbol, current_count, prev_computed,
-            )
-            return dict(cached)
-
-        # New bars arrived — full recompute (indicators need full lookback)
-        features = self.compute_features(symbol, bars)
-
-        # Update the last computed index
-        with self._lock:
-            self._last_computed[symbol] = current_count
-
-        return features
 
     def get_feature(self, symbol: str, feature_name: str) -> float:
         """Get a single cached feature value.
@@ -502,23 +458,6 @@ class FeatureStore:
 
             return value
 
-    def compute_all(self, bars_dict: Dict[str, pd.DataFrame]) -> Dict[str, Dict[str, float]]:
-        """Compute features for multiple symbols at once.
-
-        Args:
-            bars_dict: Mapping of symbol -> OHLCV DataFrame.
-
-        Returns:
-            Mapping of symbol -> {feature_name: value}.
-        """
-        results: Dict[str, Dict[str, float]] = {}
-        for symbol, bars in bars_dict.items():
-            try:
-                results[symbol] = self.compute_features(symbol, bars)
-            except Exception as e:
-                logger.error("FeatureStore: failed to compute features for %s: %s", symbol, e)
-                results[symbol] = {}
-        return results
 
     def get_all_features(self, symbol: str) -> Dict[str, float]:
         """Return all cached features for a symbol (no recompute)."""

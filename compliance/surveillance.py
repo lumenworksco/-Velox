@@ -415,10 +415,6 @@ class SelfSurveillance:
 
         return flags
 
-    def _check_marking_close_inner(self, trades: list[dict]) -> list[str]:
-        """Return list of symbols flagged for marking-the-close."""
-        flags = self._detect_marking_close(trades)
-        return [f.symbol for f in flags]
 
     # ------------------------------------------------------------------
     # Internal — spoofing detection

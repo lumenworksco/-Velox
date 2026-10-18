@@ -363,12 +363,6 @@ class DynamicUniverse:
 
         return removed
 
-    def exclude_symbol(self, symbol: str, reason: str):
-        """Manually exclude a symbol from the universe."""
-        with self._lock:
-            self._excluded.add(symbol)
-            self._exclusion_reasons[symbol] = reason
-        logger.info("DynamicUniverse: excluded %s (%s)", symbol, reason)
 
     def reinstate_symbol(self, symbol: str):
         """Re-include a previously excluded symbol."""

@@ -110,47 +110,6 @@ class ConformalStopEngine:
             )
             return None
 
-    def compute_stops_batch(
-        self,
-        positions: dict[str, Any],
-        price_data: dict[str, list[float]],
-        confidence: float = DEFAULT_CONFIDENCE,
-    ) -> dict[str, ConformalStop]:
-        """Compute conformal stops for multiple positions.
-
-        Args:
-            positions: Dict of symbol -> position (TradeRecord or dict).
-            price_data: Dict of symbol -> historical price list.
-            confidence: Confidence level for all computations.
-
-        Returns:
-            Dict of symbol -> ConformalStop (only for successful computations).
-        """
-        results: dict[str, ConformalStop] = {}
-
-        for symbol, pos in positions.items():
-            prices = price_data.get(symbol)
-            if prices is None:
-                continue
-
-            current_price = self._get_attr(pos, "entry_price", 0.0)
-            side = self._get_attr(pos, "side", "buy")
-
-            if current_price <= 0:
-                continue
-
-            stop = self.compute_stop(
-                prices=prices,
-                current_price=current_price,
-                side=side,
-                confidence=confidence,
-                symbol=symbol,
-            )
-
-            if stop is not None:
-                results[symbol] = stop
-
-        return results
 
     # ------------------------------------------------------------------
     # Core computation
