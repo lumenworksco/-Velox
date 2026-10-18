@@ -277,18 +277,6 @@ def _flag_indicator_invalidation(symbol: str, event_timestamp) -> None:
             _invalidated_symbols[symbol] = datetime.now()
 
 
-def get_invalidated_symbols() -> Dict[str, datetime]:
-    """Return symbols flagged for indicator cache invalidation due to corporate actions."""
-    with _invalidated_symbols_lock:
-        return dict(_invalidated_symbols)
-
-
-def clear_invalidation(symbol: str) -> None:
-    """Clear the invalidation flag for a symbol after indicators have been recomputed."""
-    with _invalidated_symbols_lock:
-        _invalidated_symbols.pop(symbol, None)
-
-
 def _check_duplicate_timestamps(bars: pd.DataFrame, symbol: str) -> List[QualityIssue]:
     """Check for duplicate timestamps."""
     issues = []
