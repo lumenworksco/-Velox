@@ -95,7 +95,7 @@ else
 fi
 
 # -- Required ports ------------------------------------------------------------
-PORTS=(8080 9090 3000 9093 5432)
+PORTS=(5432)
 PORTS_OK=true
 for PORT in "${PORTS[@]}"; do
     if lsof -i ":$PORT" -sTCP:LISTEN &>/dev/null; then
@@ -105,7 +105,7 @@ for PORT in "${PORTS[@]}"; do
     fi
 done
 if $PORTS_OK; then
-    ok "Required ports available (8080, 9090, 3000, 9093, 5432)"
+    ok "Required ports available (5432)"
 fi
 
 if [ "$ERRORS" -gt 0 ]; then
@@ -185,27 +185,6 @@ else
         ok "Paper trading mode selected"
     fi
 
-    # ---- Telegram notifications ----------------------------------------------
-    echo ""
-    ask "Enable Telegram notifications? (y/N):"
-    read -r USE_TELEGRAM
-    if [[ "$USE_TELEGRAM" =~ ^[Yy] ]]; then
-        ask "Telegram Bot Token:"
-        read -r TG_TOKEN
-        ask "Telegram Chat ID:"
-        read -r TG_CHAT_ID
-        if [ -n "$TG_TOKEN" ] && [ -n "$TG_CHAT_ID" ]; then
-            sed -i.bak "s|^TELEGRAM_ENABLED=.*|TELEGRAM_ENABLED=true|" .env
-            sed -i.bak "s|^TELEGRAM_BOT_TOKEN=.*|TELEGRAM_BOT_TOKEN=$TG_TOKEN|" .env
-            sed -i.bak "s|^TELEGRAM_CHAT_ID=.*|TELEGRAM_CHAT_ID=$TG_CHAT_ID|" .env
-            ok "Telegram notifications enabled"
-        else
-            warn "Missing token or chat ID -- Telegram left disabled"
-        fi
-    else
-        info "Telegram notifications skipped"
-    fi
-
     # ---- FRED API key --------------------------------------------------------
     echo ""
     ask "Do you have a FRED API key? (free at https://fred.stlouisfed.org/docs/api/api_key.html) (y/N):"
@@ -224,20 +203,6 @@ else
         info "FRED API key skipped (macro signals will use fallback data)"
     fi
 
-    # ---- Database & Grafana passwords ----------------------------------------
-    echo ""
-    info "Generating secure passwords for PostgreSQL and Grafana..."
-    PG_PASSWORD=$(python3 -c "import secrets; print(secrets.token_urlsafe(24))")
-    GF_PASSWORD=$(python3 -c "import secrets; print(secrets.token_urlsafe(16))")
-
-    sed -i.bak "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$PG_PASSWORD|" .env
-    sed -i.bak "s|^GRAFANA_ADMIN_PASSWORD=.*|GRAFANA_ADMIN_PASSWORD=$GF_PASSWORD|" .env
-    # Update the DATABASE_URL to match the new password
-    sed -i.bak "s|^DATABASE_URL=.*|DATABASE_URL=postgresql://velox:${PG_PASSWORD}@postgres:5432/velox|" .env
-
-    ok "Secure passwords generated and written to .env"
-    info "Grafana admin password: $GF_PASSWORD  (save this somewhere safe)"
-
     # Clean up sed backup files
     rm -f .env.bak
 
@@ -254,7 +219,7 @@ info "Running database init and migrations..."
 if python3 -c "import database; database.init_db(); database.run_migrations()" 2>&1; then
     ok "Database initialized and migrations applied"
 else
-    warn "Database initialization had issues (this is OK if using Docker PostgreSQL exclusively)"
+    warn "Database initialization had issues (check the output above)"
 fi
 
 # =============================================================================
@@ -360,17 +325,12 @@ echo "  ================================================================"
 echo "    ${BOLD}${GREEN}Velox V12 is ready${NC}"
 echo "  ================================================================"
 echo ""
-echo "  ${BOLD}Endpoints:${NC}"
-echo "    Dashboard:    ${CYAN}http://localhost:8080${NC}"
-echo "    Prometheus:   ${CYAN}http://localhost:9090${NC}"
-echo "    Grafana:      ${CYAN}http://localhost:3000${NC}  (admin / see .env for password)"
-echo "    Alertmanager: ${CYAN}http://localhost:9093${NC}"
-echo ""
 echo "  ${BOLD}Common commands:${NC}"
-echo "    View logs:     docker compose logs -f velox"
-echo "    Check status:  bash scripts/status.sh"
-echo "    Stop all:      bash scripts/stop.sh"
-echo "    Restart:       docker compose restart velox"
+echo "    Live dashboard: docker attach velox-v12   (detach with Ctrl-P Ctrl-Q)"
+echo "    View logs:      docker compose logs -f velox"
+echo "    Status:         python velox.py status"
+echo "    Emergency stop: python velox.py kill"
+echo "    Stop all:       docker compose down"
 echo ""
 echo "  ${BOLD}Important files:${NC}"
 echo "    Configuration: .env"

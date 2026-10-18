@@ -1,0 +1,89 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.mypy_cache/
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs and Runtime Data
+*.log
+trading_bot*.log
+*.log.*
+trade_history.json          # Runtime trade database (created by backend)
+
+# Trading data and reports
+performance_report_*.txt
+backtest_results_*.txt
+backtest_performance_results.json
+trades_*.csv
+results/
+
+# Frontend build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+frontend/.turbo/
+
+# API Keys and Credentials (IMPORTANT!)
+.env
+!.env.example
+config_local.py
+*_credentials.json
+api_keys.txt
+*_agreement.pdf
+customer_agreement.pdf
+crypto_agreement.pdf
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Test files
+test_*.py
+*_test.py
+
+# Temporary files
+*.tmp
+*.bak
+.cache/
+
+# Project-specific files
+Unknown.pdf
+*.pdf
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*

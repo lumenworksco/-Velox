@@ -268,53 +268,10 @@ class TestTimingConfigs:
         import config
         assert config.ALLOCATION_LOOKBACK_DAYS > 0
 
-    def test_kelly_lookback_positive(self):
-        """KELLY_LOOKBACK must be positive."""
-        import config
-        assert config.KELLY_LOOKBACK > 0
-
-    def test_kelly_min_trades_positive(self):
-        """KELLY_MIN_TRADES must be positive."""
-        import config
-        assert config.KELLY_MIN_TRADES > 0
-
     def test_orb_time_stop_positive(self):
         """ORB_TIME_STOP_HOURS must be positive."""
         import config
         assert config.ORB_TIME_STOP_HOURS > 0
-
-
-class TestKellyParams:
-    """Tests for Kelly criterion configuration."""
-
-    def test_kelly_min_less_than_max_risk(self):
-        """KELLY_MIN_RISK must be strictly less than KELLY_MAX_RISK."""
-        import config
-        assert config.KELLY_MIN_RISK < config.KELLY_MAX_RISK, (
-            f"KELLY_MIN_RISK={config.KELLY_MIN_RISK} >= KELLY_MAX_RISK={config.KELLY_MAX_RISK}"
-        )
-
-    def test_kelly_min_risk_positive(self):
-        """KELLY_MIN_RISK must be positive."""
-        import config
-        assert config.KELLY_MIN_RISK > 0
-
-    def test_kelly_max_risk_positive(self):
-        """KELLY_MAX_RISK must be positive."""
-        import config
-        assert config.KELLY_MAX_RISK > 0
-
-    def test_kelly_fraction_mult_in_range(self):
-        """KELLY_FRACTION_MULT must be between 0 and 1 inclusive."""
-        import config
-        assert 0 < config.KELLY_FRACTION_MULT <= 1.0, (
-            f"KELLY_FRACTION_MULT={config.KELLY_FRACTION_MULT} out of range (0, 1]"
-        )
-
-    def test_kelly_enabled_is_bool(self):
-        """KELLY_ENABLED must be a bool."""
-        import config
-        assert isinstance(config.KELLY_ENABLED, bool)
 
 
 class TestRuntimeParams:

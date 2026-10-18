@@ -85,7 +85,6 @@ def _mock_deps():
     import types
     cfg = types.ModuleType("config")
     cfg.ET = ET
-    cfg.TELEGRAM_ENABLED = False
     cfg.BROKER_SYNC_EXCLUDE_SYMBOLS = {"SPY"}
 
     mock_database = MagicMock()
@@ -126,7 +125,6 @@ def broker_sync(_mock_deps):
     importlib.reload(mod)
     # Reset module-level state
     mod._broker_miss_counts.clear()
-    mod._notifications = None
     return mod
 
 

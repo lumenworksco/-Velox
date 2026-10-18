@@ -42,7 +42,6 @@ def _emit_event(event_type: str, data: dict, source: str = "exit_processor"):
             pass
 
 # Lazy-loaded optional modules
-_notifications = None
 _intraday_controls = None
 
 # Adaptive exit manager for STAT_MR and VWAP positions (fail-open)
@@ -63,17 +62,6 @@ def set_intraday_controls(controls) -> None:
     """Set the shared IntradayRiskControls instance (called from main.py)."""
     global _intraday_controls
     _intraday_controls = controls
-
-
-def _get_notifications():
-    global _notifications
-    if _notifications is None:
-        try:
-            import notifications as _n
-            _notifications = _n
-        except ImportError:
-            _notifications = False
-    return _notifications if _notifications else None
 
 
 def now_et():
@@ -306,8 +294,6 @@ def handle_strategy_exits(exit_actions: list[dict], risk: RiskManager, now: date
     Each action dict: {symbol, action, reason, ...}
     action = "full" -> close_position, "partial" -> close_partial_position
     """
-    notif = _get_notifications()
-
     # V12 HOTFIX: Lazy-import to avoid circular import; fail-open in tests
     try:
         from engine.broker_sync import mark_symbol_close_attempted, was_recently_closed
@@ -433,11 +419,6 @@ def handle_strategy_exits(exit_actions: list[dict], risk: RiskManager, now: date
             })
             if ws_monitor:
                 ws_monitor.unsubscribe(symbol)
-            if notif and config.TELEGRAM_ENABLED:
-                try:
-                    notif.notify_trade_closed(trade)
-                except Exception as e:
-                    logger.error(f"Failed to send close notification for {symbol}: {e}")
 
 
 def handle_ws_close(symbol: str, reason: str, risk: RiskManager, ws_monitor):
@@ -496,13 +477,6 @@ def handle_ws_close(symbol: str, reason: str, risk: RiskManager, ws_monitor):
 
     risk.close_trade(symbol, exit_price, now_et(), exit_reason=reason, commission=commission)
     ws_monitor.unsubscribe(symbol)
-
-    notif = _get_notifications()
-    if notif and config.TELEGRAM_ENABLED:
-        try:
-            notif.notify_trade_closed(trade)
-        except Exception as e:
-            logger.error(f"Failed to send close notification for {symbol}: {e}")
 
 
 def get_current_prices(open_trades: dict) -> dict[str, float]:

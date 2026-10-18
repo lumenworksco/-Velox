@@ -240,12 +240,6 @@ class ConfigManager:
             if total > 1.01:
                 errors.append(f"Strategy allocations sum to {total:.2%}, must be <= 100%")
 
-        # Kelly bounds
-        kelly_min = self.risk("kelly", "min_risk", float, 0.003)
-        kelly_max = self.risk("kelly", "max_risk", float, 0.02)
-        if kelly_min >= kelly_max:
-            errors.append(f"kelly.min_risk ({kelly_min}) must be < kelly.max_risk ({kelly_max})")
-
         # Risk per trade
         rpt = self.risk("position_sizing", "risk_per_trade_pct", float, 0.008)
         if rpt <= 0 or rpt > 0.10:
