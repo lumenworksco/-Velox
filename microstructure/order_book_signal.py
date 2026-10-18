@@ -188,7 +188,7 @@ class OrderBookFeatureExtractor:
 
         with self._lock:
             history = list(
-                self._per_symbol.get(symbol, self._history) if symbol
+                self._per_symbol.get(symbol, ()) if symbol
                 else self._history
             )
             ema = self._ema_imbalance.get(key, 0.0)

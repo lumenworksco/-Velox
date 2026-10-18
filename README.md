@@ -2,11 +2,13 @@
 
 ![CI](https://github.com/lumenworksco/Velox/actions/workflows/ci.yml/badge.svg)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)
-![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Docker](https://img.shields.io/badge/docker-compose-2496ED.svg)
+![Broker: Alpaca](https://img.shields.io/badge/broker-Alpaca-yellow.svg)
 
-A production-grade autonomous equity trading system built on the Alpaca API. Features 6 diversified strategies, a unified ExitOrchestrator with 10-priority-level exit cascade, an 18-stage signal pipeline with ML confidence gating, real-time VaR monitoring, FinBERT sentiment analysis, structured logging, and a Docker production stack with PostgreSQL, Prometheus, Grafana, Alertmanager, and automated backups.
+A production-grade autonomous equity trading system built on the Alpaca API. Features 6 diversified strategies (5 currently allocated), a unified ExitOrchestrator with 10-priority-level exit cascade, an 18-stage signal pipeline with ML confidence gating, real-time VaR monitoring, FinBERT sentiment analysis, structured logging, and a Docker production stack with PostgreSQL, Prometheus, Grafana, Alertmanager, and automated backups.
 
-**Philosophy:** Consistent returns over big wins. Target 0.3-0.8% per trade, 65-75% win rate, 15-25 trades/day across 6 active strategies.
+**Philosophy:** Consistent returns over big wins. Target 0.3-0.8% per trade, 65-75% win rate, 15-25 trades/day across the active strategies.
 
 ---
 
@@ -43,12 +45,12 @@ python main.py
 
 | Strategy | Allocation | Type | Hold | Description |
 |---|---|---|---|---|
-| **StatMeanReversion** | 25% | Mean Reversion | Intraday | OU process z-score entries with Hurst/ADF filtering on 2-min bars |
-| **VWAP v2 Hybrid** | 13% | Mean Reversion | Intraday | VWAP + OU z-score dual confirmation with bid-ask spread filter |
-| **KalmanPairsTrader** | 27% | Market-Neutral | Multi-day | Kalman filter dynamic hedge ratios on cointegrated sector pairs |
-| **ORB v2** | 12% | Breakout | Day | Opening range breakout with gap/range quality filters (10:00-11:30 AM) |
-| **IntradayMicroMomentum** | 5% | Event-Driven | 8 min | SPY volume spike detection, high-beta stock scalps |
-| **PEAD** | 18% | Event-Driven | Multi-day | Post-earnings announcement drift with FinBERT sentiment confirmation |
+| **StatMeanReversion** | 28% | Mean Reversion | Intraday | OU process z-score entries with Hurst/ADF filtering on 2-min bars |
+| **VWAP v2 Hybrid** | 15% | Mean Reversion | Intraday | VWAP + OU z-score dual confirmation with bid-ask spread filter |
+| **KalmanPairsTrader** | 31% | Market-Neutral | Multi-day | Kalman filter dynamic hedge ratios on cointegrated sector pairs |
+| **ORB v2** | 0% (disabled) | Breakout | Day | Opening range breakout with gap/range quality filters (10:00-11:30 AM). Demoted 2026-04-17 after an alpha-decay alert; code retained |
+| **IntradayMicroMomentum** | 6% | Event-Driven | 8 min | SPY volume spike detection, high-beta stock scalps |
+| **PEAD** | 20% | Event-Driven | Multi-day | Post-earnings announcement drift with FinBERT sentiment confirmation |
 
 ### How It Works
 
@@ -352,7 +354,7 @@ pytest tests/test_v10_events.py -v
 pytest tests/test_v10_phase4.py -v
 ```
 
-900+ tests across 63 test files covering all strategies, risk modules, OMS, exit orchestrator, event bus, circuit breaker, ML pipeline, and analytics.
+1,900+ tests across 85 test files covering all strategies, risk modules, OMS, exit orchestrator, event bus, circuit breaker, ML pipeline, and analytics.
 
 ---
 
@@ -403,4 +405,6 @@ pytest tests/test_v10_phase4.py -v
 
 ## License
 
-[MIT](LICENSE)
+Released under the [MIT License](LICENSE).
+
+See also: [CONTRIBUTING](CONTRIBUTING.md) · [SECURITY](SECURITY.md) · [CHANGELOG](CHANGELOG.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
