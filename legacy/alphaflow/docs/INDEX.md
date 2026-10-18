@@ -4,12 +4,12 @@ Complete guide to all AlphaFlow documentation files.
 
 ---
 
-## 📚 Documentation Files (10 guides)
+## 📚 Documentation Files (7 guides)
 
 ### 🚀 **Getting Started**
 
 #### [README_PRODUCTION.md](README_PRODUCTION.md)
-**Purpose**: Complete production guide and quick start
+**Purpose**: Complete production deployment guide
 - Quick start instructions (5 minutes to running)
 - Complete feature list with descriptions
 - All 7 trading strategies with performance metrics
@@ -19,7 +19,7 @@ Complete guide to all AlphaFlow documentation files.
 - Production safety features
 - Cost breakdown
 
-**When to read**: First document to read for production deployment
+**When to read**: Primary guide for production deployment
 
 ---
 
@@ -28,7 +28,7 @@ Complete guide to all AlphaFlow documentation files.
 - Pre-deployment checklist
 - Environment configuration
 - Backend and frontend testing
-- Paper trading validation (2+ weeks)
+- Paper trading validation (2+ weeks minimum)
 - Live trading preparation
 - Day 1 launch procedures
 - Week 1 monitoring checklist
@@ -103,88 +103,19 @@ Complete guide to all AlphaFlow documentation files.
 
 ---
 
-### 🧹 **Cleanup Documentation**
+### 🧹 **Project History**
 
-#### [CLEANUP_SUMMARY.md](CLEANUP_SUMMARY.md)
-**Purpose**: First cleanup pass documentation
+#### [CLEANUP_HISTORY.md](CLEANUP_HISTORY.md)
+**Purpose**: Cleanup and optimization history
 - Initial cleanup objectives
-- 24 duplicate documentation files removed
-- 42 old log files removed
-- Requirements consolidation
-- .gitignore enhancements
-- PROJECT_STRUCTURE.md creation
+- Deep cleanup analysis
+- Files removed (87 total)
+- Modules consolidated
+- Requirements optimization
 - File statistics before/after
-- Git repository readiness
+- Structure improvements
 
-**When to read**: Historical reference for cleanup process
-
----
-
-#### [FINAL_CLEANUP_SUMMARY.md](FINAL_CLEANUP_SUMMARY.md)
-**Purpose**: Deep cleanup analysis
-- Second cleanup pass details
-- tests/ folder removal (empty)
-- docs/ folder removal (outdated)
-- 10 unused core modules removed
-- scripts/ folder removal
-- File reduction statistics (90 → 49 files)
-- Code size reduction (~200 KB)
-- Final structure validation
-- Every file purpose verification
-
-**When to read**: Historical reference for deep cleanup and optimization
-
----
-
-### 📝 **Project History**
-
-#### [CHANGES_MADE.md](CHANGES_MADE.md)
-**Purpose**: Detailed change log
-- Chronological list of all changes
-- Feature additions
-- Bug fixes
-- Refactoring details
-- File modifications
-- Commit history
-
-**When to read**: To see detailed history of what changed and when
-
----
-
-#### [README_OLD.md](README_OLD.md)
-**Purpose**: Original README (archived)
-- Previous version reference
-- Historical context
-- Original feature descriptions
-
-**When to read**: Reference only - use main README.md instead
-
----
-
-## 🗂️ **Documentation Categories**
-
-### By Use Case
-
-**New Users (Start Here)**:
-1. README.md (root) - Overview
-2. README_PRODUCTION.md - Complete guide
-3. DEPLOYMENT_CHECKLIST.md - Step-by-step setup
-
-**Understanding Features**:
-1. LIVE_TRADING_READY.md - Live trading features
-2. PRODUCTION_READY_SUMMARY.md - All features
-3. PRODUCTION_TRADING_IMPLEMENTED.md - Technical details
-
-**Developers**:
-1. PROJECT_STRUCTURE.md - Code organization
-2. PRODUCTION_TRADING_IMPLEMENTED.md - Implementation
-3. CONTRIBUTING.md (root) - Contribution guide
-
-**Historical Reference**:
-1. CLEANUP_SUMMARY.md - Initial cleanup
-2. FINAL_CLEANUP_SUMMARY.md - Deep cleanup
-3. CHANGES_MADE.md - Change history
-4. README_OLD.md - Original README
+**When to read**: Historical reference for project cleanup process
 
 ---
 
@@ -274,20 +205,18 @@ These essential files are in the root directory:
 | Report security issue | SECURITY.md |
 | Contribute code | CONTRIBUTING.md |
 | Understand implementation | PRODUCTION_TRADING_IMPLEMENTED.md |
-| Reference cleanup | CLEANUP_SUMMARY.md + FINAL_CLEANUP_SUMMARY.md |
 
 ---
 
 ## 📊 **Documentation Statistics**
 
-- **Total documentation files**: 16 (10 in docs/ + 6 in root)
-- **Getting started guides**: 3
+- **Total documentation files**: 13 (7 in docs/ + 6 in root)
+- **Getting started guides**: 2
 - **Feature documentation**: 3
-- **Implementation guides**: 2
-- **Cleanup documentation**: 3
-- **Project history**: 2
+- **Implementation guides**: 1
+- **Project organization**: 1
 - **Community/Security**: 3
-- **Total pages**: ~150 pages of documentation
+- **Total pages**: ~120 pages of documentation
 
 ---
 
@@ -324,5 +253,5 @@ When making changes to the codebase:
 ---
 
 **Last Updated**: January 20, 2026
-**Total Documentation**: 16 files, ~150 pages
+**Total Documentation**: 13 files, ~120 pages
 **Status**: ✅ Comprehensive and up-to-date

@@ -74,12 +74,12 @@ export default function Backtest() {
     if (!currentBacktestId) return
 
     try {
-      const res = await fetch(`http://localhost:8000/api/backtest/status/${currentBacktestId}`)
+      const res = await fetch(`/api/backtest/status/${currentBacktestId}`)
       const statusData = await res.json()
       setStatus(statusData)
 
       if (statusData.status === 'completed') {
-        const resultRes = await fetch(`http://localhost:8000/api/backtest/results/${currentBacktestId}`)
+        const resultRes = await fetch(`/api/backtest/results/${currentBacktestId}`)
         const resultData = await resultRes.json()
         setResult(resultData)
         setRunning(false)
@@ -99,7 +99,7 @@ export default function Backtest() {
       setResult(null)
       setStatus(null)
 
-      const res = await fetch('http://localhost:8000/api/backtest/run', {
+      const res = await fetch('/api/backtest/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -125,7 +125,7 @@ export default function Backtest() {
     if (!currentBacktestId) return
 
     try {
-      await fetch(`http://localhost:8000/api/backtest/${currentBacktestId}`, {
+      await fetch(`/api/backtest/${currentBacktestId}`, {
         method: 'DELETE'
       })
       setRunning(false)
@@ -153,7 +153,7 @@ export default function Backtest() {
     setSymbolError(null)
 
     try {
-      const response = await fetch(`http://localhost:8000/api/market/quote/${symbol}`)
+      const response = await fetch(`/api/market/quote/${symbol}`)
 
       if (!response.ok) {
         setSymbolError(`Invalid symbol: ${symbol}`)

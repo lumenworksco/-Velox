@@ -186,8 +186,10 @@ class StrategyExecutor:
                                     logger.info(f"Take-profit triggered for {symbol} @ ${current_price:.2f}")
                                     self._execute_sell(strategy_id, symbol, current_price, reason="take_profit")
 
-                    # Sleep before next iteration (check every 60 seconds)
-                    stop_flag.wait(timeout=60)
+                    # Sleep before next iteration
+                    # Quick test strategy checks every 5 seconds, others every 60 seconds
+                    check_interval = 5 if strategy_id == 'quick_test' else 60
+                    stop_flag.wait(timeout=check_interval)
 
                 except Exception as e:
                     logger.error(f"Error in strategy {strategy_id} execution loop: {e}")
