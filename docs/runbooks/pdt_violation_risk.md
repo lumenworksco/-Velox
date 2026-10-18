@@ -15,7 +15,7 @@
 
 2. **Check account equity (PDT threshold is $25,000):**
    ```bash
-   curl http://localhost:8080/health | python3 -m json.tool
+   python velox.py status
    ```
 
 3. **Check PDT tracker state:**
@@ -60,7 +60,7 @@
 
 1. **Activate kill switch:**
    ```bash
-   curl -X POST http://localhost:8080/api/kill-switch -H "Content-Type: application/json" -d '{"reason": "pdt_emergency"}'
+   python velox.py kill --reason pdt_emergency
    ```
 
 2. **Stop the bot:**

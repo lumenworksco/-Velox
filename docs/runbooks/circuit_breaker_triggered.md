@@ -2,15 +2,15 @@
 
 ## Symptoms
 - Log message: `Circuit breaker {YELLOW|RED|BLACK} — skipping scan cycle`
-- Prometheus alert: `CircuitBreakerTriggered` or `DailyDrawdownExceeds3Pct`
-- Dashboard shows "CB" status instead of "SCANNING"
+- Log lines such as `circuit breaker escalated` or a tier change in the dashboard
+- Dashboard footer shows `Circuit breaker: ACTIVE - NO NEW TRADES`
 - No new trades being opened
 
 ## Diagnosis Steps
 
 1. **Check current circuit breaker level:**
    ```bash
-   curl http://localhost:8080/health | python3 -m json.tool
+   python velox.py status
    ```
 
 2. **Check day P&L:**
@@ -45,7 +45,7 @@
 - New entries are blocked until next trading day.
 - Verify that positions were actually closed at broker:
   ```bash
-  curl http://localhost:8080/api/positions
+  python velox.py status
   ```
 
 ### BLACK (day P&L > -3% or manual kill switch)
@@ -59,7 +59,7 @@
 
 ### Manual Reset (after BLACK)
 1. Verify all positions are closed at broker
-2. Check for orphaned orders: `curl http://localhost:8080/api/orders`
+2. Check for orphaned orders in the Alpaca dashboard
 3. Restart the bot: `python3 main.py`
 4. Circuit breaker resets on new trading day
 

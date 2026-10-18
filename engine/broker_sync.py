@@ -76,7 +76,6 @@ def prune_recent_closes() -> None:
             _recent_close_attempts.pop(s, None)
 
 # Lazy-loaded optional modules
-_notifications = None
 _intraday_controls = None
 _intraday_controls_checked = False
 
@@ -91,17 +90,6 @@ def _get_intraday_controls():
     return _intraday_controls
 
 
-def _get_notifications():
-    global _notifications
-    if _notifications is None:
-        try:
-            import notifications as _n
-            _notifications = _n
-        except ImportError:
-            _notifications = False
-    return _notifications if _notifications else None
-
-
 def sync_positions_with_broker(risk: RiskManager, now: datetime, ws_monitor=None):
     """Sync open trades with actual broker positions.
 
@@ -114,8 +102,6 @@ def sync_positions_with_broker(risk: RiskManager, now: datetime, ws_monitor=None
     except Exception as e:
         logger.error(f"Failed to fetch positions: {e}")
         return
-
-    notif = _get_notifications()
 
     # Close DB records for positions the broker no longer has
     for symbol in list(risk.open_trades.keys()):
@@ -220,11 +206,6 @@ def sync_positions_with_broker(risk: RiskManager, now: datetime, ws_monitor=None
 
             if ws_monitor:
                 ws_monitor.unsubscribe(symbol)
-            if notif and config.TELEGRAM_ENABLED:
-                try:
-                    notif.notify_trade_closed(trade)
-                except Exception as e:
-                    logger.error(f"Failed to send close notification for {symbol}: {e}")
         else:
             with _broker_miss_lock:
                 _broker_miss_counts.pop(symbol, None)
@@ -539,10 +520,6 @@ def recover_positions(risk: RiskManager, now: datetime) -> dict:
             "stop_loss": round(stop_loss, 2),
         })
 
-    # --- Send Telegram alert if any discrepancies found ---
-    if summary["adopted"] or summary["orphaned"]:
-        _send_recovery_alert(summary)
-
     # --- Summary log ---
     logger.info(
         f"V12-6.5 Recovery complete: {len(summary['matched'])} matched, "
@@ -550,35 +527,3 @@ def recover_positions(risk: RiskManager, now: datetime) -> dict:
     )
 
     return summary
-
-
-def _send_recovery_alert(summary: dict):
-    """Send a Telegram notification summarizing startup position recovery."""
-    notif = _get_notifications()
-    if not notif:
-        return
-
-    lines = ["*V12-6.5 Startup Position Recovery*\n"]
-
-    if summary["adopted"]:
-        lines.append(f"*Adopted ({len(summary['adopted'])})* — at broker, missing from DB:")
-        for a in summary["adopted"]:
-            lines.append(
-                f"  {a['side'].upper()} {a['qty']} {a['symbol']} "
-                f"@ ${a['entry_price']:.2f} ({a['strategy']})"
-            )
-
-    if summary["orphaned"]:
-        lines.append(f"\n*Orphaned ({len(summary['orphaned'])})* — in DB, missing from broker:")
-        for o in summary["orphaned"]:
-            lines.append(
-                f"  {o['side'].upper()} {o['qty']} {o['symbol']} "
-                f"@ ${o['entry_price']:.2f} → closed @ ${o['exit_price']:.2f} ({o['reason']})"
-            )
-
-    lines.append(f"\n_Matched: {len(summary.get('matched', []))} positions OK_")
-
-    try:
-        notif._send_telegram("\n".join(lines))
-    except Exception as e:
-        logger.warning(f"V12-6.5: Failed to send recovery Telegram alert: {e}")

@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [13.0.0] - 2026-10-17
+
+### Added
+- **`velox` CLI** -- `run`, `start`, `stop`, `status [--watch]`, `health`, `kill`, `backtest`, `tearsheet`, `demo`, `strategies`
+- **Terminal kill switch** -- `velox kill` drops a request file that the main loop consumes (replaces the web endpoint)
+- **Heartbeat every 30s** from the main loop; Docker and CI health checks use `velox health`
+- **Baseline strategies** ported from the Rust *Trading Algorithms* project (EMA crossover, RSI, momentum, Bollinger mean reversion) in `backtesting/baselines.py`, with sample market data in `data/samples/`
+- **Predecessor projects merged** with history preserved under `legacy/`: AlphaFlow (Velox's predecessor) and Trading Algorithms (Rust). Secrets, `node_modules` and logs were stripped first
+- Issue/PR templates and a code of conduct
+
+### Changed
+- **Terminal only**: README, docs, runbooks, Docker and CI describe a terminal workflow
+- **License is now MIT** (was proprietary); the commercial license template is removed
+- CI runs pytest directly with coverage (it previously piped through `head` and stopped at the first failure, hiding 30 failing tests); gitleaks gets `GITHUB_TOKEN`
+- Docker stack reduced to `velox` + `backup`; health check is the heartbeat file
+- Dashboard footer derives strategy allocations from config
+
+### Removed
+- Telegram notifications and every trace of them: `notifications.py`, the `TELEGRAM_*` settings, setup prompts and docs. Alerts now go to the log only
+- Unreachable code (~60 modules): the `ml/models` research models, `strategies/options`, `sector_momentum`, the unused SQLAlchemy/Alembic `db/` package, `exit_manager.py`, `replay.py`, Kelly sizing, shadowed root `data.py`/`execution.py`/`config.py`, and their tests
+- HTML tear sheet export and SPY-benchmark fetch (`velox tearsheet` is terminal only); committed `reports/tearsheet_*.html`
+- FastAPI web dashboard, JWT auth, Prometheus metrics, Grafana, Alertmanager
+- PostgreSQL service and backups (the bot only ever used SQLite)
+- Duplicate `start.sh`, `stop.sh`, `status.sh` scripts (now `velox start|stop|status`)
+
+### Fixed
+- 30 stale or order-dependent tests (ORB demoted to 0% allocation, new micro-momentum and stat-MR logic, shared-module mutation, import-order-dependent broker patching)
+- `OrderBookFeatureExtractor.get_features(symbol)` returned global history after a per-symbol reset
+- Dashboard API no longer returned raw exception text (CodeQL `py/stack-trace-exposure`)
+
 ## [12.0.0] - 2026-04-05
 
 ### Added
@@ -13,7 +43,6 @@ All notable changes to this project will be documented in this file.
 - **Data Feed Monitor** -- Alpaca outage detection with backup stop enforcement
 - **Gap Analysis** -- Pre-open gap detection for MR/breakout signal boosting
 - **Health Alerts** -- 8 system health alert types (DB failure, API rate limit, feed stale, etc.)
-- **Daily P&L Reports** -- Automated EOD Telegram summary with per-strategy breakdown
 - **Tax-Loss Harvesting** -- Friday EOD scan for tax-loss opportunities with wash sale enforcement
 - **Disaster Recovery** -- State recovery on startup, heartbeat monitoring, position reconciliation
 - **Position Recovery** -- Broker position adoption on mid-day restart
@@ -132,7 +161,6 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Strategy allocations: StatMR 50%, VWAP 20%, Pairs 20%, ORB 5%, MicroMom 5%
-- Notifications switched from WhatsApp to Telegram Bot API
 - Dropped Python 3.11 support; minimum is now 3.12
 - Dockerfile updated to Python 3.13
 - Dashboard and web UI updated to V7 branding with new strategy filters
@@ -173,7 +201,6 @@ All notable changes to this project will be documented in this file.
 - Short selling support
 - Gap & Go strategy (pre-market gap continuation)
 - Relative strength scanning
-- Telegram alerts for fills, errors, and daily P&L summaries
 - Web dashboard with live positions and equity curve
 - Auto-optimization of strategy parameters via walk-forward analysis
 

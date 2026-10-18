@@ -1,7 +1,7 @@
 # Runbook: Model Degradation
 
 ## Symptoms
-- Prometheus alert: `ModelStale`
+- Model file older than 7 days (check `models/` timestamps)
 - Log message: `Alpha decay CRITICAL: {strategy} — consider demoting`
 - Declining win rate or Sharpe ratio over recent days
 - ML signal scorer producing consistently low confidence scores
@@ -67,6 +67,6 @@ For persistent degradation:
 ## Prevention
 - Run walk-forward validation weekly (Sunday task is auto-scheduled)
 - Monitor alpha decay metrics daily at EOD
-- Set up the `ModelStale` Prometheus alert (fires if model not retrained in 7 days)
+- Schedule weekly retraining (`python scripts/train_ml_model.py`)
 - Use the adaptive allocator to automatically reduce allocation to underperforming strategies
 - Maintain a diverse strategy set to hedge against single-strategy degradation

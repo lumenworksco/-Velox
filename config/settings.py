@@ -368,17 +368,6 @@ VOL_TARGET_MAX = 0.015
 VOL_SCALAR_MIN = 0.3
 VOL_SCALAR_MAX = 1.5
 
-# --- Kelly Criterion ---
-KELLY_ENABLED = True
-KELLY_MIN_TRADES = 30
-KELLY_LOOKBACK = 100
-KELLY_FRACTION_MULT = 0.5          # Half-Kelly
-KELLY_MIN_RISK = 0.003
-KELLY_MAX_RISK = 0.02
-
-# --- T7-004: Bayesian Kelly Sizing ---
-BAYESIAN_KELLY_ENABLED = True           # V11.4: Enable regime-weighted Kelly fractions
-
 # --- Daily P&L Controls ---
 PNL_GAIN_LOCK_PCT = 0.015
 PNL_LOSS_HALT_PCT = -0.010
@@ -635,17 +624,6 @@ ADAPTIVE_SCAN_ENABLED = os.getenv("ADAPTIVE_SCAN_ENABLED", "false") == "true"
 # MONITORING & ALERTS
 # ============================================================
 
-# --- Telegram ---
-TELEGRAM_ENABLED = os.getenv("TELEGRAM_ENABLED", "false") == "true"
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
-
-# --- Web Dashboard ---
-WEB_DASHBOARD_ENABLED = os.getenv("WEB_DASHBOARD_ENABLED", "true") == "true"
-WEB_DASHBOARD_PORT = int(os.getenv("WEB_DASHBOARD_PORT", "8080"))
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
-TRUSTED_PROXY_IPS: list[str] = []  # MED-034: IPs allowed to set X-Forwarded-For
-
 # --- WebSocket Position Monitoring ---
 WEBSOCKET_MONITORING = True
 WEBSOCKET_RECONNECT_SEC = 5
@@ -818,16 +796,6 @@ def validate_config() -> tuple[list[str], list[str]]:
     if MAX_PORTFOLIO_DEPLOY > 1.0:
         errors.append(f"MAX_PORTFOLIO_DEPLOY ({MAX_PORTFOLIO_DEPLOY}) > 100% — invalid")
 
-    # --- Kelly criterion bounds ---
-    if KELLY_MIN_RISK >= KELLY_MAX_RISK:
-        errors.append(f"KELLY_MIN_RISK ({KELLY_MIN_RISK}) must be < KELLY_MAX_RISK ({KELLY_MAX_RISK})")
-
-    if KELLY_FRACTION_MULT <= 0 or KELLY_FRACTION_MULT > 1.0:
-        warnings.append(
-            f"KELLY_FRACTION_MULT ({KELLY_FRACTION_MULT}) — "
-            f"expected 0 < value <= 1.0 (half-Kelly = 0.5)"
-        )
-
     # --- Daily P&L controls ---
     if PNL_LOSS_HALT_PCT >= 0:
         errors.append(f"PNL_LOSS_HALT_PCT ({PNL_LOSS_HALT_PCT}) must be negative (it's a loss threshold)")
@@ -971,7 +939,7 @@ def _apply_yaml_overrides(data: dict) -> int:
     _logger = _logging.getLogger("config")
     import sys
 
-    _protected = {"API_KEY", "API_SECRET", "ANTHROPIC_API_KEY", "TELEGRAM_BOT_TOKEN"}
+    _protected = {"API_KEY", "API_SECRET", "ANTHROPIC_API_KEY"}
     _self = sys.modules[__name__]
     applied = 0
 
@@ -1081,10 +1049,6 @@ class RiskSettings:
     vol_target_max: float = 0.0
     vol_scalar_min: float = 0.0
     vol_scalar_max: float = 0.0
-    kelly_enabled: bool = False
-    kelly_fraction_mult: float = 0.0
-    kelly_min_risk: float = 0.0
-    kelly_max_risk: float = 0.0
     pnl_gain_lock_pct: float = 0.0
     pnl_loss_halt_pct: float = 0.0
     vix_risk_scaling_enabled: bool = False
@@ -1139,8 +1103,6 @@ class ExecutionSettings:
 class OperationalSettings:
     """Grouped operational / monitoring parameters."""
     paper_mode: bool = True
-    telegram_enabled: bool = False
-    web_dashboard_enabled: bool = False
     websocket_monitoring: bool = False
     watchdog_enabled: bool = False
     reconciliation_enabled: bool = False
@@ -1179,10 +1141,6 @@ def _build_settings() -> Settings:
             vol_target_max=_g("VOL_TARGET_MAX", 0.015),
             vol_scalar_min=_g("VOL_SCALAR_MIN", 0.3),
             vol_scalar_max=_g("VOL_SCALAR_MAX", 1.5),
-            kelly_enabled=_g("KELLY_ENABLED", True),
-            kelly_fraction_mult=_g("KELLY_FRACTION_MULT", 0.5),
-            kelly_min_risk=_g("KELLY_MIN_RISK", 0.003),
-            kelly_max_risk=_g("KELLY_MAX_RISK", 0.02),
             pnl_gain_lock_pct=_g("PNL_GAIN_LOCK_PCT", 0.015),
             pnl_loss_halt_pct=_g("PNL_LOSS_HALT_PCT", -0.01),
             vix_risk_scaling_enabled=_g("VIX_RISK_SCALING_ENABLED", True),
@@ -1225,8 +1183,6 @@ def _build_settings() -> Settings:
         ),
         ops=OperationalSettings(
             paper_mode=_g("PAPER_MODE", True),
-            telegram_enabled=_g("TELEGRAM_ENABLED", False),
-            web_dashboard_enabled=_g("WEB_DASHBOARD_ENABLED", True),
             websocket_monitoring=_g("WEBSOCKET_MONITORING", True),
             watchdog_enabled=_g("WATCHDOG_ENABLED", True),
             reconciliation_enabled=_g("RECONCILIATION_ENABLED", True),

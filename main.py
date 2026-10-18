@@ -42,6 +42,7 @@ from data import (
     get_feed_monitor,
 )
 # V10: Decomposed engine modules
+from oms.kill_switch import consume_kill_request
 from engine.broker_sync import sync_positions_with_broker, check_shadow_exits
 from engine.signal_processor import process_signals
 from engine.exit_processor import (
@@ -59,17 +60,16 @@ try:
 except ImportError:
     _exit_orchestrator = None
 from engine.scanner import scan_all_strategies, check_all_exits, run_beta_neutralization
-from engine.daily_tasks import daily_reset, weekly_tasks, eod_close, backup_database
+from engine.daily_tasks import daily_reset, weekly_tasks, eod_close
 # V12 BONUS: Profit maximization engine
 try:
     from engine.profit_maximizer import (
         IntradayVolRegime, WinStreakTracker,
-        compute_dynamic_stop, get_adaptive_scan_interval,
+        get_adaptive_scan_interval,
     )
 except ImportError:
     IntradayVolRegime = None
     WinStreakTracker = None
-    compute_dynamic_stop = None
     get_adaptive_scan_interval = None
 from strategies.base import Signal
 from strategies.regime import MarketRegime
@@ -111,11 +111,6 @@ try:
     from position_monitor import PositionMonitor
 except ImportError:
     PositionMonitor = None
-
-try:
-    import notifications
-except ImportError:
-    notifications = None
 
 try:
     from news_sentiment import AlpacaNewsSentiment
@@ -226,11 +221,6 @@ except ImportError:
     DynamicCorrelation = None
 
 try:
-    from execution.smart_router import SmartOrderRouter as V11SmartRouter
-except ImportError:
-    V11SmartRouter = None
-
-try:
     from execution.optimal_execution import AlmgrenChriss
 except ImportError:
     AlmgrenChriss = None
@@ -300,10 +290,6 @@ try:
 except ImportError:
     MetricsPipeline = None
 
-try:
-    from compliance.audit_trail import AuditTrail as V11AuditTrail
-except ImportError:
-    V11AuditTrail = None
 
 try:
     from compliance.pdt import PDTCompliance
@@ -818,7 +804,7 @@ def main():
     from engine.startup import (
         initialize_strategies, initialize_risk_engines,
         initialize_optional_modules, initialize_v10_components,
-        initialize_risk_manager, initialize_websocket, initialize_dashboard,
+        initialize_risk_manager, initialize_websocket,
     )
 
     strats = initialize_strategies()
@@ -922,14 +908,6 @@ def main():
                 "V12 6.5: Position recovery complete — %d adopted, %d orphaned",
                 _adopted, _orphaned,
             )
-            if notifications and config.TELEGRAM_ENABLED:
-                try:
-                    notifications.send_alert(
-                        f"Position Recovery: {_adopted} adopted, {_orphaned} orphaned",
-                        severity="WARNING",
-                    )
-                except Exception as e:
-                    logger.debug("V12 6.5: Position recovery notification failed: %s", e)
         else:
             logger.info("V12 6.5: Position recovery — all positions in sync")
     except Exception as _e:
@@ -949,7 +927,6 @@ def main():
     VIX_SPIKE_THRESHOLD_PCT = getattr(config, 'VIX_SPIKE_THRESHOLD_PCT', 0.20)
 
     ws_monitor = initialize_websocket(risk)
-    initialize_dashboard(order_manager, kill_switch, tiered_cb)
 
     # V12 BONUS: Initialize profit maximization components
     _intraday_vol_regime = IntradayVolRegime() if IntradayVolRegime else None
@@ -1017,13 +994,9 @@ def main():
             logger.warning(f"V12 2.5: CorporateActionDetector init failed (fail-open): {e}")
 
     # Feature flags
-    features = ["MR40%", "VWAP20%", "PAIRS20%", "PEAD10%", "ORB5%", "MICRO5%"]
+    features = [f"{k}{v:.0%}" for k, v in config.STRATEGY_ALLOCATIONS.items() if v]
     if config.ALLOW_SHORT:
         features.append("Short")
-    if config.TELEGRAM_ENABLED:
-        features.append("Notify")
-    if config.WEB_DASHBOARD_ENABLED:
-        features.append("Web")
     if config.WEBSOCKET_MONITORING:
         features.append("WS")
 
@@ -1212,9 +1185,22 @@ def main():
             refresh_per_second=0.2,
             transient=False,
         ) as live:
+            _last_heartbeat = 0.0
             while True:
                 current = now_et()
                 current_time = current.time()
+
+                # -------------------------------------------------------
+                # Terminal control: heartbeat file (health checks) and
+                # `velox kill` requests
+                # -------------------------------------------------------
+                if _dr_instance is not None and time_mod.monotonic() - _last_heartbeat >= 30:
+                    _dr_instance.update_heartbeat({"open_positions": len(risk.open_trades)})
+                    _last_heartbeat = time_mod.monotonic()
+                _kill_reason = consume_kill_request()
+                if _kill_reason and kill_switch:
+                    logger.critical("Kill requested from terminal: %s", _kill_reason)
+                    kill_switch.activate(_kill_reason, risk_manager=risk, order_manager=order_manager)
 
                 # -------------------------------------------------------
                 # Daily reset
@@ -1514,11 +1500,6 @@ def main():
                         if skip_scan:
                             # V12 FINAL: Define tier_name before any conditional block
                             tier_name = tiered_cb.current_tier.name if tiered_cb else "ACTIVE"
-                            if notifications and config.TELEGRAM_ENABLED:
-                                try:
-                                    notifications.notify_circuit_breaker(risk.day_pnl)
-                                except Exception as e:
-                                    logger.warning(f"Circuit breaker notification failed: {e}")
                             logger.warning(f"Circuit breaker {tier_name} — skipping scan cycle (day P&L: {risk.day_pnl:.2f})")
                             last_scan = current
                             continue
@@ -1825,12 +1806,6 @@ def main():
                     print_day_summary(summary, consistency_score=latest_consistency_score)
                     logger.info(f"Day summary: {summary}")
 
-                    if notifications and config.TELEGRAM_ENABLED:
-                        try:
-                            notifications.notify_daily_summary(summary, risk.current_equity)
-                        except Exception as e:
-                            logger.warning(f"Daily summary notification failed: {e}")
-
                     # Save daily snapshot
                     try:
                         wr = summary.get("win_rate", 0) if summary.get("trades", 0) > 0 else 0
@@ -1960,13 +1935,10 @@ def main():
                 if (current - last_analytics_update).total_seconds() >= 300:
                     try:
                         current_analytics = analytics_mod.compute_analytics()
-                        if current_analytics and notifications and config.TELEGRAM_ENABLED:
+                        if current_analytics:
                             dd = current_analytics.get("max_drawdown", 0)
                             if dd > 0.05:
-                                try:
-                                    notifications.notify_drawdown_warning(dd)
-                                except Exception as e:
-                                    logger.debug("Drawdown notification failed: %s", e)
+                                logger.warning("Max drawdown %.1f%% exceeds 5%%", dd * 100)
                     except Exception as e:
                         logger.error(f"Failed to compute analytics: {e}")
 
@@ -2016,28 +1988,6 @@ def main():
                 # -------------------------------------------------------
                 # Update dashboard
                 # -------------------------------------------------------
-                # V9: Update web dashboard shared state
-                if config.WEB_DASHBOARD_ENABLED:
-                    try:
-                        from web_dashboard import update_v9_state
-                        v9_update = {}
-                        if regime_detector and hasattr(regime_detector, 'hmm_regime'):
-                            v9_update['hmm_regime'] = str(regime_detector.hmm_regime or "UNKNOWN")
-                            v9_update['hmm_probabilities'] = getattr(regime_detector, 'hmm_probabilities', {})
-                        if cross_asset_monitor:
-                            v9_update['cross_asset_bias'] = cross_asset_monitor.get_equity_bias()
-                            try:
-                                v9_update['cross_asset_signals'] = cross_asset_monitor.compute_signals()
-                            except Exception as e:
-                                logger.debug("Cross-asset signals update failed: %s", e)
-                        if overnight_manager:
-                            v9_update['overnight_count'] = len(overnight_manager.get_overnight_positions())
-                        if adaptive_allocator and hasattr(vol_engine, '_adaptive_weights'):
-                            v9_update['adaptive_weights'] = getattr(vol_engine, '_adaptive_weights', {})
-                        update_v9_state(**v9_update)
-                    except Exception as e:
-                        logger.debug("Web dashboard state update failed: %s", e)
-
                 # Build V9 dashboard kwargs
                 _v9_dash = {}
                 try:

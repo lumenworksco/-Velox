@@ -109,9 +109,6 @@ ALPACA_API_KEY=PKXXXXXXXXXXXXXXXXXX
 ALPACA_API_SECRET=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ALPACA_LIVE=false
 
-# Required -- set secure passwords for the database and Grafana
-POSTGRES_PASSWORD=choose_a_strong_password_here
-GRAFANA_ADMIN_PASSWORD=choose_a_strong_password_here
 ```
 
 Leave `ALPACA_LIVE=false` for now. This runs the bot in paper trading mode using simulated money.
@@ -122,15 +119,11 @@ Leave `ALPACA_LIVE=false` for now. This runs the bot in paper trading mode using
 docker compose up -d
 ```
 
-This starts all six services:
+This starts two services:
 
 | Service | Description | Port |
 |---|---|---|
-| velox | The trading bot | 8080 |
-| postgres | PostgreSQL database | 5432 |
-| prometheus | Metrics collection | 9090 |
-| grafana | Metrics dashboards | 3000 |
-| alertmanager | Alert routing | 9093 |
+| velox | The trading bot (terminal dashboard) | -- |
 | backup | Automated daily backups | -- |
 
 First startup takes 2-3 minutes while Docker builds the image and downloads dependencies.
@@ -141,10 +134,11 @@ First startup takes 2-3 minutes while Docker builds the image and downloads depe
 docker compose ps
 ```
 
-All services should show `Up (healthy)` or `Up`. Then open the dashboard:
+All services should show `Up (healthy)` or `Up`. Then attach to the live terminal dashboard (detach with `Ctrl-P Ctrl-Q`):
 
-- **Dashboard**: [http://localhost:8080](http://localhost:8080)
-- **Grafana**: [http://localhost:3000](http://localhost:3000) (log in with `admin` / your `GRAFANA_ADMIN_PASSWORD`)
+```bash
+docker attach velox-v12
+```
 
 ### Step 7: Check the Logs
 
@@ -254,39 +248,7 @@ pead:
   enabled: false    # Disable Post-Earnings Drift
 ```
 
-### 3.5 Configuring Telegram Alerts
-
-Velox can send real-time trade alerts, daily summaries, and risk warnings to Telegram.
-
-1. Open Telegram and message **@BotFather**
-2. Send `/newbot` and follow the prompts to create a bot
-3. Copy the **bot token** (looks like `123456789:ABCdefGhIJKlmNoPQRsTUVwxYZ`)
-4. Send any message to your new bot, then visit:
-   ```
-   https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates
-   ```
-5. Find your `chat_id` in the JSON response (a numeric ID)
-6. Update your `.env` file:
-
-```bash
-TELEGRAM_ENABLED=true
-TELEGRAM_BOT_TOKEN=123456789:ABCdefGhIJKlmNoPQRsTUVwxYZ
-TELEGRAM_CHAT_ID=987654321
-```
-
-7. Restart the bot:
-
-```bash
-docker compose restart velox
-```
-
-You will receive notifications for:
-- Trade opened (symbol, strategy, entry price, size, TP/SL levels)
-- Trade closed (symbol, P&L, exit reason, hold time)
-- Daily performance summary
-- Risk warnings (circuit breaker activations, VIX halts)
-
-### 3.6 Configuring the FRED API Key
+### 3.5 Configuring the FRED API Key
 
 The FRED API key enables macroeconomic data integration (yield curve, unemployment, GDP surprise signals).
 
@@ -323,62 +285,42 @@ All services should show `Up (healthy)`.
 **Detailed status:**
 
 ```bash
-./status.sh
+python velox.py status          # one-shot
+python velox.py status --watch  # full-screen, refreshes every 5s
 ```
 
-This shows the process status, open positions, recent trades, and the last 10 log lines.
+This shows the process status, heartbeat age, open positions and recent trades.
 
-**Via the dashboard API:**
+**Health check (exit code 0 when the heartbeat is fresh):**
 
 ```bash
-curl http://localhost:8080/health
+python velox.py health && echo healthy
 ```
 
-A healthy response returns HTTP 200.
+### 4.2 The Terminal Dashboard
 
-### 4.2 Viewing the Dashboard
+`python velox.py run` (or `docker attach velox-v12`) shows the live dashboard:
 
-Open [http://localhost:8080](http://localhost:8080) in your browser. The dashboard shows:
-
-- Current portfolio value and daily P&L
-- Open positions with entry prices, unrealized P&L, and strategy labels
+- Current portfolio value and daily/weekly P&L
+- Open positions with entry prices, hold type and strategy labels
 - Recent trade history with exit reasons and realized P&L
-- Signal log (generated, acted on, and skipped signals with reasons)
-- Risk state (circuit breaker tier, VIX level, portfolio heat)
-- Strategy health metrics
+- Risk state (circuit breaker, vol scalar, beta, consistency score)
+- Strategy allocation and per-strategy breakdown
 
-If you configured dashboard authentication (see `.env.example`), you will need to log in first.
+### 4.3 Emergency Stop
 
-### 4.3 Checking Grafana Metrics
+```bash
+python velox.py kill
+```
 
-Open [http://localhost:3000](http://localhost:3000) and log in with:
-- Username: `admin`
-- Password: your `GRAFANA_ADMIN_PASSWORD` from `.env`
-
-Grafana provides time-series visualizations of:
-- Portfolio equity curve
-- Per-strategy P&L breakdown
-- Signal generation rates
-- Execution latency and slippage
-- VIX levels and risk scalar
-- Circuit breaker activations
-
-Prometheus (the underlying metrics store) is accessible at [http://localhost:9090](http://localhost:9090) for ad-hoc queries.
+Asks the running bot to cancel all orders and close all positions. It prompts for confirmation (`--yes` skips it) and the bot acts within one loop iteration.
 
 ### 4.4 Viewing Trade History
 
-**Via the dashboard:**
-
-Navigate to the Trades section at [http://localhost:8080](http://localhost:8080).
-
-**Via the API:**
+**Performance report:**
 
 ```bash
-# Last 20 trades
-curl http://localhost:8080/api/trades?limit=20
-
-# Trades for a specific symbol
-curl http://localhost:8080/api/trades?symbol=AAPL
+python velox.py tearsheet --days 30
 ```
 
 **Via SQLite directly (if running locally without Docker):**
@@ -395,7 +337,7 @@ The bot automatically generates a daily end-of-day summary at 4:15 PM ET, which 
 - Sharpe ratio (rolling)
 - Strategy-level breakdown
 
-If Telegram is configured, this summary is sent as a notification. The data is also persisted to the `daily_snapshots` table for historical analysis.
+The data is also persisted to the `daily_snapshots` table for historical analysis.
 
 ### 4.6 What to Do if the Bot Crashes
 
@@ -508,16 +450,6 @@ The following table lists all key parameters with their defaults and safe ranges
 | Vol scalar ceiling | `vol_scalar_max` | 1.5 | 1.0 -- 2.0 |
 | Bearish size cut | `bearish_size_cut` | 40% | 20% -- 60% |
 
-**Kelly Criterion:**
-
-| Parameter | Config Key | Default | Safe Range |
-|---|---|---|---|
-| Kelly enabled | `kelly.enabled` | true | true/false |
-| Min trades for Kelly | `kelly.min_trades` | 30 | 20 -- 50 |
-| Kelly fraction | `kelly.fraction_mult` | 0.5 (half-Kelly) | 0.25 -- 0.75 |
-| Kelly min risk | `kelly.min_risk` | 0.3% | 0.1% -- 0.5% |
-| Kelly max risk | `kelly.max_risk` | 2.0% | 1.0% -- 3.0% |
-
 **Daily P&L Controls:**
 
 | Parameter | Config Key | Default | Safe Range |
@@ -588,25 +520,15 @@ The following parameters are carefully tuned and should not be modified without 
     | StatMR       |  | risk_manager.py   (sizing)      |  | data.py (Alpaca) |
     | VWAP         |  | vol_targeting.py  (vol target)  |  | yfinance (VIX)   |
     | KalmanPairs  |  | circuit_breaker.py (4-tier CB)  |  | FinBERT (NLP)    |
-    | ORB          |  | kelly.py          (Kelly crit)  |  | FRED (macro)     |
-    | MicroMom     |  | daily_pnl_lock.py (P&L locks)   |  | EDGAR (filings)  |
-    | PEAD         |  | beta_neutralizer.py (hedging)   |  |                  |
-    +--------------+  | portfolio_heat.py  (correlation) |  +------------------+
-                      | pdt_tracker.py    (PDT rule)    |
-                      +---------------------------------+
+    | ORB          |  | daily_pnl_lock.py (P&L locks)   |  | FRED (macro)     |
+    | MicroMom     |  | beta_neutralizer.py (hedging)   |  | EDGAR (filings)  |
+    | PEAD         |  | pdt_tracker.py    (PDT rule)    |  |                  |
+    +--------------+  +---------------------------------+  +------------------+
                                      |
                           +----------v-----------+
                           |      Persistence     |
                           |  SQLite (bot.db)     |
-                          |  PostgreSQL (Docker)  |
                           +----------------------+
-                                     |
-               +---------------------+---------------------+
-               |                     |                     |
-      +--------v--------+  +--------v--------+  +---------v--------+
-      |   Dashboard     |  |   Prometheus    |  |     Grafana      |
-      | :8080 (FastAPI) |  | :9090 (metrics) |  | :3000 (charts)   |
-      +-----------------+  +-----------------+  +------------------+
 ```
 
 ### 6.2 Signal Flow Pipeline
@@ -627,10 +549,8 @@ The following parameters are carefully tuned and should not be modified without 
 4. **Position Sizing** -- Surviving signals are sized using:
    - Risk-per-trade percentage (0.8% default)
    - Volatility targeting (scale to 1% daily vol)
-   - Kelly criterion (half-Kelly based on rolling win rate)
    - VIX risk scalar (reduce in high-volatility regimes)
    - Regime adjustment (40% size cut in bearish regimes)
-   - Portfolio heat check (block if total heat exceeds limit)
 
 5. **Order Submission** -- Sized orders are submitted to Alpaca as bracket orders (entry + take-profit + stop-loss) via the execution module with smart routing and adaptive TWAP.
 
@@ -674,7 +594,7 @@ Exits are managed by the Exit Orchestrator (`engine/exit_orchestrator.py`) with 
 
 ### 6.5 Database Schema Overview
 
-Velox uses SQLite (`bot.db`) for local state and PostgreSQL (in Docker) for production persistence. Key tables:
+Velox keeps all state in SQLite (`bot.db`). Key tables:
 
 | Table | Purpose |
 |---|---|
@@ -699,22 +619,17 @@ The schema auto-migrates on startup. No manual database management is required.
 
 Your `.env` file is missing the Alpaca API key, or the key is empty. Open `.env` and verify that `ALPACA_API_KEY` and `ALPACA_API_SECRET` are set correctly with no leading or trailing spaces.
 
-**"Set POSTGRES_PASSWORD in .env"**
-
-The Docker Compose file requires `POSTGRES_PASSWORD` to be set. Add a strong password to your `.env` file.
-
 **Bot starts but makes no trades**
 
 - Check if it is outside market hours (9:30 AM -- 4:00 PM ET, weekdays only). The bot only trades during market hours.
-- Check if the circuit breaker is active: `curl http://localhost:8080/api/risk`
-- Check if there are signals being generated but filtered: `curl http://localhost:8080/api/signals`
+- Check the circuit breaker state and signal activity in the live dashboard (`docker attach velox-v12`) or `python velox.py status`
+- Check the logs: `docker compose logs velox`
 - Verify your Alpaca account has sufficient buying power.
 
-**"Connection refused" when accessing the dashboard**
+**The dashboard is blank or the bot looks stuck**
 
-- Verify the bot is running: `docker compose ps`
+- Verify the bot is running: `docker compose ps` or `python velox.py status`
 - Check for startup errors: `docker compose logs velox`
-- Ensure port 8080 is not in use by another application.
 
 **Alpaca API errors (403 Forbidden)**
 
@@ -767,9 +682,6 @@ docker compose down
 # Remove the SQLite database
 rm bot.db
 
-# Remove the PostgreSQL volume (Docker)
-docker volume rm trading_bot_pgdata
-
 # Restart -- fresh database will be created automatically
 docker compose up -d
 ```
@@ -779,9 +691,6 @@ To back up before resetting:
 ```bash
 # SQLite backup
 cp bot.db bot.db.backup
-
-# PostgreSQL backup
-docker compose exec postgres pg_dump -U velox velox > backup.sql
 ```
 
 ### 7.4 How to Retrain the ML Model
@@ -828,7 +737,6 @@ If your account is below $25,000, the bot will still work but will be limited to
 Use the same Docker setup instructions. For production VPS deployments, also consider:
 - Setting up automatic OS updates
 - Configuring a firewall (allow only ports you need)
-- Setting up Telegram alerts so you are notified of issues remotely
 
 ### How much does it cost to run?
 

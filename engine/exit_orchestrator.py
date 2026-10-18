@@ -18,7 +18,7 @@ The orchestrator runs exits in priority order for each position:
   10. Time stops
 
 All exit execution flows through handle_exit_action() which emits events,
-updates risk state, and manages notifications.
+updates risk state, and manages cleanup.
 """
 
 import logging
@@ -101,7 +101,6 @@ class ExitOrchestrator:
         # Adaptive exit manager instance
         self._adaptive_mgr = AdaptiveExitManager() if _ADAPTIVE_AVAILABLE else None
         # Lazy-loaded optional modules
-        self._notifications = None
         self._intraday_controls = None
 
     # ------------------------------------------------------------------ #
@@ -295,8 +294,6 @@ class ExitOrchestrator:
             def was_recently_closed(_s: str) -> bool:  # type: ignore[misc]
                 return False
 
-        notif = self._get_notifications()
-
         # V12 HOTFIX: de-dup exits within a single batch — each symbol gets at
         # most one action per execute_exits() call, preferring the lowest
         # priority number (highest priority).
@@ -455,12 +452,6 @@ class ExitOrchestrator:
                 if ws_monitor:
                     ws_monitor.unsubscribe(symbol)
 
-                if notif and config.TELEGRAM_ENABLED:
-                    try:
-                        notif.notify_trade_closed(trade)
-                    except Exception as e:
-                        logger.error(f"ExitOrchestrator: notification failed for {symbol}: {e}")
-
     # ------------------------------------------------------------------ #
     #  WebSocket-triggered closes (delegated from exit_processor)
     # ------------------------------------------------------------------ #
@@ -544,13 +535,6 @@ class ExitOrchestrator:
         risk_manager.close_trade(symbol, exit_price, now, exit_reason=reason)
         self.cleanup_state(symbol)
         ws_monitor.unsubscribe(symbol)
-
-        notif = self._get_notifications()
-        if notif and config.TELEGRAM_ENABLED:
-            try:
-                notif.notify_trade_closed(trade)
-            except Exception as e:
-                logger.error(f"ExitOrchestrator: notification failed for {symbol}: {e}")
 
     # ------------------------------------------------------------------ #
     #  Price extreme updates (from WebSocket quotes)
@@ -972,15 +956,6 @@ class ExitOrchestrator:
     # ------------------------------------------------------------------ #
     #  Helpers
     # ------------------------------------------------------------------ #
-
-    def _get_notifications(self):
-        if self._notifications is None:
-            try:
-                import notifications as _n
-                self._notifications = _n
-            except ImportError:
-                self._notifications = False
-        return self._notifications if self._notifications else None
 
     def _register_oms_partial(self, symbol, trade, qty, price, now, reason):
         """Register partial close in OMS (fail-open)."""

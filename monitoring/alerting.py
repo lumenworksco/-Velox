@@ -6,7 +6,6 @@ Alert levels:
   CRITICAL — Circuit breaker, position sync issue  (rate limit: 1/5min per issue)
   EMERGENCY — Kill switch, margin call             (no rate limit)
 
-Integrates with existing Telegram notifications (notifications.py).
 """
 
 import json
@@ -40,13 +39,6 @@ LEVEL_NAMES = {
     AlertLevel.WARNING: "WARNING",
     AlertLevel.CRITICAL: "CRITICAL",
     AlertLevel.EMERGENCY: "EMERGENCY",
-}
-
-LEVEL_EMOJI = {
-    AlertLevel.INFO: "\u2139\ufe0f",
-    AlertLevel.WARNING: "\u26a0\ufe0f",
-    AlertLevel.CRITICAL: "\U0001f6a8",
-    AlertLevel.EMERGENCY: "\U0001f198",
 }
 
 
@@ -171,7 +163,7 @@ class AlertManager:
           1. Create Alert record
           2. Check maintenance window suppression
           3. Check rate limiting
-          4. Deliver via Telegram (if enabled)
+          4. Deliver to the log
           5. Log to audit file
 
         Args:
@@ -336,9 +328,8 @@ class AlertManager:
         return False
 
     def _deliver(self, alert: Alert):
-        """Deliver alert via Telegram and local logging."""
+        """Deliver an alert to the log."""
         level_name = LEVEL_NAMES.get(alert.level, "INFO")
-        emoji = LEVEL_EMOJI.get(alert.level, "")
 
         # Always log locally
         log_fn = {
@@ -348,18 +339,6 @@ class AlertManager:
             AlertLevel.EMERGENCY: logger.critical,
         }.get(alert.level, logger.info)
         log_fn(f"ALERT [{level_name}] ({alert.source}): {alert.message}")
-
-        # Send via Telegram
-        try:
-            import notifications
-            telegram_msg = (
-                f"{emoji} *{level_name}*\n"
-                f"Source: {alert.source}\n"
-                f"{alert.message}"
-            )
-            notifications._send_telegram(telegram_msg)
-        except Exception as e:
-            logger.error(f"AlertManager: Telegram delivery failed: {e}")
 
     def _store_alert(self, alert: Alert):
         """Store alert in memory and append to log file."""

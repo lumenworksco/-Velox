@@ -69,7 +69,6 @@ def _mock_deps():
     import types
     cfg = types.ModuleType("config")
     cfg.ET = ET
-    cfg.TELEGRAM_ENABLED = False
     cfg.ADAPTIVE_EXITS_ENABLED = False
 
     mock_data = MagicMock()
