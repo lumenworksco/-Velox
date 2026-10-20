@@ -8,4 +8,4 @@ pytest-mock>=3.14
 mypy>=1.10
 black>=24.0
 isort>=5.13
-pylint>=3.2
+pylint>=4.1.3
